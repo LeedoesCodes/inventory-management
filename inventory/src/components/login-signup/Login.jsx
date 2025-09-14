@@ -1,11 +1,10 @@
 import React, { useState } from "react";
 import { auth } from "../../Firebase/firebase";
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import googleLogo from "../../assets/images/google-logo.png";
 import"../../styles/login.scss";
 import Footer from "../UI/Footer";
-import"../../styles/register.scss";
 import { GuestHeader } from "../UI/Headers";
 
 export default function Login() {
@@ -14,6 +13,8 @@ export default function Login() {
   const [passwordReveal, setPasswordReveal] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
+  const successMessage = location.state?.successMessage;
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -41,8 +42,13 @@ export default function Login() {
     <div className="main-container">
     
   <form onSubmit={handleLogin}>
-    <h1>Login</h1>
-    <div classname="inputbox"> 
+          <h1>Login</h1>
+          {successMessage && (
+        <p className="prompt" style={{ color: "green", textAlign: "center" }}>
+          {successMessage}
+        </p>
+      )}
+    <div className="inputbox"> 
         <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
         <input
           type={passwordReveal ? "text" : "password"}

@@ -3,9 +3,10 @@ import { useContext } from "react";
 import { AuthContext } from "./context/AuthContext.jsx";
 
 // Pages
-import Login from "./components/login-signup/Login.";
-import Register from "./components/login-signup/Register";
+
+import Register from "./components/login-signup/register";
 import Dashboard from "./components/Dashboard.jsx";
+import Login from "./components/login-signup/login.jsx";
 
 function App() {
   const { isLoggedIn, loading } = useContext(AuthContext);

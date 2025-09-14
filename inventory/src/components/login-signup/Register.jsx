@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { GuestHeader } from "../UI/Headers";
 import Footer from "../UI/Footer";
-import"../../styles/register.scss";
+import "../../styles/register.scss";
 
 // Firebase imports
 import { auth } from "../../Firebase/firebase";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
 
 export default function Register() {
   const [email, set_email] = useState("");
@@ -28,7 +28,6 @@ export default function Register() {
   async function handle_submit(e) {
     e.preventDefault();
 
-    
     if (!email || !password || !confirmPassword) {
       setPromptColor("error");
       setPrompt("Please fill in all fields.");
@@ -47,31 +46,32 @@ export default function Register() {
       return;
     }
 
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      console.log("User registered:", userCredential.user);
+        try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        console.log("User registered:", userCredential.user);
 
-      setPromptColor("success");
-      setPrompt("Account created successfully! Please login.");
+        await signOut(auth);
 
-    
-      setTimeout(() => {
-        navigate("/login");
-      }, 2000);
-    } catch (err) {
-      console.error("Error:", err.message);
-      setPromptColor("error");
+        
+        navigate("/login", {
+          state: { successMessage: " Account created successfully! Please login." }
+        });
 
-      if (err.code === "auth/email-already-in-use") {
-        setPrompt("This email is already in use.");
-      } else if (err.code === "auth/invalid-email") {
-        setPrompt("Invalid email format.");
-      } else if (err.code === "auth/weak-password") {
-        setPrompt("Password is too weak (min 6 characters).");
-      } else {
-        setPrompt(err.message);
+      } catch (err) {
+        console.error("Error:", err.message);
+        setPromptColor("error");
+
+        if (err.code === "auth/email-already-in-use") {
+          setPrompt("This email is already in use.");
+        } else if (err.code === "auth/invalid-email") {
+          setPrompt("Invalid email format.");
+        } else if (err.code === "auth/weak-password") {
+          setPrompt("Password is too weak (min 6 characters).");
+        } else {
+          setPrompt(err.message);
+        }
       }
-    }
+
   }
 
   return (
@@ -105,7 +105,6 @@ export default function Register() {
             onChange={(e) => set_confirmPassword(e.target.value)}
           />
 
-          {/* Single show password toggle */}
           <div className="show-password">
             <input
               type="checkbox"
@@ -121,7 +120,7 @@ export default function Register() {
           </button>
 
           <p className="login-redirect">
-            Already have an account? <a href="/login">Login here</a>
+            Already have an account? <Link to="/login">Login here</Link>
           </p>
           <p className="prompt">{prompt}</p>
         </form>

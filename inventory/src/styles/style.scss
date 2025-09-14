@@ -18,34 +18,22 @@ form {
     color: #2c3e50;
   }
   
- 
   input {
     width: 100%;
-    padding: 0.75rem;
-    margin-bottom: 1rem;
+    padding: 1em;
+    margin-bottom: 5px;
     border: 1px solid #ccc;
     border-radius: 6px;
     outline: none;
     display: flex;
-    justify-content: center;
+    justify-content: center;  
     align-items: center;
     &:focus {
     border-color: #3498db;
     }
-  }
 
- /* button {
-    width: 100%;
-    padding: 0.75rem;
-    border: none;
-    border-radius: 6px;
-    background-color: #3498db;
-    color: rgb(255, 255, 255);
-    font-size: 1rem;
-    cursor: pointer;
-    margin-bottom: 1rem;
-    transition: 0.2s;
-  } */
+      }
+
 
   .show-password {
     display: flex;
