@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import { Link } from "react-router-dom";   
+import { Link } from "react-router-dom";
 import "../../styles/sidebar.scss";
 import fredLogo from "../../assets/images/fred-logo.png";
 import avatar from "../../assets/images/avatar-default.png";
@@ -11,11 +11,7 @@ export default function Sidebar() {
   return (
     <div className="sidebar">
       <div className="company-logo-container">
-        <img
-          src={fredLogo}
-          alt="Company Logo"
-          className="company-logo"
-        />
+        <img src={fredLogo} alt="Company Logo" className="company-logo" />
       </div>
 
       <h1 className="app-title">FREDDIE'S GOODIES</h1>
@@ -35,10 +31,18 @@ export default function Sidebar() {
       </Link>
 
       <ul className="menu">
-        <li><Link to="/dashboard">Dashboard</Link></li>
-        <li><Link to="/inventory">Inventory</Link></li>
-        <li><Link to="/products">Products</Link></li>
-        <li><Link to="/settings">Settings</Link></li>
+        <li>
+          <Link to="/dashboard">Dashboard</Link>
+        </li>
+        <li>
+          <Link to="/inventory">Inventory</Link>
+        </li>
+        <li>
+          <Link to="/products">Products</Link>
+        </li>
+        <li>
+          <Link to="/settings">Settings</Link>
+        </li>
       </ul>
     </div>
   );

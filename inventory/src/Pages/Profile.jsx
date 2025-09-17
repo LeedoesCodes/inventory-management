@@ -4,7 +4,7 @@ import avatar from "../assets/images/avatar-default.png";
 import "../styles/profile.scss";
 import ConfirmModal from "../components/UI/ConfirmModal.jsx";
 import { AuthContext } from "../context/AuthContext.jsx";
-import Sidebar from "../components/UI/sidebar.jsx"; 
+import Sidebar from "../components/UI/sidebar.jsx";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -21,10 +21,8 @@ export default function Profile() {
 
   return (
     <div className="profile-page">
-      
-      <Sidebar /> 
+      <Sidebar />
 
-      
       <div className="profile-card">
         <img
           src={user?.photoURL || avatar}

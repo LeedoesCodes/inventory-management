@@ -7,6 +7,8 @@ import "../../styles/register.scss";
 // Firebase imports
 import { auth } from "../../Firebase/firebase";
 import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "../../Firebase/firebase";
 
 export default function Register() {
   const [email, set_email] = useState("");
@@ -46,37 +48,39 @@ export default function Register() {
       return;
     }
 
-        try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        console.log("User registered:", userCredential.user);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      console.log("User registered:", userCredential.user);
 
-        await signOut(auth);
+      await signOut(auth);
 
-        
-        navigate("/login", {
-          state: { successMessage: " Account created successfully! Please login." }
-        });
+      navigate("/login", {
+        state: {
+          successMessage: " Account created successfully! Please login.",
+        },
+      });
+    } catch (err) {
+      console.error("Error:", err.message);
+      setPromptColor("error");
 
-      } catch (err) {
-        console.error("Error:", err.message);
-        setPromptColor("error");
-
-        if (err.code === "auth/email-already-in-use") {
-          setPrompt("This email is already in use.");
-        } else if (err.code === "auth/invalid-email") {
-          setPrompt("Invalid email format.");
-        } else if (err.code === "auth/weak-password") {
-          setPrompt("Password is too weak (min 6 characters).");
-        } else {
-          setPrompt(err.message);
-        }
+      if (err.code === "auth/email-already-in-use") {
+        setPrompt("This email is already in use.");
+      } else if (err.code === "auth/invalid-email") {
+        setPrompt("Invalid email format.");
+      } else if (err.code === "auth/weak-password") {
+        setPrompt("Password is too weak (min 6 characters).");
+      } else {
+        setPrompt(err.message);
       }
-
+    }
   }
 
   return (
     <div className="RegisterPage">
-      
       <div className="main-container">
         <form onSubmit={handle_submit}>
           <h1>Register</h1>
@@ -125,7 +129,6 @@ export default function Register() {
           <p className="prompt">{prompt}</p>
         </form>
       </div>
-     
     </div>
   );
 }
