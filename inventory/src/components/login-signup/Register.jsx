@@ -54,13 +54,22 @@ export default function Register() {
         email,
         password
       );
-      console.log("User registered:", userCredential.user);
+      const user = userCredential.user;
+
+      console.log("User registered:", user);
+
+      await setDoc(doc(db, "users", user.uid), {
+        email: user.email,
+        role: "pending", // default role (admin will approve later)
+        permissions: [],
+        createdAt: new Date(),
+      });
 
       await signOut(auth);
 
       navigate("/login", {
         state: {
-          successMessage: " Account created successfully! Please login.",
+          successMessage: "Account created! Please wait for admin approval.",
         },
       });
     } catch (err) {
