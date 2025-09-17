@@ -1,0 +1,68 @@
+.user-approvals-page {
+  display: flex; /* Sidebar on left, content on right */
+  min-height: 100vh;
+
+  .content {
+    flex: 1; /* take remaining space */
+    padding: 40px;
+    background-color: #f5f6fa;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 30px;
+      color: #333;
+    }
+
+    p {
+      font-size: 1rem;
+      color: #666;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+
+      li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        margin-bottom: 15px;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        background-color: #fff;
+        transition: background 0.2s, box-shadow 0.2s;
+
+        &:hover {
+          background-color: #f0f4ff;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        span {
+          font-size: 1rem;
+          color: #333;
+        }
+
+        button {
+          padding: 6px 12px;
+          border: none;
+          border-radius: 6px;
+          background-color: #4caf50;
+          color: white;
+          cursor: pointer;
+          font-weight: 600;
+          transition: background 0.2s;
+
+          &:hover {
+            background-color: #45a049;
+          }
+
+          &:active {
+            transform: scale(0.97);
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,12 +1,13 @@
+// src/components/Sidebar.jsx
 import React, { useContext } from "react";
 import { Link } from "react-router-dom";
 import "../../styles/sidebar.scss";
 import fredLogo from "../../assets/images/fred-logo.png";
 import avatar from "../../assets/images/avatar-default.png";
-import { AuthContext } from "../../context/AuthContext.jsx"; // ⬅️ import context
+import { AuthContext } from "../../context/AuthContext.jsx";
 
 export default function Sidebar() {
-  const { user } = useContext(AuthContext);
+  const { user, role } = useContext(AuthContext);
 
   return (
     <div className="sidebar">
@@ -25,7 +26,7 @@ export default function Sidebar() {
           />
           <div className="profile-info">
             <p className="name">{user?.displayName || user?.email}</p>
-            <p className="role">Admin</p>
+            <p className="role">{role === "admin" ? "Admin" : "User"}</p>
           </div>
         </div>
       </Link>
@@ -43,6 +44,12 @@ export default function Sidebar() {
         <li>
           <Link to="/settings">Settings</Link>
         </li>
+
+        {role === "admin" && (
+          <li>
+            <Link to="/user-approvals">User Approvals</Link>
+          </li>
+        )}
       </ul>
     </div>
   );

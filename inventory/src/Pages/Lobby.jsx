@@ -1,41 +1,36 @@
-import { useEffect, useState } from "react";
-import { auth, db } from "../firebase";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
+import { signOut } from "firebase/auth";
+import { auth } from "../Firebase/firebase";
 
 function Lobby() {
-  const [userData, setUserData] = useState(null);
+  const { user, role, loading } = useContext(AuthContext);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const docRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(docRef);
+    if (loading) return; // wait until role is known
 
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setUserData(data);
+    if (!user) {
+      navigate("/login");
+      return;
+    }
 
-          if (data.role === "approved") {
-            navigate("/dashboard");
-          } else if (data.role === "admin") {
-            navigate("/admin");
-          }
-        }
-      } else {
-        navigate("/login");
-      }
-    });
+    // Role-based redirection
+    if (role === "approved" || role === "admin") {
+      navigate("/dashboard"); // admins & approved users go to dashboard
+      return;
+    }
 
-    return () => unsubscribe();
-  }, [navigate]);
+    // pending users stay in Lobby
+  }, [user, role, loading, navigate]);
 
   async function handleLogout() {
     await signOut(auth);
     navigate("/login");
   }
+
+  if (loading) return <div>Loading...</div>;
 
   return (
     <div className="flex flex-col items-center justify-center h-screen text-center">
@@ -44,9 +39,9 @@ function Lobby() {
         Your account is pending approval from an administrator. Please check
         back later.
       </p>
-      {userData && (
+      {user && (
         <p className="text-gray-500">
-          Logged in as <strong>{userData.email}</strong>
+          Logged in as <strong>{user.email}</strong>
         </p>
       )}
       <button
