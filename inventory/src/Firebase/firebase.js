@@ -3,10 +3,6 @@ import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-
-const db = getFirestore(app);
-export { db };
 
 // Your Firebase config
 const firebaseConfig = {
@@ -19,8 +15,10 @@ const firebaseConfig = {
   measurementId: "G-8FP8X3DPEW",
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
+// Services
 export const auth = getAuth(app);
-export const firestore = getFirestore(app);
+export const db = getFirestore(app);

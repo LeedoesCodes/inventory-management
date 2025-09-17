@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { auth } from "../../Firebase/firebase";
+import { auth, db } from "../../Firebase/firebase";
 import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
 } from "firebase/auth";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import googleLogo from "../../assets/images/google-logo.png";
 import "../../styles/login.scss";
@@ -20,11 +21,41 @@ export default function Login() {
   const location = useLocation();
   const successMessage = location.state?.successMessage;
 
+  const handleUserRedirect = async (user) => {
+    const userRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userRef);
+
+    if (userSnap.exists()) {
+      const data = userSnap.data();
+
+      if (data.role === "admin") {
+        navigate("/admin");
+      } else if (data.role === "approved") {
+        navigate("/dashboard");
+      } else {
+        navigate("/lobby");
+      }
+    } else {
+      await setDoc(userRef, {
+        email: user.email,
+        role: "pending",
+        permissions: [],
+        createdAt: new Date(),
+      });
+      navigate("/lobby");
+    }
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError("");
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      navigate("/dashboard");
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      await handleUserRedirect(userCredential.user);
     } catch (err) {
       if (err.code === "auth/invalid-credential") {
         setError(
@@ -43,8 +74,8 @@ export default function Login() {
   const handleGoogleLogin = async () => {
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      navigate("/dashboard");
+      const result = await signInWithPopup(auth, provider);
+      await handleUserRedirect(result.user);
     } catch (err) {
       setError(err.message);
     }
@@ -63,6 +94,7 @@ export default function Login() {
               {successMessage}
             </p>
           )}
+
           <div className="inputbox">
             <input
               type="email"
@@ -100,7 +132,11 @@ export default function Login() {
             Continue with Google
           </button>
 
-          {error && <p className="prompt">{error}</p>}
+          {error && (
+            <p className="prompt" style={{ color: "red" }}>
+              {error}
+            </p>
+          )}
 
           <p className="redirect">
             Don’t have an account? <Link to="/register">Register here</Link>
