@@ -1,8 +1,8 @@
 // src/Firebase/firebase.js
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getFirestore } from "firebase/firestore"; // ✅ lowercase 'firebase'
-import { getAuth } from "firebase/auth"; // ✅ add this for authentication
+import { getFirestore } from "firebase/firestore"; 
+import { getAuth } from "firebase/auth"; 
 
 // Your Firebase config
 const firebaseConfig = {
@@ -15,10 +15,10 @@ const firebaseConfig = {
   measurementId: "G-8FP8X3DPEW",
 };
 
-// Initialize Firebase
+
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
-// ✅ Exports
-export const auth = getAuth(app);       // for Login/Register
-export const firestore = getFirestore(app); // for storing inventory items
+
+export const auth = getAuth(app);       
+export const firestore = getFirestore(app); 

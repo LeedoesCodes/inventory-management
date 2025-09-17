@@ -5,7 +5,7 @@ import { AuthContext } from "./context/AuthContext.jsx";
 // Pages
 
 import Register from "./components/login-signup/register";
-import Dashboard from "./components/Dashboard.jsx";
+import Dashboard from "./Pages/Dashboard.jsx";
 import Login from "./components/login-signup/login.jsx";
 
 function App() {
