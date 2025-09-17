@@ -2,11 +2,11 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "./context/AuthContext.jsx";
 
-// Pages
 
 import Register from "./components/login-signup/register";
 import Dashboard from "./Pages/Dashboard.jsx";
 import Login from "./components/login-signup/login.jsx";
+import Profile from "./Pages/Profile.jsx";
 
 function App() {
   const { isLoggedIn, loading } = useContext(AuthContext);
@@ -29,6 +29,7 @@ function App() {
             )
           }
         />
+        
 
        
         <Route
@@ -45,6 +46,11 @@ function App() {
           path="/dashboard"
           element={isLoggedIn ? <Dashboard /> : <Navigate to="/login" replace />}
         />
+        <Route
+            path="/profile"
+            element={isLoggedIn ? <Profile /> : <Navigate to="/login" replace />}
+          />
+
 
        
         <Route path="*" element={<Navigate to="/" replace />} />

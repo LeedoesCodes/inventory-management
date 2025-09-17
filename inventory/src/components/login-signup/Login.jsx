@@ -16,15 +16,24 @@ export default function Login() {
   const location = useLocation();
   const successMessage = location.state?.successMessage;
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      navigate("/dashboard");
-    } catch (err) {
-      setError(err.message);
-    }
-  };
+        const handleLogin = async (e) => {
+          e.preventDefault();
+          try {
+            await signInWithEmailAndPassword(auth, email, password);
+            navigate("/dashboard");
+          } catch (err) {
+            if (err.code === "auth/invalid-credential") {
+              setError("This email is registered with Google. Please use 'Continue with Google' to sign in.");
+            } else if (err.code === "auth/user-not-found") {
+              setError("No account found with this email.");
+            } else if (err.code === "auth/wrong-password") {
+              setError("Incorrect password. Please try again.");
+            } else {
+              setError(err.message);
+            }
+          }
+        };
+
 
   const handleGoogleLogin = async () => {
     try {
@@ -38,7 +47,7 @@ export default function Login() {
 
   return (
   <div className="login-page">
-   <GuestHeader /> 
+   
     <div className="main-container">
     
   <form onSubmit={handleLogin}>
@@ -78,7 +87,7 @@ export default function Login() {
    </form>
   
   </div>
-  <Footer />
+  
 </div>
 
   );

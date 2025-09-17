@@ -1,28 +1,16 @@
-// src/components/Dashboard.jsx
-import { useContext } from "react";
-import { AuthContext } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import React from "react";
+import Sidebar from "../components/UI/sidebar.jsx";
 
-function Dashboard() {
-  const { user, logout } = useContext(AuthContext);
-  const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
 
+export default function Dashboard() {
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold">Welcome, {user?.email}!</h1>
-      <button
-        onClick={handleLogout}
-        className="mt-4 bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
-      >
-        Logout
-      </button>
+    <div className="dashboard-layout">
+      <Sidebar />
+      <div className="dashboard-content">
+        <h1>Welcome to the Dashboard</h1>
+        {/* Later replace this with routes or page content */}
+      </div>
     </div>
   );
 }
-
-export default Dashboard;

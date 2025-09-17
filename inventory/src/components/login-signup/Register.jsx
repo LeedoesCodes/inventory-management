@@ -76,7 +76,7 @@ export default function Register() {
 
   return (
     <div className="RegisterPage">
-      <GuestHeader />
+      
       <div className="main-container">
         <form onSubmit={handle_submit}>
           <h1>Register</h1>
@@ -125,7 +125,7 @@ export default function Register() {
           <p className="prompt">{prompt}</p>
         </form>
       </div>
-      <Footer />
+     
     </div>
   );
 }
