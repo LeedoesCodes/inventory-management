@@ -96,7 +96,6 @@ export default function Login() {
 
   return (
     <div className="login-page">
-      <GuestHeader />
       <div className="main-container">
         <form onSubmit={handleLogin}>
           <h1>Login</h1>
@@ -169,7 +168,6 @@ export default function Login() {
           </p>
         </form>
       </div>
-      <Footer />
     </div>
   );
 }
