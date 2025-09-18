@@ -3,11 +3,13 @@ import { auth, db } from "../../Firebase/firebase";
 import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
+  FacebookAuthProvider,
   signInWithPopup,
 } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import googleLogo from "../../assets/images/google-logo.png";
+import facebookLogo from "../../assets/images/Facebook-logo.png";
 import "../../styles/login.scss";
 import Footer from "../UI/Footer";
 import { GuestHeader } from "../UI/Headers";
@@ -21,6 +23,7 @@ export default function Login() {
   const location = useLocation();
   const successMessage = location.state?.successMessage;
 
+  // Redirect user based on role
   const handleUserRedirect = async (user) => {
     const userRef = doc(db, "users", user.uid);
     const userSnap = await getDoc(userRef);
@@ -29,7 +32,7 @@ export default function Login() {
       const data = userSnap.data();
 
       if (data.role === "admin") {
-        navigate("/admin");
+        navigate("/user-approvals");
       } else if (data.role === "approved") {
         navigate("/dashboard");
       } else {
@@ -81,8 +84,19 @@ export default function Login() {
     }
   };
 
+  const handleFacebookLogin = async () => {
+    try {
+      const provider = new FacebookAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      await handleUserRedirect(result.user);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   return (
     <div className="login-page">
+      <GuestHeader />
       <div className="main-container">
         <form onSubmit={handleLogin}>
           <h1>Login</h1>
@@ -123,14 +137,26 @@ export default function Login() {
             Login
           </button>
 
-          <button
-            type="button"
-            className="google-login"
-            onClick={handleGoogleLogin}
-          >
-            <img src={googleLogo} alt="Google Logo" />
-            Continue with Google
-          </button>
+          <p className="or-text">or</p>
+          <div className="social-login-container">
+            <button
+              type="button"
+              className="google-login"
+              onClick={handleGoogleLogin}
+            >
+              <img src={googleLogo} alt="Google Logo" />
+              Google
+            </button>
+
+            <button
+              type="button"
+              className="facebook-login"
+              onClick={handleFacebookLogin}
+            >
+              <img src={facebookLogo} alt="Facebook Logo" />
+              Facebook
+            </button>
+          </div>
 
           {error && (
             <p className="prompt" style={{ color: "red" }}>
@@ -143,6 +169,7 @@ export default function Login() {
           </p>
         </form>
       </div>
+      <Footer />
     </div>
   );
 }
