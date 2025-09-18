@@ -1,19 +1,17 @@
-
 form {
-  background: #fff;
+  background: #f8f9fa;
   padding: 2rem;
   border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
   width: 100%;
   max-width: 400px;
   text-align: center;
-  
-  
+
   h1 {
     margin-bottom: 1.5rem;
     color: #2c3e50;
   }
-  
+
   input {
     width: 100%;
     padding: 1em;
@@ -22,14 +20,12 @@ form {
     border-radius: 6px;
     outline: none;
     display: flex;
-    justify-content: center;  
+    justify-content: center;
     align-items: center;
     &:focus {
-    border-color: #3498db;
+      border-color: #3498db;
     }
-
-      }
-
+  }
 
   .show-password {
     display: flex;
@@ -41,13 +37,13 @@ form {
       width: 16px;
       height: 16px;
       cursor: pointer;
-      margin-top: 10px;
+      margin-top: 15px;
     }
 
     label {
       cursor: pointer;
       font-size: 0.9rem;
-      color: #374151;
+      color: #000000;
     }
   }
 
@@ -71,5 +67,3 @@ form {
     }
   }
 }
-
-

@@ -13,6 +13,7 @@ import facebookLogo from "../../assets/images/Facebook-logo.png";
 import "../../styles/login.scss";
 import Footer from "../UI/Footer";
 import { GuestHeader } from "../UI/Headers";
+import freddieLogo from "../../assets/images/freddie-logo.png";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -23,21 +24,15 @@ export default function Login() {
   const location = useLocation();
   const successMessage = location.state?.successMessage;
 
-  // Redirect user based on role
   const handleUserRedirect = async (user) => {
     const userRef = doc(db, "users", user.uid);
     const userSnap = await getDoc(userRef);
 
     if (userSnap.exists()) {
       const data = userSnap.data();
-
-      if (data.role === "admin") {
-        navigate("/user-approvals");
-      } else if (data.role === "approved") {
-        navigate("/dashboard");
-      } else {
-        navigate("/lobby");
-      }
+      if (data.role === "admin") navigate("/user-approvals");
+      else if (data.role === "approved") navigate("/dashboard");
+      else navigate("/lobby");
     } else {
       await setDoc(userRef, {
         email: user.email,
@@ -96,77 +91,68 @@ export default function Login() {
 
   return (
     <div className="login-page">
-      <div className="main-container">
-        <form onSubmit={handleLogin}>
-          <h1>Login</h1>
-          {successMessage && (
-            <p
-              className="prompt"
-              style={{ color: "green", textAlign: "center" }}
-            >
-              {successMessage}
-            </p>
-          )}
+      <div className="split-container">
+        <div className="logo-side">
+          <img src={freddieLogo} alt="Company Logo" className="company-logo" />
+        </div>
 
-          <div className="inputbox">
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <input
-              type={passwordReveal ? "text" : "password"}
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-
-          <label className="show-password">
-            <input
-              type="checkbox"
-              checked={passwordReveal}
-              onChange={() => setPasswordReveal(!passwordReveal)}
-            />
-            Show Password
-          </label>
-
-          <button type="submit" className="email-login">
-            Login
-          </button>
-
-          <p className="or-text">or</p>
-          <div className="social-login-container">
-            <button
-              type="button"
-              className="google-login"
-              onClick={handleGoogleLogin}
-            >
-              <img src={googleLogo} alt="Google Logo" />
-              Google
+        <div className="form-side">
+          <form onSubmit={handleLogin}>
+            <h1>Login</h1>
+            {successMessage && (
+              <p className="prompt success">{successMessage}</p>
+            )}
+            <div className="inputbox">
+              <input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <input
+                type={passwordReveal ? "text" : "password"}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            <label className="show-password">
+              <input
+                type="checkbox"
+                checked={passwordReveal}
+                onChange={() => setPasswordReveal(!passwordReveal)}
+              />
+              Show Password
+            </label>
+            <button type="submit" className="email-login">
+              Login
             </button>
+            <p className="or-text">or</p>
+            <div className="social-login-container">
+              <button
+                type="button"
+                className="google-login"
+                onClick={handleGoogleLogin}
+              >
+                <img src={googleLogo} alt="Google Logo" />
+                Google
+              </button>
 
-            <button
-              type="button"
-              className="facebook-login"
-              onClick={handleFacebookLogin}
-            >
-              <img src={facebookLogo} alt="Facebook Logo" />
-              Facebook
-            </button>
-          </div>
-
-          {error && (
-            <p className="prompt" style={{ color: "red" }}>
-              {error}
+              <button
+                type="button"
+                className="facebook-login"
+                onClick={handleFacebookLogin}
+              >
+                <img src={facebookLogo} alt="Facebook Logo" />
+                Facebook
+              </button>
+            </div>
+            {error && <p className="prompt error">{error}</p>}
+            <p className="redirect">
+              Don’t have an account? <Link to="/register">Register here</Link>
             </p>
-          )}
-
-          <p className="redirect">
-            Don’t have an account? <Link to="/register">Register here</Link>
-          </p>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );

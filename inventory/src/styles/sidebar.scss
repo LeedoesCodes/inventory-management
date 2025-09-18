@@ -1,7 +1,6 @@
 .sidebar {
   width: 220px;
-  background: #1f5895;
-;
+  background: #009feb;
   color: #ecf0f1;
   min-height: 100vh;
   padding: 1rem;
@@ -12,25 +11,20 @@
     font-size: 1.5rem;
     margin-bottom: 1.5rem;
     text-align: center;
-    color: #ecf0f1;
-
+    color: #000000;
   }
 
-    .company-logo-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;  
+  .company-logo-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 
-        .company-logo{
-            width: 100px;   
-            height: 100px;  
-            border-radius: 50%;
-        
-        }
-        
-    
-        }
-        
+    .company-logo {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+    }
+  }
 
   .logo {
     margin-bottom: 2rem;
@@ -51,7 +45,7 @@
 
       a {
         text-decoration: none;
-        color: #ecf0f1;
+        color: #000000;
         font-size: 1rem;
 
         &:hover {
@@ -77,8 +71,8 @@
   margin-bottom: 2rem;
 
   .profile-pic {
-    width: 50px;   
-    height: 50px;  
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
     object-fit: cover;
     margin-right: 0.75rem;
@@ -86,21 +80,20 @@
   }
 
   .profile-link {
-  text-decoration: none;   
-  color: inherit;          
-}
-
-.profile-info {
-  .name {
-    font-weight: bold;
-    font-size: 1rem;
-    color: #fff;           
+    text-decoration: none;
+    color: inherit;
   }
 
-  .role {
-    font-size: 0.85rem;
-    color: #bdc3c7;
-  }
-}
+  .profile-info {
+    .name {
+      font-weight: bold;
+      font-size: 1rem;
+      color: #000000;
+    }
 
+    .role {
+      font-size: 0.85rem;
+      color: #000000;
+    }
+  }
 }

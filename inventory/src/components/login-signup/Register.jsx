@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { GuestHeader } from "../UI/Headers";
 import Footer from "../UI/Footer";
 import "../../styles/register.scss";
+import freddielogo from "../../assets/images/freddie-logo.png";
 
 // Firebase imports
 import { auth } from "../../Firebase/firebase";
@@ -89,54 +90,49 @@ export default function Register() {
   }
 
   return (
-    <div className="RegisterPage">
-      <div className="main-container">
-        <form onSubmit={handle_submit}>
-          <h1>Register</h1>
-
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => set_email(e.target.value)}
-          />
-
-          <input
-            type={passwordReveal ? "text" : "password"}
-            name="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => set_password(e.target.value)}
-          />
-
-          <input
-            type={passwordReveal ? "text" : "password"}
-            name="confirmPassword"
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChange={(e) => set_confirmPassword(e.target.value)}
-          />
-
-          <div className="show-password">
+    <div className="register-page">
+      <div className="split-container">
+        <div className="logo-side">
+          <img src={freddielogo} alt="Company Logo" className="company-logo" />
+        </div>
+        <div className="form-side">
+          <form onSubmit={handle_submit}>
+            <h1>Register</h1>
             <input
-              type="checkbox"
-              id="showPassword"
-              checked={passwordReveal}
-              onChange={() => set_passwordReveal(!passwordReveal)}
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => set_email(e.target.value)}
             />
-            <label htmlFor="showPassword">Show Password</label>
-          </div>
-
-          <button type="submit" className="create-account-btn">
-            <span>Create Account</span>
-          </button>
-
-          <p className="login-redirect">
-            Already have an account? <Link to="/login">Login here</Link>
-          </p>
-          <p className="prompt">{prompt}</p>
-        </form>
+            <input
+              type={passwordReveal ? "text" : "password"}
+              placeholder="Password"
+              value={password}
+              onChange={(e) => set_password(e.target.value)}
+            />
+            <input
+              type={passwordReveal ? "text" : "password"}
+              placeholder="Confirm Password"
+              value={confirmPassword}
+              onChange={(e) => set_confirmPassword(e.target.value)}
+            />
+            <div className="show-password">
+              <input
+                type="checkbox"
+                checked={passwordReveal}
+                onChange={() => set_passwordReveal(!passwordReveal)}
+              />
+              <label>Show Password</label>
+            </div>
+            <button type="submit" className="create-account-btn">
+              Create Account
+            </button>
+            <p className="login-redirect">
+              Already have an account? <Link to="/login">Login here</Link>
+            </p>
+            <p className="prompt">{prompt}</p>
+          </form>
+        </div>
       </div>
     </div>
   );
