@@ -1,4 +1,3 @@
-// src/components/Sidebar.jsx
 import React, { useContext } from "react";
 import { Link } from "react-router-dom";
 import "../../styles/sidebar.scss";
@@ -34,9 +33,6 @@ export default function Sidebar() {
       <ul className="menu">
         <li>
           <Link to="/dashboard">Dashboard</Link>
-        </li>
-        <li>
-          <Link to="/inventory">Inventory</Link>
         </li>
         <li>
           <Link to="/products">Products</Link>

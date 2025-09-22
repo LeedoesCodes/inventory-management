@@ -1,0 +1,68 @@
+.dashboard-page {
+  display: flex;
+}
+
+.dashboard-content {
+  flex: 1;
+  margin-left: 230px; // match your Sidebar width
+  padding: 2rem;
+
+  h1 {
+    margin-bottom: 2rem;
+  }
+
+  .stats-cards {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+
+    .card {
+      background: #fff;
+      padding: 1.5rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      flex: 1 1 200px;
+      text-align: center;
+
+      &.low-stock {
+        background: #ffe6e6;
+      }
+
+      h2 {
+        margin: 0 0 0.5rem;
+        font-size: 2rem;
+      }
+
+      p {
+        margin: 0;
+        color: #555;
+      }
+    }
+  }
+
+  .popular-items {
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+    h2 {
+      margin-bottom: 1rem;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+
+      li {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #eee;
+
+        &:last-child {
+          border-bottom: none;
+        }
+      }
+    }
+  }
+}

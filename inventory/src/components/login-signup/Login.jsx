@@ -55,14 +55,14 @@ export default function Login() {
       );
       await handleUserRedirect(userCredential.user);
     } catch (err) {
-      if (err.code === "auth/invalid-credential") {
-        setError(
-          "This email is registered with Google. Please use 'Continue with Google' to sign in."
-        );
-      } else if (err.code === "auth/user-not-found") {
+      if (err.code === "auth/user-not-found") {
         setError("No account found with this email.");
       } else if (err.code === "auth/wrong-password") {
         setError("Incorrect password. Please try again.");
+      } else if (err.code === "auth/invalid-credential") {
+        setError(
+          "Invalid login credentials. Please check your email and password."
+        );
       } else {
         setError(err.message);
       }

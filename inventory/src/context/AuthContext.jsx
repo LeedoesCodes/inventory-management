@@ -1,7 +1,7 @@
 import { createContext, useState, useEffect } from "react";
 import { auth, db } from "../Firebase/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 
 export const AuthContext = createContext();
 
@@ -11,31 +11,28 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        try {
-          const docRef = doc(db, "users", currentUser.uid);
-          const docSnap = await getDoc(docRef);
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
 
+      if (currentUser) {
+        const docRef = doc(db, "users", currentUser.uid);
+        const unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
           if (docSnap.exists()) {
-            const data = docSnap.data();
-            setRole(data.role || "pending");
+            setRole(docSnap.data().role || "pending");
           } else {
             setRole("pending");
           }
-        } catch (err) {
-          console.error("Error fetching role:", err);
-          setRole("pending");
-        }
+          setLoading(false);
+        });
+
+        return () => unsubscribeSnapshot();
       } else {
-        setUser(null);
         setRole(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => unsubscribeAuth();
   }, []);
 
   function logout() {

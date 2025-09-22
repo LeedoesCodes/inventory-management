@@ -1,17 +1,25 @@
 import React from "react";
 import "../../styles/confirm-modal.scss";
 
-export default function ConfirmModal({ message, onConfirm, onCancel }) {
+export default function ConfirmModal({
+  message,
+  children,
+  onConfirm,
+  onCancel,
+}) {
   return (
     <div className="modal-overlay">
       <div className="modal">
-        <h3>{message}</h3>
+        {typeof message === "string" ? <h3>{message}</h3> : message}
+
+        {children && <div className="modal-extra">{children}</div>}
+
         <div className="modal-actions">
-          <button className="btn-yes" onClick={onConfirm}>
-            Yes
+          <button className="btn-confirm" onClick={onConfirm}>
+            Confirm
           </button>
-          <button className="btn-no" onClick={onCancel}>
-            No
+          <button className="btn-cancel" onClick={onCancel}>
+            Cancel
           </button>
         </div>
       </div>

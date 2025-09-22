@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
 import { db } from "../Firebase/firebase";
-import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
-import Sidebar from "../components/UI/sidebar";
+import {
+  collection,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
+import Sidebar from "../components/UI/Sidebar";
 import "../styles/user-approvals.scss";
 
 export default function UserApprovals() {
@@ -23,6 +29,11 @@ export default function UserApprovals() {
     );
   };
 
+  const rejectUser = async (userId) => {
+    await deleteDoc(doc(db, "users", userId));
+    setUsers(users.filter((u) => u.id !== userId));
+  };
+
   return (
     <div className="user-approvals-page">
       <Sidebar />
@@ -37,7 +48,20 @@ export default function UserApprovals() {
               .map((u) => (
                 <li key={u.id}>
                   <span>{u.email}</span>
-                  <button onClick={() => approveUser(u.id)}>Approve</button>
+                  <div className="button-group">
+                    <button
+                      className="btn-approve"
+                      onClick={() => approveUser(u.id)}
+                    >
+                      Approve
+                    </button>
+                    <button
+                      className="btn-reject"
+                      onClick={() => rejectUser(u.id)}
+                    >
+                      Reject
+                    </button>
+                  </div>
                 </li>
               ))}
           </ul>

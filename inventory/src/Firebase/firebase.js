@@ -1,10 +1,10 @@
-// src/Firebase/firebase.js
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import { getStorage } from "firebase/storage";
 
-// Your Firebase config
+let analytics;
+
 const firebaseConfig = {
   apiKey: "AIzaSyD30eN40VyYMxTkXzI6IGVLaxAtEU1u9v8",
   authDomain: "inventory-management-eb8f4.firebaseapp.com",
@@ -15,10 +15,16 @@ const firebaseConfig = {
   measurementId: "G-8FP8X3DPEW",
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+
+if (typeof window !== "undefined") {
+  import("firebase/analytics").then(({ getAnalytics }) => {
+    analytics = getAnalytics(app);
+  });
+}
 
 // Services
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export { firebaseConfig };
+export const storage = getStorage(app);

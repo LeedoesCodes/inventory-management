@@ -13,6 +13,11 @@
   .logo-side {
     flex: 2;
     background: #009feb;
+    background: linear-gradient(
+      180deg,
+      rgba(0, 159, 235, 1) 0%,
+      rgb(235, 234, 234) 100%
+    );
     display: flex;
     justify-content: center;
     align-items: center;

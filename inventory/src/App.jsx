@@ -1,19 +1,22 @@
-// src/App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "./context/AuthContext.jsx";
 
+// Components
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
+
+// Pages
 import Register from "./components/login-signup/register.jsx";
 import Login from "./components/login-signup/login.jsx";
 import Dashboard from "./Pages/Dashboard.jsx";
 import Lobby from "./Pages/Lobby.jsx";
 import Profile from "./Pages/Profile.jsx";
 import UserApprovals from "./Pages/UserApprovals.jsx";
+import ProductPage from "./Pages/ProductsPage.jsx";
 
 function App() {
   const { isLoggedIn, role, loading } = useContext(AuthContext);
 
-  // Wait until auth state & role are known
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -22,78 +25,65 @@ function App() {
     );
   }
 
-  // Helper: decide default route after login
   const getDefaultRoute = () => {
     if (!isLoggedIn) return "/login";
     if (role === "admin" || role === "approved") return "/dashboard";
-    return "/lobby"; // pending users
+    return "/lobby";
   };
 
   return (
     <BrowserRouter>
       <Routes>
-        {/* Root: redirect based on role */}
+        {/* Default redirect */}
         <Route path="/" element={<Navigate to={getDefaultRoute()} replace />} />
 
         {/* Auth routes */}
-        <Route
-          path="/login"
-          element={
-            isLoggedIn ? <Navigate to={getDefaultRoute()} replace /> : <Login />
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            isLoggedIn ? (
-              <Navigate to={getDefaultRoute()} replace />
-            ) : (
-              <Register />
-            )
-          }
-        />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
         {/* Protected routes */}
         <Route
           path="/lobby"
           element={
-            isLoggedIn && role === "pending" ? (
+            <ProtectedRoute allowedRoles={["pending"]}>
               <Lobby />
-            ) : (
-              <Navigate to={getDefaultRoute()} replace />
-            )
+            </ProtectedRoute>
           }
         />
         <Route
           path="/dashboard"
           element={
-            isLoggedIn && (role === "approved" || role === "admin") ? (
+            <ProtectedRoute allowedRoles={["approved", "admin"]}>
               <Dashboard />
-            ) : (
-              <Navigate to="/login" replace />
-            )
+            </ProtectedRoute>
           }
         />
         <Route
           path="/profile"
-          element={isLoggedIn ? <Profile /> : <Navigate to="/login" replace />}
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/products"
+          element={
+            <ProtectedRoute allowedRoles={["approved", "admin"]}>
+              <ProductPage />
+            </ProtectedRoute>
+          }
         />
         <Route
           path="/user-approvals"
           element={
-            isLoggedIn ? (
-              role === "admin" ? (
-                <UserApprovals />
-              ) : (
-                <Navigate to="/dashboard" replace />
-              )
-            ) : (
-              <Navigate to="/login" replace />
-            )
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <UserApprovals />
+            </ProtectedRoute>
           }
         />
 
-        {/* Catch-all */}
+        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
