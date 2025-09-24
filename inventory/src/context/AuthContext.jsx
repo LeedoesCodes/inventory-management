@@ -1,6 +1,9 @@
 import { createContext, useState, useEffect } from "react";
 import { auth, db } from "../Firebase/firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import {
+  onAuthStateChanged,
+  updateProfile as firebaseUpdateProfile,
+} from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
 
 export const AuthContext = createContext();
@@ -42,6 +45,14 @@ export function AuthProvider({ children }) {
     });
   }
 
+  // NEW: wrapper to update Firebase Auth profile
+  async function updateProfile(updates) {
+    if (!auth.currentUser) throw new Error("No authenticated user");
+    await firebaseUpdateProfile(auth.currentUser, updates);
+    // Optionally update local user state
+    setUser({ ...auth.currentUser, ...updates });
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -50,6 +61,7 @@ export function AuthProvider({ children }) {
         isLoggedIn: !!user,
         loading,
         logout,
+        updateProfile, // <-- add this here
       }}
     >
       {children}

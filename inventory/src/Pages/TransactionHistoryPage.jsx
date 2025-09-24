@@ -43,8 +43,6 @@ export default function TransactionHistory() {
         <Header />
 
         <div className="transactions-content">
-          <h2>Transaction History</h2>
-
           <div className="search-container">
             <input
               type="text"

@@ -20,7 +20,6 @@ export default function Checkout({
 
   return (
     <div className="checkout">
-      {/* Render any children passed to Checkout */}
       {children && <div className="checkout-children">{children}</div>}
 
       <h3>Checkout Summary</h3>

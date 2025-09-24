@@ -21,6 +21,7 @@ import UserApprovals from "./Pages/UserApprovals.jsx";
 import ProductPage from "./Pages/ProductsPage.jsx";
 import OrdersPage from "./Pages/OrdersPage.jsx";
 import TransactionHistory from "./Pages/TransactionHistoryPage.jsx";
+import LowStockPage from "./components/products/LowStockPage.jsx";
 
 function SidebarLayout() {
   return (
@@ -82,6 +83,7 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/products" element={<ProductPage />} />
             <Route path="/orderspage" element={<OrdersPage />} />
+            <Route path="/low-stock" element={<LowStockPage />} />{" "}
             <Route
               path="/transactionHistory"
               element={<TransactionHistory />}

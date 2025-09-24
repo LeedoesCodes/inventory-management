@@ -1,90 +1,553 @@
-.profile-page {
-  margin-left: 230px;
+.page-container {
   display: flex;
-  flex-direction: row;
   min-height: 100vh;
-  background: #f8f9fa;
+}
+
+.profile-page {
+  flex: 1;
+  margin-left: 230px;
+  transition: margin-left 0.3s ease;
+
+  &.collapsed {
+    margin-left: 60px;
+  }
+}
+
+.profile-content {
+  padding: 2rem;
+  background: #f9f9f9;
+  min-height: 100vh;
+  margin-top: 80px;
+
+  .loading {
+    text-align: center;
+    padding: 3rem;
+    font-size: 1.2rem;
+    color: #666;
+  }
+
+  .profile-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+
+    h1 {
+      margin: 0;
+      font-size: 2rem;
+      color: #333;
+      font-weight: 600;
+    }
+
+    .edit-toggle-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+
+      &:hover {
+        background: #0056b3;
+        transform: translateY(-1px);
+      }
+
+      &.editing {
+        background: #6c757d;
+
+        &:hover {
+          background: #545b62;
+        }
+      }
+    }
+  }
+
+  .profile-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    grid-template-areas:
+      "profile stats"
+      "profile actions";
+
+    @media (max-width: 1200px) {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "profile"
+        "stats"
+        "actions";
+    }
+  }
 
   .profile-card {
-    top: 0;
-    flex: 1;
-    margin: auto;
-    background: #fff;
+    grid-area: profile;
+    background: white;
     padding: 2rem;
     border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(29, 16, 16, 0.1);
-    text-align: left;
-    height: 650px;
-    width: 95%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    text-align: center;
 
-    .profile-avatar {
-      margin-top: 3rem;
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      object-fit: cover;
-      margin-bottom: 1rem;
-      border: 3px solid #3498db;
+    .avatar-section {
+      position: relative;
+      margin-bottom: 2rem;
+
+      .avatar-wrapper {
+        position: relative;
+        display: inline-block;
+
+        .profile-avatar {
+          width: 120px;
+          height: 120px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 4px solid #3498db;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .avatar-upload {
+          position: absolute;
+          bottom: 5px;
+          right: 5px;
+          background: #007bff;
+          color: white;
+          width: 35px;
+          height: 35px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.3s;
+
+          &:hover {
+            background: #0056b3;
+            transform: scale(1.1);
+          }
+
+          input {
+            display: none;
+          }
+        }
+      }
+
+      .saving-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-weight: 600;
+        color: #007bff;
+      }
     }
 
-    .profile-name {
-      font-size: 1.5rem;
-      font-weight: bold;
-      margin: 0.5rem 0;
-      color: #2c3e50;
+    .edit-form {
+      text-align: left;
+
+      .form-group {
+        margin-bottom: 1.5rem;
+
+        label {
+          display: block;
+          margin-bottom: 0.5rem;
+          font-weight: 600;
+          color: #333;
+        }
+
+        input,
+        textarea {
+          width: 100%;
+          padding: 0.75rem;
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          font-size: 1rem;
+          transition: border-color 0.3s;
+
+          &:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+          }
+
+          &.disabled {
+            background: #f8f9fa;
+            color: #6c757d;
+            cursor: not-allowed;
+          }
+        }
+
+        textarea {
+          resize: vertical;
+          min-height: 80px;
+        }
+      }
+
+      .save-btn {
+        width: 100%;
+        padding: 1rem;
+        background: #28a745;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+
+        &:hover:not(:disabled) {
+          background: #218838;
+          transform: translateY(-1px);
+        }
+
+        &:disabled {
+          background: #6c757d;
+          cursor: not-allowed;
+        }
+      }
     }
 
-    .profile-role {
-      font-size: 1rem;
-      color: #7f8c8d;
-      margin-bottom: 1.5rem;
+    .profile-info {
+      .profile-name {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin: 0.5rem 0;
+        color: #2c3e50;
+      }
+
+      .profile-role {
+        font-size: 1rem;
+        color: #7f8c8d;
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+      }
+
+      .contact-info {
+        text-align: left;
+
+        .contact-item {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          padding: 0.75rem 0;
+          border-bottom: 1px solid #eee;
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          svg {
+            color: #007bff;
+            width: 16px;
+          }
+
+          span {
+            color: #555;
+          }
+        }
+      }
+    }
+  }
+
+  .stats-card {
+    grid-area: stats;
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+    h3 {
+      margin: 0 0 1.5rem 0;
+      color: #333;
+      font-size: 1.3rem;
     }
 
-    // button group (stacks buttons with spacing)
+    .stats-grid {
+      display: grid;
+      gap: 1rem;
+
+      .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+        transition: transform 0.2s;
+
+        &:hover {
+          transform: translateY(-2px);
+        }
+
+        svg {
+          color: #007bff;
+          font-size: 1.5rem;
+        }
+
+        .stat-content {
+          display: flex;
+          flex-direction: column;
+
+          .stat-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+          }
+
+          .stat-date {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+          }
+
+          .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+          }
+        }
+      }
+    }
+  }
+
+  .actions-card {
+    grid-area: actions;
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+    h3 {
+      margin: 0 0 1.5rem 0;
+      color: #333;
+      font-size: 1.3rem;
+    }
+
     .button-group {
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
-    }
+      gap: 1rem;
+      margin-bottom: 2rem;
 
-    .logout-btn,
-    .delete-btn {
-      width: 20%;
-      padding: 0.75rem 1.5rem;
-      border: none;
-      border-radius: 6px;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: background 0.3s, transform 0.2s;
+      .logout-btn {
+        padding: 1rem;
+        background: #e67e22;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
 
-      &:hover {
-        transform: translateY(-2px);
+        &:hover {
+          background: #d35400;
+          transform: translateY(-1px);
+        }
       }
 
-      &:active {
-        transform: translateY(0);
+      /* Styles for the delete account button */
+      .delete-account-btn {
+        padding: 1rem;
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+
+        &:hover {
+          background: #c82333;
+          transform: translateY(-1px);
+        }
+
+        &:disabled {
+          background: #6c757d;
+          cursor: not-allowed;
+          transform: none;
+        }
+      }
+
+      /* If UserAccountDeletion uses a different class name */
+      .user-deletion-component,
+      .account-deletion-btn,
+      .delete-btn {
+        padding: 1rem;
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        width: 100%;
+        text-align: center;
+
+        &:hover {
+          background: #c82333;
+          transform: translateY(-1px);
+        }
       }
     }
 
-    .logout-btn {
-      background: #e67e22;
-      color: #fff;
+    .account-info {
+      border-top: 1px solid #eee;
+      padding-top: 1.5rem;
 
-      &:hover {
-        background: #d35400;
+      h4 {
+        margin: 0 0 1rem 0;
+        color: #333;
       }
-    }
 
-    .delete-btn {
-      background: #e74c3c;
-      color: #fff;
+      .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #f8f9fa;
 
-      &:hover {
-        background: #c0392b;
+        &:last-child {
+          border-bottom: none;
+        }
+
+        span:first-child {
+          color: #666;
+          font-weight: 500;
+        }
+
+        code {
+          background: #f8f9fa;
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+          font-size: 0.9rem;
+        }
+
+        .status-active {
+          color: #28a745;
+          font-weight: 600;
+        }
       }
     }
   }
 }
-.spacer {
-  height: 15rem; // Adjust height as needed
+
+/* Additional styles for the modal/confirmation dialog */
+.delete-account-modal {
+  .modal-content {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  }
+
+  .modal-header {
+    background: #dc3545;
+    color: white;
+    border-bottom: none;
+    border-radius: 12px 12px 0 0;
+
+    .modal-title {
+      font-weight: 600;
+    }
+
+    .btn-close {
+      filter: invert(1);
+    }
+  }
+
+  .modal-body {
+    padding: 2rem;
+    font-size: 1.1rem;
+    color: #333;
+  }
+
+  .modal-footer {
+    border-top: none;
+    padding: 1rem 2rem 2rem;
+
+    .btn-secondary {
+      background: #6c757d;
+      border: none;
+      padding: 0.75rem 1.5rem;
+
+      &:hover {
+        background: #545b62;
+      }
+    }
+
+    .btn-danger {
+      background: #dc3545;
+      border: none;
+      padding: 0.75rem 1.5rem;
+
+      &:hover {
+        background: #c82333;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .profile-page {
+    margin-left: 0 !important;
+
+    &.collapsed {
+      margin-left: 0 !important;
+    }
+  }
+
+  .profile-content {
+    margin-top: 70px;
+    padding: 1rem;
+
+    .profile-header {
+      flex-direction: column;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+
+    .profile-grid {
+      gap: 1rem;
+    }
+
+    .profile-card,
+    .stats-card,
+    .actions-card {
+      padding: 1.5rem;
+    }
+
+    .actions-card {
+      .button-group {
+        .logout-btn,
+        .delete-account-btn,
+        .user-deletion-component,
+        .account-deletion-btn,
+        .delete-btn {
+          padding: 0.875rem;
+          font-size: 0.95rem;
+        }
+      }
+    }
+  }
 }

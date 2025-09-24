@@ -5,7 +5,6 @@ import Footer from "../UI/Footer";
 import "../../styles/register.scss";
 import freddielogo from "../../assets/images/freddie-logo.png";
 
-// Firebase imports
 import { auth } from "../../Firebase/firebase";
 import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
@@ -15,10 +14,14 @@ export default function Register() {
   const [email, set_email] = useState("");
   const [password, set_password] = useState("");
   const [confirmPassword, set_confirmPassword] = useState("");
+  const [displayName, set_displayName] = useState("");
   const [passwordReveal, set_passwordReveal] = useState(false);
   const [prompt, setPrompt] = useState("");
   const navigate = useNavigate();
 
+  const getUserDisplayName = (user) => {
+    return user.displayName || user.email.split("@")[0] || "Unknown User";
+  };
   function setPromptColor(msgType) {
     const promptElement = document.querySelector(".prompt");
     if (!promptElement) return;
@@ -31,9 +34,15 @@ export default function Register() {
   async function handle_submit(e) {
     e.preventDefault();
 
-    if (!email || !password || !confirmPassword) {
+    if (!email || !password || !confirmPassword || !displayName.trim()) {
       setPromptColor("error");
       setPrompt("Please fill in all fields.");
+      return;
+    }
+
+    if (displayName.trim().length < 2) {
+      setPromptColor("error");
+      setPrompt("Display name must be at least 2 characters long.");
       return;
     }
 
@@ -61,7 +70,8 @@ export default function Register() {
 
       await setDoc(doc(db, "users", user.uid), {
         email: user.email,
-        role: "pending", // default role (admin will approve later)
+        displayName: displayName.trim(),
+        role: "pending",
         permissions: [],
         createdAt: new Date(),
       });
@@ -98,6 +108,15 @@ export default function Register() {
         <div className="form-side">
           <form onSubmit={handle_submit}>
             <h1>Register</h1>
+
+            <input
+              type="text"
+              placeholder="Full Name"
+              value={displayName}
+              onChange={(e) => set_displayName(e.target.value)}
+              maxLength={50}
+            />
+
             <input
               type="email"
               placeholder="Email"

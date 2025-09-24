@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import { NavLink } from "react-router-dom"; // Change from Link to NavLink
+import { NavLink } from "react-router-dom";
 import "../../styles/sidebar.scss";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -9,6 +9,9 @@ import {
   faGear,
   faClipboardList,
   faMoneyBill,
+  faUsers,
+  faUserCheck,
+  faUserCog,
 } from "@fortawesome/free-solid-svg-icons";
 import fredLogo from "../../assets/images/fred-logo.png";
 import { AuthContext } from "../../context/AuthContext.jsx";
@@ -25,12 +28,6 @@ export default function Sidebar() {
           <FontAwesomeIcon icon={faBars} />
         </button>
       </div>
-
-      {!isCollapsed && (
-        <div className="company-logo-container">
-          <img src={fredLogo} alt="Company Logo" className="company-logo" />
-        </div>
-      )}
 
       <h1 className="app-title">{!isCollapsed && "FREDDIE'S GOODIES"}</h1>
 
@@ -79,6 +76,55 @@ export default function Sidebar() {
             {!isCollapsed && <span className="menu-text">Transactions</span>}
           </NavLink>
         </li>
+
+        {/* Admin Exclusive Section */}
+        {(role === "admin" || role === "owner") && (
+          <>
+            <li className="menu-section">
+              {!isCollapsed && <span className="section-label">ADMIN</span>}
+            </li>
+            <li>
+              <NavLink
+                to="/user-approvals"
+                className={({ isActive }) =>
+                  isActive ? "nav-link active" : "nav-link"
+                }
+              >
+                <FontAwesomeIcon icon={faUserCheck} />
+                {!isCollapsed && (
+                  <span className="menu-text">User Approvals</span>
+                )}
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
+                to="/customer-management"
+                className={({ isActive }) =>
+                  isActive ? "nav-link active" : "nav-link"
+                }
+              >
+                <FontAwesomeIcon icon={faUsers} />
+                {!isCollapsed && (
+                  <span className="menu-text">Customer Management</span>
+                )}
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
+                to="/user-management"
+                className={({ isActive }) =>
+                  isActive ? "nav-link active" : "nav-link"
+                }
+              >
+                <FontAwesomeIcon icon={faUserCog} />
+                {!isCollapsed && (
+                  <span className="menu-text">User Management</span>
+                )}
+              </NavLink>
+            </li>
+          </>
+        )}
+
         <li>
           <NavLink
             to="/settings"
@@ -90,22 +136,6 @@ export default function Sidebar() {
             {!isCollapsed && <span className="menu-text">Settings</span>}
           </NavLink>
         </li>
-
-        {role === "admin" && (
-          <li>
-            <NavLink
-              to="/user-approvals"
-              className={({ isActive }) =>
-                isActive ? "nav-link active" : "nav-link"
-              }
-            >
-              <FontAwesomeIcon icon={faClipboardList} />
-              {!isCollapsed && (
-                <span className="menu-text">User Approvals</span>
-              )}
-            </NavLink>
-          </li>
-        )}
       </ul>
     </div>
   );

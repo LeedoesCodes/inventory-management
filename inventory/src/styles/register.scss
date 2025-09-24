@@ -38,7 +38,7 @@
         border-radius: 8px;
         display: flex;
         flex-direction: column;
-        padding-top: 6.5rem;
+        padding-top: 5rem;
         flex: 1;
         justify-content: flex-start;
 
@@ -66,6 +66,12 @@
           border-radius: 5px;
           font-size: 1rem;
           box-sizing: border-box;
+
+          &:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+          }
         }
 
         .show-password {
@@ -103,6 +109,11 @@
           &:hover {
             background: #0056b3;
           }
+
+          &:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+          }
         }
 
         .login-redirect {
@@ -124,6 +135,10 @@
           font-size: 0.95rem;
           text-align: center;
           color: red;
+
+          &.success {
+            color: green;
+          }
         }
       }
     }
@@ -136,13 +151,17 @@
 
     .logo-side {
       flex: unset;
-      height: 40vh;
+      height: 30vh;
     }
 
     .form-side {
       flex: unset;
       width: 100%;
       padding: 1rem;
+
+      form {
+        padding-top: 2rem;
+      }
     }
   }
 }

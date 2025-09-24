@@ -5,14 +5,28 @@ import {
   addDoc,
   writeBatch,
   doc,
+  query,
+  where,
 } from "firebase/firestore";
 import { db } from "../Firebase/firebase";
 import Sidebar from "../components/UI/Sidebar";
 import Header from "../components/UI/Headers";
 import Checkout from "../components/products/Checkout";
 import { useSidebar } from "../context/SidebarContext";
+import FloatingCheckout from "../components/UI/FloatingCheckout";
 import "../styles/orders.scss";
 import ProductSearch from "../components/products/ProductSearch";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faSearch,
+  faFilter,
+  faSort,
+  faEye,
+  faEyeSlash,
+  faShoppingCart,
+  faExclamationTriangle,
+  faCheckCircle,
+} from "@fortawesome/free-solid-svg-icons";
 
 export default function OrdersPage() {
   const { isCollapsed } = useSidebar();
@@ -21,18 +35,53 @@ export default function OrdersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [customerName, setCustomerName] = useState("");
+  const [sortBy, setSortBy] = useState("name");
+  const [sortOrder, setSortOrder] = useState("asc");
+  const [showOutOfStock, setShowOutOfStock] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [recentCustomers, setRecentCustomers] = useState([]);
 
   const fetchProducts = async () => {
-    const snapshot = await getDocs(collection(db, "products"));
-    const productsData = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    setProducts(productsData);
+    try {
+      setLoading(true);
+      const snapshot = await getDocs(collection(db, "products"));
+      const productsData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setProducts(productsData);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRecentCustomers = async () => {
+    try {
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+      const ordersQuery = query(
+        collection(db, "orders"),
+        where("createdAt", ">=", oneWeekAgo)
+      );
+      const snapshot = await getDocs(ordersQuery);
+      const customers = snapshot.docs
+        .map((doc) => doc.data().customerName)
+        .filter((name) => name && name.trim() !== "")
+        .filter((name, index, array) => array.indexOf(name) === index)
+        .slice(0, 5);
+
+      setRecentCustomers(customers);
+    } catch (error) {
+      console.error("Error fetching recent customers:", error);
+    }
   };
 
   useEffect(() => {
     fetchProducts();
+    fetchRecentCustomers();
   }, []);
 
   const handleSearch = (term, category) => {
@@ -41,6 +90,9 @@ export default function OrdersPage() {
   };
 
   const toggleProduct = (id) => {
+    const product = products.find((p) => p.id === id);
+    if (product && product.stock === 0) return;
+
     setCart((prev) => ({
       ...prev,
       [id]: {
@@ -52,14 +104,34 @@ export default function OrdersPage() {
   };
 
   const changeQuantity = (id, delta) => {
-    setCart((prev) => {
-      const currentQty = prev[id]?.quantity || 1;
-      const newQty = Math.max(1, currentQty + delta);
-      return {
-        ...prev,
-        [id]: { ...prev[id], checked: true, quantity: newQty },
-      };
-    });
+    const product = products.find((p) => p.id === id);
+    const currentQty = cart[id]?.quantity || 1;
+    const newQty = Math.max(1, currentQty + delta);
+
+    if (product && newQty > product.stock) {
+      alert(`Only ${product.stock} items available in stock`);
+      return;
+    }
+
+    setCart((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], checked: true, quantity: newQty },
+    }));
+  };
+
+  const setQuantity = (id, quantity) => {
+    const product = products.find((p) => p.id === id);
+    const newQty = Math.max(1, parseInt(quantity) || 1);
+
+    if (product && newQty > product.stock) {
+      alert(`Only ${product.stock} items available in stock`);
+      return;
+    }
+
+    setCart((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], checked: true, quantity: newQty },
+    }));
   };
 
   const getTotals = () => {
@@ -77,7 +149,6 @@ export default function OrdersPage() {
 
   const { totalItems, totalAmount } = getTotals();
 
-  // Checkout function
   const handleCheckout = async () => {
     if (totalItems === 0) {
       alert("Please select some products first.");
@@ -96,6 +167,17 @@ export default function OrdersPage() {
         }));
 
       const batch = writeBatch(db);
+
+      for (const item of orderItems) {
+        const product = products.find((p) => p.id === item.id);
+        if (product.stock < item.quantity) {
+          alert(
+            `Not enough stock for ${product.name}. Only ${product.stock} available.`
+          );
+          return;
+        }
+      }
+
       orderItems.forEach((item) => {
         const productRef = doc(db, "products", item.id);
         const currentProduct = products.find((p) => p.id === item.id);
@@ -110,34 +192,58 @@ export default function OrdersPage() {
       await batch.commit();
 
       await addDoc(collection(db, "orders"), {
-        customerName: customerName || null,
+        customerName: customerName || "Walk-in Customer",
         items: orderItems,
         totalItems,
         totalAmount,
         createdAt: new Date(),
+        status: "completed",
       });
 
       alert(
-        `Order completed!\nCustomer: ${
-          customerName || "N/A"
-        }\nTotal Items: ${totalItems}\nTotal: ₱${totalAmount.toFixed(2)}`
+        `Order completed successfully!\n\nCustomer: ${
+          customerName || "Walk-in Customer"
+        }\nTotal Items: ${totalItems}\nTotal Amount: ₱${totalAmount.toFixed(2)}`
       );
 
       setCart({});
       setCustomerName("");
       fetchProducts();
+      fetchRecentCustomers();
     } catch (err) {
       console.error("Checkout error:", err);
       alert("Something went wrong while completing the order.");
     }
   };
 
-  const filteredProducts = products.filter((p) => {
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm);
-    const matchesCategory =
-      !selectedCategory || p.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredAndSortedProducts = products
+    .filter((p) => {
+      const matchesSearch = p.name.toLowerCase().includes(searchTerm);
+      const matchesCategory =
+        !selectedCategory || p.category === selectedCategory;
+      const matchesStock = showOutOfStock || p.stock > 0;
+      return matchesSearch && matchesCategory && matchesStock;
+    })
+    .sort((a, b) => {
+      let aValue = a[sortBy];
+      let bValue = b[sortBy];
+
+      if (sortBy === "price" || sortBy === "stock") {
+        aValue = Number(aValue);
+        bValue = Number(bValue);
+      } else {
+        aValue = String(aValue).toLowerCase();
+        bValue = String(bValue).toLowerCase();
+      }
+
+      if (sortOrder === "asc") {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+
+  const cartItems = products.filter((p) => cart[p.id]?.checked);
 
   return (
     <div className="page-container">
@@ -146,60 +252,176 @@ export default function OrdersPage() {
         <Header />
 
         <div className="orders-content">
+          <div className="page-header">
+            <h2>Create new orders </h2>
+          </div>
+
           <div className="search-container">
             <ProductSearch onSearch={handleSearch} />
           </div>
 
-          <h2>Select Products</h2>
-          <ul className="orders-list">
-            {filteredProducts.map((p) => {
-              const item = cart[p.id] || {};
-              return (
-                <li key={p.id} className="order-item">
-                  <input
-                    type="checkbox"
-                    checked={item.checked || false}
-                    onChange={() => toggleProduct(p.id)}
-                  />
-                  <span className="product-name">{p.name}</span>
-                  <span className="product-price">₱{p.price}</span>
-
-                  {item.checked && (
-                    <div className="quantity-controls">
-                      <button onClick={() => changeQuantity(p.id, -1)}>
-                        -
-                      </button>
-                      <span>{item.quantity || 1}</span>
-                      <button onClick={() => changeQuantity(p.id, 1)}>+</button>
-                    </div>
-                  )}
-
-                  {item.checked && (
-                    <span className="subtotal">
-                      Subtotal: ₱{(p.price * (item.quantity || 1)).toFixed(2)}
-                    </span>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-
-          <Checkout
-            totalItems={totalItems}
-            totalAmount={totalAmount}
-            onCheckout={handleCheckout}
-          >
-            <div className="customer-name-input">
-              <label>Customer Name (optional):</label>
-              <input
-                type="text"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="Enter customer name"
-              />
+          <div className="controls-bar">
+            <div className="control-group">
+              <label>
+                <FontAwesomeIcon icon={faSort} />
+                Sort by:
+              </label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="control-select"
+              >
+                <option value="name">Name</option>
+                <option value="price">Price</option>
+                <option value="category">Category</option>
+                <option value="stock">Stock</option>
+              </select>
+              <select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value)}
+                className="control-select"
+              >
+                <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
+              </select>
             </div>
-          </Checkout>
+
+            <div className="control-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={showOutOfStock}
+                  onChange={(e) => setShowOutOfStock(e.target.checked)}
+                />
+                <FontAwesomeIcon icon={showOutOfStock ? faEye : faEyeSlash} />
+                Show out of stock
+              </label>
+            </div>
+
+            <div className="cart-summary-mini">
+              <FontAwesomeIcon icon={faShoppingCart} />
+              <span>{totalItems} items</span>
+              <span className="amount">₱{totalAmount.toFixed(2)}</span>
+            </div>
+          </div>
+
+          {recentCustomers.length > 0 && (
+            <div className="recent-customers">
+              <h3>Recent Customers</h3>
+              <div className="customer-tags">
+                {recentCustomers.map((customer, index) => (
+                  <button
+                    key={index}
+                    className="customer-tag"
+                    onClick={() => setCustomerName(customer)}
+                  >
+                    {customer}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="products-grid">
+            <h2>Available Products ({filteredAndSortedProducts.length})</h2>
+
+            {loading ? (
+              <div className="loading">Loading products...</div>
+            ) : filteredAndSortedProducts.length === 0 ? (
+              <div className="no-products">
+                <FontAwesomeIcon icon={faSearch} size="3x" />
+                <p>No products found matching your criteria</p>
+              </div>
+            ) : (
+              <div className="products-list">
+                {filteredAndSortedProducts.map((p) => {
+                  const item = cart[p.id] || {};
+                  const isOutOfStock = p.stock === 0;
+
+                  return (
+                    <div
+                      key={p.id}
+                      className={`product-card ${
+                        item.checked ? "selected" : ""
+                      } ${isOutOfStock ? "out-of-stock" : ""}`}
+                    >
+                      <div className="product-header">
+                        <input
+                          type="checkbox"
+                          checked={item.checked || false}
+                          onChange={() => toggleProduct(p.id)}
+                          disabled={isOutOfStock}
+                        />
+                        <span className="product-name">{p.name}</span>
+                        <span className="product-category">{p.category}</span>
+                      </div>
+
+                      <div className="product-details">
+                        <span className="product-price">
+                          ₱{p.price.toFixed(2)}
+                        </span>
+                        <span
+                          className={`stock-badge ${
+                            p.stock < 5 ? "low-stock" : ""
+                          }`}
+                        >
+                          {p.stock} in stock
+                        </span>
+                      </div>
+
+                      {item.checked && (
+                        <div className="quantity-section">
+                          <div className="quantity-controls">
+                            <button
+                              onClick={() => changeQuantity(p.id, -1)}
+                              disabled={item.quantity <= 1}
+                            >
+                              -
+                            </button>
+                            <input
+                              type="number"
+                              value={item.quantity || 1}
+                              onChange={(e) =>
+                                setQuantity(p.id, e.target.value)
+                              }
+                              min="1"
+                              max={p.stock}
+                            />
+                            <button
+                              onClick={() => changeQuantity(p.id, 1)}
+                              disabled={item.quantity >= p.stock}
+                            >
+                              +
+                            </button>
+                          </div>
+                          <span className="subtotal">
+                            ₱{(p.price * (item.quantity || 1)).toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+
+                      {isOutOfStock && (
+                        <div className="out-of-stock-overlay">
+                          <FontAwesomeIcon icon={faExclamationTriangle} />
+                          Out of Stock
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
+
+        <FloatingCheckout
+          totalItems={totalItems}
+          totalAmount={totalAmount}
+          cartItems={cartItems}
+          onCheckout={handleCheckout}
+          customerName={customerName}
+          setCustomerName={setCustomerName}
+        />
       </div>
     </div>
   );

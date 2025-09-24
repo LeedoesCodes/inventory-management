@@ -31,7 +31,8 @@
     }
 
     .search-container {
-      margin-top: 80px;
+      position: fixed;
+      margin-top: 70px;
       width: 100%;
       padding: 15px 20px;
       background: #009feb;
@@ -78,6 +79,7 @@
       ul {
         list-style: none;
         padding: 0;
+        margin-top: 150px;
       }
 
       li {
