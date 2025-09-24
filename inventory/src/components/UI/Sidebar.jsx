@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext } from "react";
 import { Link } from "react-router-dom";
 import "../../styles/sidebar.scss";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -12,59 +12,57 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import fredLogo from "../../assets/images/fred-logo.png";
 import { AuthContext } from "../../context/AuthContext.jsx";
+import { useSidebar } from "../../context/SidebarContext.jsx";
 
 export default function Sidebar() {
   const { role } = useContext(AuthContext);
-  const [collapsed, setCollapsed] = useState(false);
-
-  const toggleSidebar = () => setCollapsed(!collapsed);
+  const { isCollapsed, toggleSidebar } = useSidebar();
 
   return (
-    <div className={`sidebar ${collapsed ? "collapsed" : ""}`}>
+    <div className={`sidebar ${isCollapsed ? "collapsed" : ""}`}>
       <div className="sidebar-header">
         <button className="toggle-btn" onClick={toggleSidebar}>
           <FontAwesomeIcon icon={faBars} />
         </button>
       </div>
 
-      {/* Logo only visible when NOT collapsed */}
-      {!collapsed && (
+      {!isCollapsed && (
         <div className="company-logo-container">
           <img src={fredLogo} alt="Company Logo" className="company-logo" />
         </div>
       )}
 
-      <h1 className="app-title">{!collapsed && "FREDDIE'S GOODIES"}</h1>
+      <h1 className="app-title">{!isCollapsed && "FREDDIE'S GOODIES"}</h1>
 
       <ul className="menu">
         <li>
           <Link to="/dashboard">
             <FontAwesomeIcon icon={faHouse} />
-            {!collapsed && <span className="menu-text">Dashboard</span>}
+            {!isCollapsed && <span className="menu-text">Dashboard</span>}
           </Link>
         </li>
         <li>
           <Link to="/products">
             <FontAwesomeIcon icon={faBoxOpen} />
-            {!collapsed && <span className="menu-text">Products</span>}
+            {!isCollapsed && <span className="menu-text">Products</span>}
           </Link>
         </li>
         <li>
           <Link to="/settings">
             <FontAwesomeIcon icon={faGear} />
-            {!collapsed && <span className="menu-text">Settings</span>}
+            {!isCollapsed && <span className="menu-text">Settings</span>}
           </Link>
         </li>
         <li>
           <Link to="/orderspage">
             <FontAwesomeIcon icon={faClipboardList} />
-            {!collapsed && <span className="menu-text">Orders</span>}
+            {!isCollapsed && <span className="menu-text">Orders</span>}
           </Link>
         </li>
         <li>
           <Link to="/transactionHistory">
             <FontAwesomeIcon icon={faMoneyBill} />
-            {!collapsed && <span className="menu-text">Transactions</span>}
+            {!isCollapsed && <span className="menu-text">Transactions</span>}
           </Link>
         </li>
 
@@ -72,7 +70,9 @@ export default function Sidebar() {
           <li>
             <Link to="/user-approvals">
               <FontAwesomeIcon icon={faClipboardList} />
-              {!collapsed && <span className="menu-text">User Approvals</span>}
+              {!isCollapsed && (
+                <span className="menu-text">User Approvals</span>
+              )}
             </Link>
           </li>
         )}

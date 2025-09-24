@@ -3,6 +3,23 @@
   display: flex;
   flex-direction: column;
   gap: 30px;
+  transition: margin-left 0.3s ease;
+
+  &.collapsed {
+    margin-left: 60px;
+
+    .products-content {
+      .header {
+        left: 60px;
+        width: calc(100% - 60px);
+      }
+
+      .search-container {
+        left: 90px;
+        width: calc(100% - 120px);
+      }
+    }
+  }
 
   .products-content {
     flex: 1;
@@ -20,7 +37,6 @@
       z-index: 1000;
       border-bottom-left-radius: 10px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      z-index: 1000;
 
       h1 {
         margin: 0;
@@ -40,6 +56,7 @@
       border-radius: 10px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       left: 260px;
+      transition: left 0.3s ease, width 0.3s ease;
 
       input {
         flex: 1;

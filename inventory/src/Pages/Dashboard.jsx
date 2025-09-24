@@ -1,17 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../Firebase/firebase";
-import Sidebar from "../components/UI/Sidebar";
-import Header from "../components/UI/Headers";
+import { useSidebar } from "../context/SidebarContext.jsx";
 import "../styles/dashboard.scss";
 
 export default function Dashboard() {
+  const { isCollapsed } = useSidebar();
   const [totalProducts, setTotalProducts] = useState(0);
   const [totalSuppliers, setTotalSuppliers] = useState(0);
   const [totalOrders, setTotalOrders] = useState(0);
   const [lowStock, setLowStock] = useState(0);
   const [popularItems, setPopularItems] = useState([]);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // new
 
   const fetchDashboardData = async () => {
     try {
@@ -28,22 +27,18 @@ export default function Dashboard() {
 
       const ordersSnap = await getDocs(collection(db, "orders"));
       const orders = ordersSnap.docs.map((doc) => doc.data());
-      setTotalOrders(ordersSnap.docs.length);
+      setTotalOrders(orders.length);
 
       const itemCounts = {};
       orders.forEach((order) => {
         order.items.forEach((item) => {
-          if (itemCounts[item.name]) {
-            itemCounts[item.name] += item.quantity;
-          } else {
-            itemCounts[item.name] = item.quantity;
-          }
+          itemCounts[item.name] = (itemCounts[item.name] || 0) + item.quantity;
         });
       });
 
       const sortedItems = Object.entries(itemCounts)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 5) // top 5 items
+        .slice(0, 5)
         .map(([name, sold]) => ({ name, sold }));
 
       setPopularItems(sortedItems);
@@ -57,9 +52,8 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className={`dashboard ${sidebarCollapsed ? "collapsed" : ""}`}>
-      <Sidebar collapsed={sidebarCollapsed} />
-      <Header onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)} />
+    <div className={`dashboard-page ${isCollapsed ? "collapsed" : ""}`}>
+      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
 
       <div className="stats-cards">
         <div className="card">
@@ -80,8 +74,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="popular-items">
-        <h2>Popular Items</h2>
+      <div className="popular-items mt-8">
+        <h2 className="text-xl font-semibold mb-4">Popular Items</h2>
         <ul>
           {popularItems.map((item, index) => (
             <li key={index}>

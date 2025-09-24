@@ -1,9 +1,17 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  Outlet,
+} from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "./context/AuthContext.jsx";
 
 // Components
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import Sidebar from "./components/UI/Sidebar.jsx";
+import { SidebarProvider } from "./context/SidebarContext.jsx";
 
 // Pages
 import Register from "./components/login-signup/register.jsx";
@@ -15,6 +23,17 @@ import UserApprovals from "./Pages/UserApprovals.jsx";
 import ProductPage from "./Pages/ProductsPage.jsx";
 import OrdersPage from "./Pages/OrdersPage.jsx";
 import TransactionHistory from "./Pages/TransactionHistoryPage.jsx";
+
+function SidebarLayout() {
+  return (
+    <div className="app-layout">
+      <Sidebar />
+      <main className="main-content">
+        <Outlet />
+      </main>
+    </div>
+  );
+}
 
 function App() {
   const { isLoggedIn, role, loading } = useContext(AuthContext);
@@ -35,76 +54,46 @@ function App() {
 
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Default redirect */}
-        <Route path="/" element={<Navigate to={getDefaultRoute()} replace />} />
+      <SidebarProvider>
+        <Routes>
+          <Route
+            path="/"
+            element={<Navigate to={getDefaultRoute()} replace />}
+          />
 
-        {/* Auth routes */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
-        {/* Protected routes */}
-        <Route
-          path="/lobby"
-          element={
-            <ProtectedRoute allowedRoles={["pending"]}>
-              <Lobby />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute allowedRoles={["approved", "admin"]}>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/products"
-          element={
-            <ProtectedRoute allowedRoles={["approved", "admin"]}>
-              <ProductPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/orderspage"
-          element={
-            <ProtectedRoute allowedRoles={["approved", "admin"]}>
-              <OrdersPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/transactionHistory"
-          element={
-            <ProtectedRoute allowedRoles={["approved", "admin"]}>
-              <TransactionHistory />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/lobby"
+            element={
+              <ProtectedRoute allowedRoles={["pending"]}>
+                <Lobby />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/user-approvals"
-          element={
-            <ProtectedRoute allowedRoles={["admin"]}>
-              <UserApprovals />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            element={
+              <ProtectedRoute allowedRoles={["approved", "admin"]}>
+                <SidebarLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/products" element={<ProductPage />} />
+            <Route path="/orderspage" element={<OrdersPage />} />
+            <Route
+              path="/transactionHistory"
+              element={<TransactionHistory />}
+            />
+            <Route path="/user-approvals" element={<UserApprovals />} />
+          </Route>
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </SidebarProvider>
     </BrowserRouter>
   );
 }

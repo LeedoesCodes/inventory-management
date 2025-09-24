@@ -1,13 +1,12 @@
-.dashboard {
-  margin-top: 110px;
-  margin-left: 230px;
+.dashboard-page {
   padding: 2rem;
   background: #f9f9f9;
   min-height: 100vh;
-  transition: margin-left 0.3s ease; // smooth shift when sidebar collapses
+  transition: margin-left 0.3s ease;
+  margin-left: 230px;
 
   &.collapsed {
-    margin-left: 80px; // adjust based on your collapsed sidebar width
+    margin-left: 60px; // matches sidebar collapsed width
   }
 
   .stats-cards {
@@ -65,19 +64,6 @@
           border-bottom: none;
         }
       }
-    }
-  }
-}
-
-// Responsive
-@media (max-width: 768px) {
-  .dashboard {
-    margin-left: 0;
-    padding: 1rem;
-
-    .stats-cards {
-      flex-direction: column;
-      gap: 15px;
     }
   }
 }

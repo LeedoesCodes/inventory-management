@@ -9,21 +9,54 @@
   padding: 1rem;
   display: flex;
   flex-direction: column;
-  transition: width 0.3s;
+  transition: width 0.3s ease;
+  z-index: 2000;
+
+  .app-title {
+    display: flex;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    justify-content: center;
+  }
 
   &.collapsed {
     width: 60px;
 
     .company-logo-container {
-      display: none; // hides logo when collapsed
+      display: none;
     }
 
     .app-title {
       display: none;
     }
 
-    .menu .menu-text {
-      display: none; // hides menu text, only icons remain
+    .menu {
+      margin-top: 170px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+
+      .menu-text {
+        display: none;
+      }
+    }
+  }
+
+  .sidebar-header {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1rem;
+
+    .toggle-btn {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.5rem;
+      cursor: pointer;
+      z-index: 1100;
     }
   }
 
@@ -34,30 +67,20 @@
     margin-bottom: 1.5rem;
 
     .company-logo {
-      width: 100px;
-      height: 100px;
+      width: 90px;
+      height: 90px;
       border-radius: 50%;
-    }
-  }
-
-  .sidebar-header {
-    display: flex;
-    justify-content: flex-end; // keep toggle button to the right
-    margin-bottom: 1rem;
-
-    .toggle-btn {
-      background: none;
-      border: none;
-      color: #000;
-      font-size: 1.5rem;
-      cursor: pointer;
     }
   }
 
   .menu {
     list-style: none;
     padding: 0;
-
+    margin: 0;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
     li {
       margin: 1.2rem 0;
 

@@ -24,6 +24,9 @@ export default function ProductsPage() {
   const [showForm, setShowForm] = useState(false);
   const [categories, setCategories] = useState([]);
 
+  // NEW: track sidebar collapsed state
+  const [collapsed, setCollapsed] = useState(false);
+
   const fetchProducts = async () => {
     const snapshot = await getDocs(collection(db, "products"));
     const productsData = snapshot.docs.map((docSnap) => ({
@@ -116,9 +119,10 @@ export default function ProductsPage() {
   };
 
   return (
-    <div className="products-page">
+    <div className={`products-page ${collapsed ? "collapsed" : ""}`}>
       <Header />
-      <Sidebar />
+      {/* Pass toggle + collapsed to Sidebar */}
+      <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
 
       <div className="products-content">
         <div className="search-container">
