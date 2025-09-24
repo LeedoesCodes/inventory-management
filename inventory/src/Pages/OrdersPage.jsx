@@ -10,17 +10,18 @@ import { db } from "../Firebase/firebase";
 import Sidebar from "../components/UI/Sidebar";
 import Header from "../components/UI/Headers";
 import Checkout from "../components/products/Checkout";
+import { useSidebar } from "../context/SidebarContext";
 import "../styles/orders.scss";
 import ProductSearch from "../components/products/ProductSearch";
 
 export default function OrdersPage() {
+  const { isCollapsed } = useSidebar();
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [customerName, setCustomerName] = useState("");
 
-  // Fetch products from Firebase
   const fetchProducts = async () => {
     const snapshot = await getDocs(collection(db, "products"));
     const productsData = snapshot.docs.map((doc) => ({
@@ -34,13 +35,11 @@ export default function OrdersPage() {
     fetchProducts();
   }, []);
 
-  // Handle search from ProductSearch component
   const handleSearch = (term, category) => {
     setSearchTerm(term.toLowerCase());
     setSelectedCategory(category);
   };
 
-  // Toggle product in cart
   const toggleProduct = (id) => {
     setCart((prev) => ({
       ...prev,
@@ -52,7 +51,6 @@ export default function OrdersPage() {
     }));
   };
 
-  // Change product quantity
   const changeQuantity = (id, delta) => {
     setCart((prev) => {
       const currentQty = prev[id]?.quantity || 1;
@@ -64,7 +62,6 @@ export default function OrdersPage() {
     });
   };
 
-  // Calculate totals
   const getTotals = () => {
     let totalItems = 0;
     let totalAmount = 0;
@@ -135,7 +132,6 @@ export default function OrdersPage() {
     }
   };
 
-  // Filter products by search term and category
   const filteredProducts = products.filter((p) => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm);
     const matchesCategory =
@@ -144,62 +140,66 @@ export default function OrdersPage() {
   });
 
   return (
-    <div className="orders-page">
+    <div className="page-container">
       <Sidebar />
-      <Header />
+      <div className={`orders-page ${isCollapsed ? "collapsed" : ""}`}>
+        <Header />
 
-      <div className="search-container">
-        <ProductSearch onSearch={handleSearch} />
-      </div>
-
-      <div className="orders-content">
-        <h2>Select Products</h2>
-        <ul className="orders-list">
-          {filteredProducts.map((p) => {
-            const item = cart[p.id] || {};
-            return (
-              <li key={p.id} className="order-item">
-                <input
-                  type="checkbox"
-                  checked={item.checked || false}
-                  onChange={() => toggleProduct(p.id)}
-                />
-                <span className="product-name">{p.name}</span>
-                <span className="product-price">₱{p.price}</span>
-
-                {item.checked && (
-                  <div className="quantity-controls">
-                    <button onClick={() => changeQuantity(p.id, -1)}>-</button>
-                    <span>{item.quantity || 1}</span>
-                    <button onClick={() => changeQuantity(p.id, 1)}>+</button>
-                  </div>
-                )}
-
-                {item.checked && (
-                  <span className="subtotal">
-                    Subtotal: ₱{(p.price * (item.quantity || 1)).toFixed(2)}
-                  </span>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-
-        <Checkout
-          totalItems={totalItems}
-          totalAmount={totalAmount}
-          onCheckout={handleCheckout}
-        >
-          <div className="customer-name-input">
-            <label>Customer Name (optional):</label>
-            <input
-              type="text"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="Enter customer name"
-            />
+        <div className="orders-content">
+          <div className="search-container">
+            <ProductSearch onSearch={handleSearch} />
           </div>
-        </Checkout>
+
+          <h2>Select Products</h2>
+          <ul className="orders-list">
+            {filteredProducts.map((p) => {
+              const item = cart[p.id] || {};
+              return (
+                <li key={p.id} className="order-item">
+                  <input
+                    type="checkbox"
+                    checked={item.checked || false}
+                    onChange={() => toggleProduct(p.id)}
+                  />
+                  <span className="product-name">{p.name}</span>
+                  <span className="product-price">₱{p.price}</span>
+
+                  {item.checked && (
+                    <div className="quantity-controls">
+                      <button onClick={() => changeQuantity(p.id, -1)}>
+                        -
+                      </button>
+                      <span>{item.quantity || 1}</span>
+                      <button onClick={() => changeQuantity(p.id, 1)}>+</button>
+                    </div>
+                  )}
+
+                  {item.checked && (
+                    <span className="subtotal">
+                      Subtotal: ₱{(p.price * (item.quantity || 1)).toFixed(2)}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+
+          <Checkout
+            totalItems={totalItems}
+            totalAmount={totalAmount}
+            onCheckout={handleCheckout}
+          >
+            <div className="customer-name-input">
+              <label>Customer Name (optional):</label>
+              <input
+                type="text"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="Enter customer name"
+              />
+            </div>
+          </Checkout>
+        </div>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "../Firebase/firebase";
 import { useSidebar } from "../context/SidebarContext.jsx";
 import "../styles/dashboard.scss";
+import Header from "../components/UI/Headers";
 
 export default function Dashboard() {
   const { isCollapsed } = useSidebar();
@@ -53,7 +54,8 @@ export default function Dashboard() {
 
   return (
     <div className={`dashboard-page ${isCollapsed ? "collapsed" : ""}`}>
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+      <Header />
+      <h1 className="text-2xl font-bold mb-6"></h1>
 
       <div className="stats-cards">
         <div className="card">

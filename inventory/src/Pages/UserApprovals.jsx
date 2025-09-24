@@ -6,66 +6,223 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  query,
+  where,
 } from "firebase/firestore";
 import Sidebar from "../components/UI/Sidebar";
+import Header from "../components/UI/Headers";
+import { useSidebar } from "../context/SidebarContext";
 import "../styles/user-approvals.scss";
 
 export default function UserApprovals() {
+  const { isCollapsed } = useSidebar();
   const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [actionLoading, setActionLoading] = useState(null);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      const querySnapshot = await getDocs(collection(db, "users"));
-      setUsers(querySnapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
-    };
     fetchUsers();
   }, []);
 
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const querySnapshot = await getDocs(collection(db, "users"));
+      const usersData = querySnapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+        createdAt: d.data().createdAt?.toDate?.() || new Date(),
+      }));
+      setUsers(usersData);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const approveUser = async (userId) => {
-    const userRef = doc(db, "users", userId);
-    await updateDoc(userRef, { role: "approved" });
-    setUsers(
-      users.map((u) => (u.id === userId ? { ...u, role: "approved" } : u))
-    );
+    try {
+      setActionLoading(userId);
+      const userRef = doc(db, "users", userId);
+      await updateDoc(userRef, {
+        role: "user",
+        approvedAt: new Date(),
+      });
+      setUsers(
+        users.map((u) => (u.id === userId ? { ...u, role: "user" } : u))
+      );
+    } catch (error) {
+      console.error("Error approving user:", error);
+      alert("Error approving user. Please try again.");
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const rejectUser = async (userId) => {
-    await deleteDoc(doc(db, "users", userId));
-    setUsers(users.filter((u) => u.id !== userId));
+    if (
+      window.confirm(
+        "Are you sure you want to reject this user? This action cannot be undone."
+      )
+    ) {
+      try {
+        setActionLoading(userId);
+        await deleteDoc(doc(db, "users", userId));
+        setUsers(users.filter((u) => u.id !== userId));
+      } catch (error) {
+        console.error("Error rejecting user:", error);
+        alert("Error rejecting user. Please try again.");
+      } finally {
+        setActionLoading(null);
+      }
+    }
   };
 
+  const pendingUsers = users.filter((u) => u.role === "pending");
+  const approvedUsers = users.filter(
+    (u) => u.role === "user" || u.role === "approved"
+  );
+
+  const filteredPendingUsers = pendingUsers.filter(
+    (user) =>
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.displayName?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="page-container">
+        <Sidebar />
+        <div
+          className={`user-approvals-page ${isCollapsed ? "collapsed" : ""}`}
+        >
+          <Header />
+          <div className="user-approvals-content">
+            <div className="loading">Loading users...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="user-approvals-page">
+    <div className="page-container">
       <Sidebar />
-      <div className="content">
-        <h1>Pending Users</h1>
-        {users.filter((u) => u.role === "pending").length === 0 ? (
-          <p>No pending users</p>
-        ) : (
-          <ul>
-            {users
-              .filter((u) => u.role === "pending")
-              .map((u) => (
-                <li key={u.id}>
-                  <span>{u.email}</span>
-                  <div className="button-group">
-                    <button
-                      className="btn-approve"
-                      onClick={() => approveUser(u.id)}
-                    >
-                      Approve
-                    </button>
-                    <button
-                      className="btn-reject"
-                      onClick={() => rejectUser(u.id)}
-                    >
-                      Reject
-                    </button>
+      <div className={`user-approvals-page ${isCollapsed ? "collapsed" : ""}`}>
+        <Header />
+
+        <div className="user-approvals-content">
+          <div className="page-header">
+            <h1>User Approvals</h1>
+            <div className="stats">
+              <div className="stat-card pending">
+                <span className="stat-number">{pendingUsers.length}</span>
+                <span className="stat-label">Pending</span>
+              </div>
+              <div className="stat-card approved">
+                <span className="stat-number">{approvedUsers.length}</span>
+                <span className="stat-label">Approved</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="search-container">
+            <input
+              type="text"
+              placeholder="Search by email or name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+          </div>
+
+          <div className="users-section">
+            <h2>Pending Users ({pendingUsers.length})</h2>
+
+            {pendingUsers.length === 0 ? (
+              <div className="empty-state">
+                <p>No pending user approvals</p>
+                <span>All users have been processed</span>
+              </div>
+            ) : (
+              <div className="users-grid">
+                {filteredPendingUsers.map((user) => (
+                  <div key={user.id} className="user-card">
+                    <div className="user-info">
+                      <div className="user-avatar">
+                        {user.displayName && user.displayName.length > 0
+                          ? user.displayName.charAt(0).toUpperCase()
+                          : user.email && user.email.length > 0
+                          ? user.email.charAt(0).toUpperCase()
+                          : "?"}
+                      </div>
+                      <div className="user-details">
+                        <h3>{user.displayName || "No Name"}</h3>
+                        <p className="user-email">{user.email}</p>
+                        <p className="user-date">
+                          Requested: {formatDate(user.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="user-actions">
+                      <button
+                        className="btn-approve"
+                        onClick={() => approveUser(user.id)}
+                        disabled={actionLoading === user.id}
+                      >
+                        {actionLoading === user.id ? "Approving..." : "Approve"}
+                      </button>
+                      <button
+                        className="btn-reject"
+                        onClick={() => rejectUser(user.id)}
+                        disabled={actionLoading === user.id}
+                      >
+                        {actionLoading === user.id ? "Rejecting..." : "Reject"}
+                      </button>
+                    </div>
                   </div>
-                </li>
-              ))}
-          </ul>
-        )}
+                ))}
+              </div>
+            )}
+          </div>
+
+          {approvedUsers.length > 0 && (
+            <div className="users-section">
+              <h2>Approved Users ({approvedUsers.length})</h2>
+              <div className="approved-users-list">
+                {approvedUsers.map((user) => (
+                  <div key={user.id} className="approved-user-item">
+                    <div className="user-avatar small">
+                      {user.displayName?.charAt(0).toUpperCase() ||
+                        user.email?.charAt(0).toUpperCase() ||
+                        "?"}
+                    </div>
+
+                    <div className="user-details">
+                      <span className="user-name">
+                        {user.displayName || "No Name"}
+                      </span>
+                      <span className="user-email">{user.email}</span>
+                    </div>
+                    <span className="approved-badge">Approved</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

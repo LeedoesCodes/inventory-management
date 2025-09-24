@@ -15,17 +15,18 @@ import ProductForm from "../components/products/ProductForm";
 import ProductSearch from "../components/products/ProductSearch";
 import Header from "../components/UI/Headers";
 import Sidebar from "../components/UI/Sidebar";
+import { useSidebar } from "../context/SidebarContext"; // Import the hook
 import "../styles/products.scss";
 
 export default function ProductsPage() {
+  const { isCollapsed } = useSidebar(); // Use the context hook
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [categories, setCategories] = useState([]);
 
-  // NEW: track sidebar collapsed state
-  const [collapsed, setCollapsed] = useState(false);
+  // Remove the local collapsed state since we're using context
 
   const fetchProducts = async () => {
     const snapshot = await getDocs(collection(db, "products"));
@@ -119,11 +120,9 @@ export default function ProductsPage() {
   };
 
   return (
-    <div className={`products-page ${collapsed ? "collapsed" : ""}`}>
+    <div className={`products-page ${isCollapsed ? "collapsed" : ""}`}>
       <Header />
-      {/* Pass toggle + collapsed to Sidebar */}
-      <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
-
+      <Sidebar />
       <div className="products-content">
         <div className="search-container">
           <ProductSearch onSearch={handleSearch} categories={categories} />

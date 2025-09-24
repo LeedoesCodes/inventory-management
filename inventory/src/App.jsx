@@ -8,12 +8,10 @@ import {
 import { useContext } from "react";
 import { AuthContext } from "./context/AuthContext.jsx";
 
-// Components
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import Sidebar from "./components/UI/Sidebar.jsx";
 import { SidebarProvider } from "./context/SidebarContext.jsx";
 
-// Pages
 import Register from "./components/login-signup/register.jsx";
 import Login from "./components/login-signup/login.jsx";
 import Dashboard from "./Pages/Dashboard.jsx";

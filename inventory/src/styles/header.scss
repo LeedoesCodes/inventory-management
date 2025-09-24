@@ -2,7 +2,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 2rem;
+  padding: 1.5rem 2rem;
   background: #009feb;
   position: fixed;
   top: 0;
@@ -12,12 +12,18 @@
   margin-top: 0;
   border-bottom-left-radius: 10px;
   outline: rgb(13, 107, 173) solid 2px;
+  transition: left 0.3s ease, width 0.3s ease;
+
+  &.collapsed {
+    left: 60px;
+    width: calc(100% - 60px);
+  }
 
   .page-title {
-    left: 240px;
     font-size: 1.5rem;
     font-weight: 600;
     color: #ffffff;
+    margin: 0; // Remove left positioning
   }
 
   .header-profile {
@@ -54,6 +60,28 @@
       .role {
         font-size: 0.8rem;
         color: rgb(255, 255, 255);
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .app-header {
+    left: 0 !important;
+    width: 100% !important;
+    padding: 1rem;
+
+    &.collapsed {
+      left: 0 !important;
+      width: 100% !important;
+    }
+
+    .header-profile {
+      margin-right: 20px;
+
+      .profile-info {
+        display: none;
       }
     }
   }

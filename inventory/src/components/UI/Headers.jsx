@@ -1,11 +1,13 @@
 import React, { useContext } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext.jsx";
+import { useSidebar } from "../../context/SidebarContext"; // Import the sidebar hook
 import avatar from "../../assets/images/avatar-default.png";
 import "../../styles/header.scss";
 
 export default function Header() {
   const { user, role } = useContext(AuthContext);
+  const { isCollapsed } = useSidebar(); // Get the collapsed state
   const location = useLocation();
 
   const pageTitles = {
@@ -21,7 +23,7 @@ export default function Header() {
   const title = pageTitles[location.pathname] || "Welcome";
 
   return (
-    <header className="app-header">
+    <header className={`app-header ${isCollapsed ? "collapsed" : ""}`}>
       <div className="header-left">
         <h2 className="page-title">{title}</h2>
       </div>

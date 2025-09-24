@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom"; // Change from Link to NavLink
 import "../../styles/sidebar.scss";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -36,44 +36,74 @@ export default function Sidebar() {
 
       <ul className="menu">
         <li>
-          <Link to="/dashboard">
+          <NavLink
+            to="/dashboard"
+            className={({ isActive }) =>
+              isActive ? "nav-link active" : "nav-link"
+            }
+          >
             <FontAwesomeIcon icon={faHouse} />
             {!isCollapsed && <span className="menu-text">Dashboard</span>}
-          </Link>
+          </NavLink>
         </li>
         <li>
-          <Link to="/products">
+          <NavLink
+            to="/products"
+            className={({ isActive }) =>
+              isActive ? "nav-link active" : "nav-link"
+            }
+          >
             <FontAwesomeIcon icon={faBoxOpen} />
             {!isCollapsed && <span className="menu-text">Products</span>}
-          </Link>
+          </NavLink>
         </li>
         <li>
-          <Link to="/settings">
-            <FontAwesomeIcon icon={faGear} />
-            {!isCollapsed && <span className="menu-text">Settings</span>}
-          </Link>
-        </li>
-        <li>
-          <Link to="/orderspage">
+          <NavLink
+            to="/orderspage"
+            className={({ isActive }) =>
+              isActive ? "nav-link active" : "nav-link"
+            }
+          >
             <FontAwesomeIcon icon={faClipboardList} />
             {!isCollapsed && <span className="menu-text">Orders</span>}
-          </Link>
+          </NavLink>
         </li>
         <li>
-          <Link to="/transactionHistory">
+          <NavLink
+            to="/transactionHistory"
+            className={({ isActive }) =>
+              isActive ? "nav-link active" : "nav-link"
+            }
+          >
             <FontAwesomeIcon icon={faMoneyBill} />
             {!isCollapsed && <span className="menu-text">Transactions</span>}
-          </Link>
+          </NavLink>
+        </li>
+        <li>
+          <NavLink
+            to="/settings"
+            className={({ isActive }) =>
+              isActive ? "nav-link active" : "nav-link"
+            }
+          >
+            <FontAwesomeIcon icon={faGear} />
+            {!isCollapsed && <span className="menu-text">Settings</span>}
+          </NavLink>
         </li>
 
         {role === "admin" && (
           <li>
-            <Link to="/user-approvals">
+            <NavLink
+              to="/user-approvals"
+              className={({ isActive }) =>
+                isActive ? "nav-link active" : "nav-link"
+              }
+            >
               <FontAwesomeIcon icon={faClipboardList} />
               {!isCollapsed && (
                 <span className="menu-text">User Approvals</span>
               )}
-            </Link>
+            </NavLink>
           </li>
         )}
       </ul>
