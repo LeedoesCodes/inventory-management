@@ -12,7 +12,6 @@ import googleLogo from "../../assets/images/google-logo.png";
 import facebookLogo from "../../assets/images/Facebook-logo.png";
 import "../../styles/login.scss";
 import Footer from "../UI/Footer";
-import { GuestHeader } from "../UI/Headers";
 import freddieLogo from "../../assets/images/freddie-logo.png";
 
 export default function Login() {

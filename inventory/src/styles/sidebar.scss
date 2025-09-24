@@ -3,29 +3,35 @@
   top: 0;
   left: 0;
   width: 220px;
-  background: #009feb;
-  background: linear-gradient(
-    180deg,
-    rgba(0, 159, 235, 1) 0%,
-    rgb(235, 234, 234) 100%
-  );
-  color: #ecf0f1;
   min-height: 100vh;
+  background: linear-gradient(180deg, #009feb 0%, #ebebeb 100%);
+  color: #fff;
   padding: 1rem;
   display: flex;
   flex-direction: column;
+  transition: width 0.3s;
 
-  h1.app-title {
-    font-size: 1.5rem;
-    margin-bottom: 1.5rem;
-    text-align: center;
-    color: #000000;
+  &.collapsed {
+    width: 60px;
+
+    .company-logo-container {
+      display: none; // hides logo when collapsed
+    }
+
+    .app-title {
+      display: none;
+    }
+
+    .menu .menu-text {
+      display: none; // hides menu text, only icons remain
+    }
   }
 
   .company-logo-container {
     display: flex;
     flex-direction: column;
     align-items: center;
+    margin-bottom: 1.5rem;
 
     .company-logo {
       width: 100px;
@@ -34,74 +40,51 @@
     }
   }
 
-  .logo {
-    margin-bottom: 2rem;
-    font-size: 1.3rem;
-    font-weight: bold;
-    text-align: center;
+  .sidebar-header {
+    display: flex;
+    justify-content: flex-end; // keep toggle button to the right
+    margin-bottom: 1rem;
+
+    .toggle-btn {
+      background: none;
+      border: none;
+      color: #000;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
   }
 
-  ul {
+  .menu {
     list-style: none;
     padding: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
 
     li {
-      margin: 1rem 0;
+      margin: 1.2rem 0;
 
       a {
+        display: flex;
+        align-items: center;
         text-decoration: none;
-        color: #000000;
+        color: #000;
         font-size: 1rem;
+        gap: 12px;
+        padding: 8px;
+        border-radius: 6px;
+        transition: background 0.2s, color 0.2s;
 
         &:hover {
-          color: #ffffff;
+          color: #fff;
+          background: rgba(0, 0, 0, 0.1);
+        }
+
+        svg {
+          font-size: 1.3rem;
+        }
+
+        .menu-text {
+          transition: opacity 0.3s;
         }
       }
-    }
-  }
-}
-
-.dashboard-layout {
-  display: flex;
-}
-
-.dashboard-content {
-  flex: 1;
-  padding: 2rem;
-  background: #f8f9fa;
-}
-.profile {
-  display: flex;
-  align-items: center;
-  margin-bottom: 2rem;
-
-  .profile-pic {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    object-fit: cover;
-    margin-right: 0.75rem;
-    outline: #ded9d9 solid 3px;
-  }
-
-  .profile-link {
-    text-decoration: none;
-    color: inherit;
-  }
-
-  .profile-info {
-    .name {
-      font-weight: bold;
-      font-size: 1rem;
-      color: #000000;
-    }
-
-    .role {
-      font-size: 0.85rem;
-      color: #000000;
     }
   }
 }

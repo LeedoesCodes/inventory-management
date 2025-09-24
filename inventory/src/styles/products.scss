@@ -1,6 +1,7 @@
 .products-page {
   margin-left: 230px;
   display: flex;
+  flex-direction: column;
   gap: 30px;
 
   .products-content {
@@ -19,6 +20,7 @@
       z-index: 1000;
       border-bottom-left-radius: 10px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
 
       h1 {
         margin: 0;
@@ -28,17 +30,16 @@
 
     .search-container {
       position: fixed;
-      top: 80px;
+      top: 110px;
       width: 80%;
-      left: 260px;
       padding: 10px 20px;
       background: #009feb;
       display: flex;
       gap: 10px;
       z-index: 999;
       border-radius: 10px;
-
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      left: 260px;
 
       input {
         flex: 1;
@@ -74,7 +75,7 @@
     }
 
     .product-list {
-      margin-top: 140px;
+      margin-top: 160px;
       flex: 2;
 
       ul {
@@ -285,6 +286,7 @@
   .search-container {
     flex-direction: column;
     gap: 8px;
+    z-index: 999;
 
     input,
     button {
@@ -293,7 +295,7 @@
   }
 
   .header {
-    width: calc(100%);
+    width: 100%;
     left: 0;
   }
 }

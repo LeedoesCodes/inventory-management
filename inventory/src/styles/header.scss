@@ -1,0 +1,60 @@
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: #009feb;
+  position: fixed;
+  top: 0;
+  left: 230px;
+  width: calc(100% - 230px);
+  z-index: 1000;
+  margin-top: 0;
+  border-bottom-left-radius: 10px;
+  outline: rgb(13, 107, 173) solid 2px;
+
+  .page-title {
+    left: 240px;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  .header-profile {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    gap: 10px;
+    margin-right: 50px;
+
+    &:hover {
+      opacity: 0.9;
+    }
+
+    .profile-pic {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .profile-info {
+      display: flex;
+      flex-direction: column;
+      font-size: 0.9rem;
+
+      .name {
+        font-weight: 500;
+        font-size: 0.95rem;
+        color: #222;
+      }
+
+      .role {
+        font-size: 0.8rem;
+        color: rgb(255, 255, 255);
+      }
+    }
+  }
+}

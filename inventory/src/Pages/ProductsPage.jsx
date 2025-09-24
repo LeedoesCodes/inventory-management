@@ -13,6 +13,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import ProductList from "../components/products/ProductsList";
 import ProductForm from "../components/products/ProductForm";
 import ProductSearch from "../components/products/ProductSearch";
+import Header from "../components/UI/Headers";
 import Sidebar from "../components/UI/Sidebar";
 import "../styles/products.scss";
 
@@ -116,12 +117,10 @@ export default function ProductsPage() {
 
   return (
     <div className="products-page">
+      <Header />
       <Sidebar />
-      <div className="products-content">
-        <div className="header">
-          <h1>Products</h1>
-        </div>
 
+      <div className="products-content">
         <div className="search-container">
           <ProductSearch onSearch={handleSearch} categories={categories} />
         </div>

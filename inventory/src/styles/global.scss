@@ -1,0 +1,44 @@
+/* global.scss */
+
+html {
+  font-size: 16px; // base size for rem units
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Arial", sans-serif; // consistent font
+  background: #f9f9f9;
+  color: #000;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Optional: force consistent zoom across devices */
+@media (min-width: 1000px) {
+  html {
+    font-size: 16px;
+  }
+}

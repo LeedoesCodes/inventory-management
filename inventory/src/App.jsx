@@ -13,6 +13,8 @@ import Lobby from "./Pages/Lobby.jsx";
 import Profile from "./Pages/Profile.jsx";
 import UserApprovals from "./Pages/UserApprovals.jsx";
 import ProductPage from "./Pages/ProductsPage.jsx";
+import OrdersPage from "./Pages/OrdersPage.jsx";
+import TransactionHistory from "./Pages/TransactionHistoryPage.jsx";
 
 function App() {
   const { isLoggedIn, role, loading } = useContext(AuthContext);
@@ -74,6 +76,23 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/orderspage"
+          element={
+            <ProtectedRoute allowedRoles={["approved", "admin"]}>
+              <OrdersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/transactionHistory"
+          element={
+            <ProtectedRoute allowedRoles={["approved", "admin"]}>
+              <TransactionHistory />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/user-approvals"
           element={

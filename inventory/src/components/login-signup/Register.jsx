@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { GuestHeader } from "../UI/Headers";
+
 import Footer from "../UI/Footer";
 import "../../styles/register.scss";
 import freddielogo from "../../assets/images/freddie-logo.png";
