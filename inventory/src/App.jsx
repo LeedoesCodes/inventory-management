@@ -22,6 +22,8 @@ import ProductPage from "./Pages/ProductsPage.jsx";
 import OrdersPage from "./Pages/OrdersPage.jsx";
 import TransactionHistory from "./Pages/TransactionHistoryPage.jsx";
 import LowStockPage from "./components/products/LowStockPage.jsx";
+import CustomerManagement from "./Pages/CustomerManagement.jsx";
+import UserManagement from "./Pages/UserManagement.jsx";
 
 function SidebarLayout() {
   return (
@@ -83,12 +85,17 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/products" element={<ProductPage />} />
             <Route path="/orderspage" element={<OrdersPage />} />
-            <Route path="/low-stock" element={<LowStockPage />} />{" "}
+            <Route path="/low-stock" element={<LowStockPage />} />
             <Route
               path="/transactionHistory"
               element={<TransactionHistory />}
             />
             <Route path="/user-approvals" element={<UserApprovals />} />
+            <Route
+              path="/customer-management"
+              element={<CustomerManagement />}
+            />{" "}
+            <Route path="/user-management" element={<UserManagement />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

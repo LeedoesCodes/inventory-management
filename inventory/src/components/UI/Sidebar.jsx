@@ -77,7 +77,6 @@ export default function Sidebar() {
           </NavLink>
         </li>
 
-        {/* Admin Exclusive Section */}
         {(role === "admin" || role === "owner") && (
           <>
             <li className="menu-section">
@@ -125,6 +124,9 @@ export default function Sidebar() {
           </>
         )}
 
+        <li className="menu-section">
+          {!isCollapsed && <span className="section-label">PREFERENCES</span>}
+        </li>
         <li>
           <NavLink
             to="/settings"

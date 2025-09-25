@@ -18,6 +18,8 @@ export default function Header() {
     "/user-approvals": "User Approvals",
     "/profile": "My Profile",
     "/transactionHistory": "Transaction History",
+    "/customer-management": "Customer Management",
+    "/user-management": "User Management",
   };
 
   const title = pageTitles[location.pathname] || "Welcome";

@@ -1,0 +1,280 @@
+.confirmation-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(5px);
+  animation: fadeIn 0.3s ease;
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+.confirmation-dialog {
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+.dialog-header {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  padding: 1.5rem;
+  text-align: center;
+
+  .header-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+
+  h2 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 0.9rem;
+  }
+}
+
+.dialog-body {
+  padding: 1.5rem;
+  max-height: 50vh;
+  overflow-y: auto;
+
+  .order-summary {
+    .customer-info {
+      background: #f8fafc;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+
+      .info-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        .label {
+          font-weight: 600;
+          color: #475569;
+        }
+
+        .value {
+          color: #1e293b;
+          font-weight: 500;
+        }
+      }
+    }
+
+    .items-section {
+      h3 {
+        margin: 0 0 1rem 0;
+        color: #374151;
+        font-size: 1.1rem;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 0.5rem;
+      }
+
+      .items-list {
+        .order-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.75rem 0;
+          border-bottom: 1px solid #f1f5f9;
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          .product-name {
+            flex: 2;
+            font-weight: 500;
+            color: #1e293b;
+            text-align: left;
+          }
+
+          .quantity {
+            flex: 1;
+            text-align: center;
+            color: #475569;
+            background: #f1f5f9;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+          }
+
+          .price {
+            flex: 1;
+            text-align: right;
+            color: #64748b;
+            font-size: 0.9rem;
+          }
+
+          .subtotal {
+            flex: 1;
+            text-align: right;
+            font-weight: 600;
+            color: #059669;
+          }
+        }
+      }
+    }
+
+    .totals-section {
+      background: #f0fdf4;
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid #bbf7d0;
+      margin-top: 1.5rem;
+
+      .total-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
+
+        &.grand-total {
+          font-size: 1.2rem;
+          font-weight: 700;
+          color: #059669;
+          padding-top: 0.5rem;
+          border-top: 2px solid #bbf7d0;
+          margin-top: 0.5rem;
+        }
+      }
+    }
+  }
+}
+
+.dialog-footer {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+
+  button {
+    flex: 1;
+    padding: 1rem 1.5rem;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+
+    &:hover {
+      transform: translateY(-2px);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+
+  .cancel-btn {
+    background: #94a3b8;
+    color: white;
+
+    &:hover {
+      background: #64748b;
+      box-shadow: 0 4px 12px rgba(148, 163, 184, 0.3);
+    }
+  }
+
+  .confirm-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+
+    &:hover {
+      background: linear-gradient(135deg, #059669, #047857);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .confirmation-dialog {
+    width: 95%;
+    margin: 1rem;
+  }
+
+  .dialog-header {
+    padding: 1.25rem;
+
+    h2 {
+      font-size: 1.3rem;
+    }
+  }
+
+  .dialog-body {
+    padding: 1.25rem;
+  }
+
+  .dialog-footer {
+    flex-direction: column;
+    gap: 0.75rem;
+
+    button {
+      padding: 0.875rem 1.25rem;
+    }
+  }
+
+  .order-item {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+
+    .product-name {
+      flex: 100% !important;
+      margin-bottom: 0.5rem;
+    }
+
+    .quantity,
+    .price,
+    .subtotal {
+      flex: 1;
+      text-align: center !important;
+    }
+  }
+}

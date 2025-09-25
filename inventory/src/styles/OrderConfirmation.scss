@@ -1,0 +1,332 @@
+.confirmation-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(5px);
+  animation: fadeIn 0.3s ease;
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+.confirmation-modal {
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+.confirmation-header {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  padding: 2rem;
+  position: relative;
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    .success-icon {
+      font-size: 2.5rem;
+      opacity: 0.9;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1.8rem;
+      font-weight: 700;
+    }
+
+    p {
+      margin: 0.25rem 0 0 0;
+      opacity: 0.9;
+      font-size: 1rem;
+    }
+  }
+
+  .close-button {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.1);
+    }
+  }
+}
+
+.confirmation-body {
+  padding: 2rem;
+  max-height: 60vh;
+  overflow-y: auto;
+
+  .order-summary {
+    .summary-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid #f1f5f9;
+
+      h3 {
+        margin: 0;
+        color: #1e293b;
+        font-size: 1.3rem;
+      }
+
+      svg {
+        color: #10b981;
+        font-size: 1.5rem;
+      }
+    }
+
+    .customer-info {
+      background: #f8fafc;
+      padding: 1.25rem;
+      border-radius: 10px;
+      margin-bottom: 1.5rem;
+
+      .info-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        .label {
+          font-weight: 600;
+          color: #475569;
+        }
+
+        .value {
+          color: #1e293b;
+          font-weight: 500;
+        }
+      }
+    }
+
+    .items-list {
+      h4 {
+        margin: 0 0 1rem 0;
+        color: #374151;
+        font-size: 1.1rem;
+      }
+
+      .items-header {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr;
+        gap: 1rem;
+        padding: 0.75rem 0;
+        border-bottom: 2px solid #e2e8f0;
+        font-weight: 600;
+        color: #475569;
+        font-size: 0.9rem;
+      }
+
+      .items-container {
+        max-height: 200px;
+        overflow-y: auto;
+        margin-bottom: 1.5rem;
+
+        .order-item {
+          display: grid;
+          grid-template-columns: 2fr 1fr 1fr 1fr;
+          gap: 1rem;
+          padding: 0.75rem 0;
+          border-bottom: 1px solid #f1f5f9;
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          .product-name {
+            font-weight: 500;
+            color: #1e293b;
+          }
+
+          .quantity {
+            text-align: center;
+            color: #475569;
+          }
+
+          .price,
+          .subtotal {
+            text-align: right;
+            font-weight: 600;
+            color: #059669;
+          }
+        }
+      }
+    }
+
+    .order-totals {
+      background: #f0fdf4;
+      padding: 1.25rem;
+      border-radius: 10px;
+      border: 1px solid #bbf7d0;
+
+      .total-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+        font-size: 1.1rem;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        &.grand-total {
+          font-size: 1.3rem;
+          font-weight: 700;
+          color: #059669;
+          padding-top: 0.75rem;
+          border-top: 2px solid #bbf7d0;
+        }
+      }
+    }
+  }
+}
+
+.confirmation-footer {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem 2rem;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+
+  button {
+    flex: 1;
+    padding: 1rem 1.5rem;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .print-btn {
+    background: #3b82f6;
+    color: white;
+
+    &:hover {
+      background: #2563eb;
+      transform: translateY(-2px);
+    }
+  }
+
+  .close-btn {
+    background: #94a3b8;
+    color: white;
+
+    &:hover {
+      background: #64748b;
+      transform: translateY(-2px);
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .confirmation-modal {
+    width: 95%;
+    margin: 1rem;
+  }
+
+  .confirmation-header {
+    padding: 1.5rem;
+
+    .header-content {
+      flex-direction: column;
+      text-align: center;
+      gap: 0.75rem;
+
+      .success-icon {
+        font-size: 2rem;
+      }
+
+      h2 {
+        font-size: 1.5rem;
+      }
+    }
+  }
+
+  .confirmation-body {
+    padding: 1.5rem;
+
+    .items-list {
+      .items-header,
+      .order-item {
+        grid-template-columns: 1.5fr 0.8fr 0.8fr 0.8fr;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+      }
+    }
+  }
+
+  .confirmation-footer {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
+@media print {
+  .confirmation-overlay {
+    position: static;
+    background: white;
+  }
+
+  .confirmation-modal {
+    box-shadow: none;
+    max-width: none;
+    max-height: none;
+  }
+
+  .confirmation-footer {
+    display: none;
+  }
+}

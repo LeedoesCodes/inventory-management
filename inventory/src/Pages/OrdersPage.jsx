@@ -11,11 +11,10 @@ import {
 import { db } from "../Firebase/firebase";
 import Sidebar from "../components/UI/Sidebar";
 import Header from "../components/UI/Headers";
-import Checkout from "../components/products/Checkout";
 import { useSidebar } from "../context/SidebarContext";
 import FloatingCheckout from "../components/UI/FloatingCheckout";
-import "../styles/orders.scss";
 import ProductSearch from "../components/products/ProductSearch";
+import OrderConfirmationDialog from "../components/UI/OrderConfirmationDialog";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSearch,
@@ -25,8 +24,8 @@ import {
   faEyeSlash,
   faShoppingCart,
   faExclamationTriangle,
-  faCheckCircle,
 } from "@fortawesome/free-solid-svg-icons";
+import "../styles/orders.scss";
 
 export default function OrdersPage() {
   const { isCollapsed } = useSidebar();
@@ -40,6 +39,8 @@ export default function OrdersPage() {
   const [showOutOfStock, setShowOutOfStock] = useState(false);
   const [loading, setLoading] = useState(true);
   const [recentCustomers, setRecentCustomers] = useState([]);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [pendingOrder, setPendingOrder] = useState(null);
 
   const fetchProducts = async () => {
     try {
@@ -149,36 +150,54 @@ export default function OrdersPage() {
 
   const { totalItems, totalAmount } = getTotals();
 
-  const handleCheckout = async () => {
+  const handleCheckoutClick = () => {
     if (totalItems === 0) {
       alert("Please select some products first.");
       return;
     }
 
-    try {
-      const orderItems = products
-        .filter((p) => cart[p.id]?.checked)
-        .map((p) => ({
-          id: p.id,
-          name: p.name,
-          price: p.price,
-          quantity: cart[p.id].quantity,
-          subtotal: p.price * cart[p.id].quantity,
-        }));
+    // Prepare order summary for confirmation
+    const orderItems = products
+      .filter((p) => cart[p.id]?.checked)
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        price: p.price,
+        quantity: cart[p.id].quantity,
+        subtotal: p.price * cart[p.id].quantity,
+      }));
 
+    // Set pending order and show confirmation dialog
+    setPendingOrder({
+      items: orderItems,
+      customerName: customerName || "Walk-in Customer",
+      totalItems,
+      totalAmount,
+    });
+
+    setShowConfirmation(true);
+  };
+
+  const handleConfirmOrder = async () => {
+    if (!pendingOrder) return;
+
+    try {
       const batch = writeBatch(db);
 
-      for (const item of orderItems) {
+      // Check stock availability
+      for (const item of pendingOrder.items) {
         const product = products.find((p) => p.id === item.id);
         if (product.stock < item.quantity) {
           alert(
             `Not enough stock for ${product.name}. Only ${product.stock} available.`
           );
+          setShowConfirmation(false);
           return;
         }
       }
 
-      orderItems.forEach((item) => {
+      // Update stock and sold quantities
+      pendingOrder.items.forEach((item) => {
         const productRef = doc(db, "products", item.id);
         const currentProduct = products.find((p) => p.id === item.id);
         const currentSold = currentProduct.sold || 0;
@@ -191,29 +210,42 @@ export default function OrdersPage() {
       });
       await batch.commit();
 
+      // Create order record
       await addDoc(collection(db, "orders"), {
-        customerName: customerName || "Walk-in Customer",
-        items: orderItems,
-        totalItems,
-        totalAmount,
+        customerName: pendingOrder.customerName,
+        items: pendingOrder.items,
+        totalItems: pendingOrder.totalItems,
+        totalAmount: pendingOrder.totalAmount,
         createdAt: new Date(),
         status: "completed",
       });
 
+      // Show success message
       alert(
         `Order completed successfully!\n\nCustomer: ${
-          customerName || "Walk-in Customer"
-        }\nTotal Items: ${totalItems}\nTotal Amount: ₱${totalAmount.toFixed(2)}`
+          pendingOrder.customerName
+        }\nTotal Items: ${
+          pendingOrder.totalItems
+        }\nTotal Amount: ₱${pendingOrder.totalAmount.toFixed(2)}`
       );
 
+      // Reset everything
       setCart({});
       setCustomerName("");
+      setShowConfirmation(false);
+      setPendingOrder(null);
       fetchProducts();
       fetchRecentCustomers();
     } catch (err) {
       console.error("Checkout error:", err);
       alert("Something went wrong while completing the order.");
+      setShowConfirmation(false);
     }
+  };
+
+  const handleCancelOrder = () => {
+    setShowConfirmation(false);
+    setPendingOrder(null);
   };
 
   const filteredAndSortedProducts = products
@@ -418,9 +450,19 @@ export default function OrdersPage() {
           totalItems={totalItems}
           totalAmount={totalAmount}
           cartItems={cartItems}
-          onCheckout={handleCheckout}
+          onCheckout={handleCheckoutClick}
           customerName={customerName}
           setCustomerName={setCustomerName}
+        />
+
+        <OrderConfirmationDialog
+          isOpen={showConfirmation}
+          onConfirm={handleConfirmOrder}
+          onCancel={handleCancelOrder}
+          orderDetails={pendingOrder?.items || []}
+          customerName={pendingOrder?.customerName}
+          totalItems={pendingOrder?.totalItems || 0}
+          totalAmount={pendingOrder?.totalAmount || 0}
         />
       </div>
     </div>
