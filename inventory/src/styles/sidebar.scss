@@ -1,15 +1,206 @@
+// Light theme sidebar
+[data-theme="light"] {
+  .sidebar {
+    background: linear-gradient(180deg, #f8f9fa 17%, #e9ecef 57%, #dee2e6 100%);
+    color: #333;
+    border-right: 1px solid #ced4da;
+
+    .app-title {
+      color: #2c3e50;
+      font-weight: 700;
+    }
+
+    .sidebar-header {
+      .toggle-btn {
+        color: #495057;
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: 6px;
+        padding: 6px;
+        transition: all 0.3s ease;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.9);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          color: #007bff;
+        }
+      }
+    }
+
+    .menu-container {
+      &::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.05);
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.2);
+
+        &:hover {
+          background: rgba(0, 0, 0, 0.3);
+        }
+      }
+    }
+
+    .menu {
+      li {
+        &.menu-section {
+          border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+
+          .section-label {
+            color: #6c757d;
+            opacity: 0.8;
+          }
+        }
+
+        .nav-link {
+          color: #495057;
+          border: 1px solid transparent;
+          transition: all 0.3s ease;
+
+          &:hover {
+            color: #007bff;
+            background: rgba(255, 255, 255, 0.8);
+            border-color: #007bff;
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
+          }
+
+          &.active {
+            background: linear-gradient(
+              135deg,
+              #007bff 0%,
+              #0056b3 100%
+            ) !important;
+            color: #fff !important;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+            border-color: #004085;
+
+            svg {
+              color: #fff;
+            }
+          }
+
+          svg {
+            color: #6c757d;
+          }
+
+          .menu-text {
+            color: inherit;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Dark theme sidebar with #1a202c color scheme
+[data-theme="dark"] {
+  .sidebar {
+    background: linear-gradient(180deg, #1a202c 0%, #2d3748 50%, #1a202c 100%);
+    color: #e2e8f0;
+    border-right: 1px solid #2d3748;
+
+    .app-title {
+      color: #f7fafc;
+      font-weight: 700;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .sidebar-header {
+      .toggle-btn {
+        color: #cbd5e0;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+        padding: 6px;
+        transition: all 0.3s ease;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.2);
+          color: #63b3ed;
+          box-shadow: 0 2px 8px rgba(99, 179, 237, 0.3);
+        }
+      }
+    }
+
+    .menu-container {
+      &::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.3);
+        }
+      }
+    }
+
+    .menu {
+      li {
+        &.menu-section {
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+          .section-label {
+            color: #a0aec0;
+            opacity: 0.8;
+          }
+        }
+
+        .nav-link {
+          color: #cbd5e0;
+          border: 1px solid transparent;
+          transition: all 0.3s ease;
+
+          &:hover {
+            color: #63b3ed;
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(99, 179, 237, 0.3);
+            box-shadow: 0 2px 8px rgba(99, 179, 237, 0.2);
+          }
+
+          &.active {
+            background: linear-gradient(
+              135deg,
+              #3182ce 0%,
+              #2c5aa0 100%
+            ) !important;
+            color: #fff !important;
+            box-shadow: 0 4px 12px rgba(49, 130, 206, 0.4);
+            border-color: #2c5aa0;
+
+            svg {
+              color: #fff;
+            }
+          }
+
+          svg {
+            color: #a0aec0;
+            transition: color 0.3s ease;
+          }
+
+          &:hover svg {
+            color: #63b3ed;
+          }
+
+          .menu-text {
+            color: inherit;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Base sidebar styles (shared by both themes)
 .sidebar {
   position: fixed;
   top: 0;
   left: 0;
   width: 220px;
   height: 100vh;
-  background: linear-gradient(180deg, #009feb 0%, #ebebeb 100%);
-  color: #fff;
   padding: 0.8rem;
   display: flex;
   flex-direction: column;
-  transition: width 0.3s ease;
+  transition: all 0.3s ease;
   z-index: 2000;
   overflow: hidden;
 
@@ -22,6 +213,7 @@
     white-space: nowrap;
     overflow: hidden;
     flex-shrink: 0;
+    transition: all 0.3s ease;
   }
 
   &.collapsed {
@@ -51,16 +243,12 @@
     .toggle-btn {
       background: none;
       border: none;
-      color: #fff;
       font-size: 1.3rem;
       cursor: pointer;
       z-index: 1100;
       padding: 4px;
-
-      &:hover {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 4px;
-      }
+      border-radius: 4px;
+      transition: all 0.3s ease;
     }
   }
 
@@ -75,22 +263,16 @@
     }
 
     &::-webkit-scrollbar-track {
-      background: rgba(255, 255, 255, 0.1);
       border-radius: 2px;
       margin: 3px 0;
     }
 
     &::-webkit-scrollbar-thumb {
-      background: rgba(0, 0, 0, 0.3);
       border-radius: 2px;
-
-      &:hover {
-        background: rgba(0, 0, 0, 0.5);
-      }
+      transition: background 0.3s ease;
     }
 
     scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.3) rgba(255, 255, 255, 0.1);
   }
 
   .menu {
@@ -105,15 +287,13 @@
       &.menu-section {
         margin: 0.5rem 0 0.2rem 0;
         padding: 0;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 
         .section-label {
           font-size: 0.65rem;
           font-weight: 600;
-          color: #000;
           text-transform: uppercase;
           letter-spacing: 0.5px;
-          opacity: 0.8;
+          opacity: 0.9;
           padding: 0.2rem 0;
         }
       }
@@ -122,7 +302,6 @@
         display: flex;
         align-items: center;
         text-decoration: none;
-        color: #000;
         font-size: 0.9rem;
         gap: 10px;
         padding: 8px 6px;
@@ -130,23 +309,6 @@
         transition: all 0.3s ease;
         min-height: 40px;
         border: 1px solid transparent;
-
-        &:hover {
-          color: #fff;
-          background: rgba(0, 0, 0, 0.15);
-          border-color: rgba(0, 0, 0, 0.1);
-        }
-
-        &.active {
-          background: #007bff !important;
-          color: white !important;
-          box-shadow: 0 2px 6px rgba(0, 123, 255, 0.3);
-          border-color: #0056b3;
-
-          svg {
-            color: white;
-          }
-        }
 
         svg {
           font-size: 1.1rem;
@@ -193,6 +355,7 @@
   }
 }
 
+// Mobile styles (shared by both themes)
 @media (max-width: 768px) {
   .sidebar {
     width: 100%;
@@ -296,4 +459,11 @@
       }
     }
   }
+}
+
+// Smooth transitions for theme switching
+.sidebar,
+.sidebar * {
+  transition: background-color 0.3s ease, color 0.3s ease,
+    border-color 0.3s ease, box-shadow 0.3s ease;
 }

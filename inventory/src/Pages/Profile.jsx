@@ -86,7 +86,6 @@ export default function Profile() {
     if (!user?.uid) return;
 
     try {
-      // Fetch admin/employee specific stats
       const productsQuery = query(
         collection(db, "products"),
         where("addedBy", "==", user.uid)
@@ -94,7 +93,6 @@ export default function Profile() {
       const productsSnapshot = await getDocs(productsQuery);
       const userProducts = productsSnapshot.docs.map((doc) => doc.data());
 
-      // Fetch orders processed by this user
       const ordersQuery = query(
         collection(db, "orders"),
         where("processedBy", "==", user.uid)
@@ -102,13 +100,11 @@ export default function Profile() {
       const ordersSnapshot = await getDocs(ordersQuery);
       const processedOrders = ordersSnapshot.docs.map((doc) => doc.data());
 
-      // Calculate total sales from processed orders
       const totalSales = processedOrders.reduce(
         (sum, order) => sum + (order.totalAmount || 0),
         0
       );
 
-      // Fetch total customers (for admin view)
       let totalCustomers = 0;
       if (role === "admin" || role === "owner") {
         const customersSnapshot = await getDocs(collection(db, "users"));

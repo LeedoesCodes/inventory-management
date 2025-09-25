@@ -10,7 +10,7 @@ import { AuthContext } from "./context/AuthContext.jsx";
 
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import Sidebar from "./components/UI/Sidebar.jsx";
-import { SidebarProvider } from "./context/SidebarContext.jsx";
+import { SidebarProvider, SidebarContext } from "./context/SidebarContext.jsx";
 
 import Register from "./components/login-signup/register.jsx";
 import Login from "./components/login-signup/login.jsx";
@@ -24,12 +24,18 @@ import TransactionHistory from "./Pages/TransactionHistoryPage.jsx";
 import LowStockPage from "./components/products/LowStockPage.jsx";
 import CustomerManagement from "./Pages/CustomerManagement.jsx";
 import UserManagement from "./Pages/UserManagement.jsx";
+import SettingsPage from "./Pages/SettingsPage.jsx";
 
+// ✅ Updated SidebarLayout to consume SidebarContext
 function SidebarLayout() {
+  const { isCollapsed } = useContext(SidebarContext);
+
   return (
     <div className="app-layout">
       <Sidebar />
-      <main className="main-content">
+      <main
+        className={`main-content ${isCollapsed ? "sidebar-collapsed" : ""}`}
+      >
         <Outlet />
       </main>
     </div>
@@ -94,8 +100,9 @@ function App() {
             <Route
               path="/customer-management"
               element={<CustomerManagement />}
-            />{" "}
+            />
             <Route path="/user-management" element={<UserManagement />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
