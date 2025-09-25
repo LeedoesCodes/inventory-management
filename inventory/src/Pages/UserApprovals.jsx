@@ -204,12 +204,6 @@ export default function UserApprovals() {
               <div className="approved-users-list">
                 {approvedUsers.map((user) => (
                   <div key={user.id} className="approved-user-item">
-                    <div className="user-avatar small">
-                      {user.displayName?.charAt(0).toUpperCase() ||
-                        user.email?.charAt(0).toUpperCase() ||
-                        "?"}
-                    </div>
-
                     <div className="user-details">
                       <span className="user-name">
                         {user.displayName || "No Name"}

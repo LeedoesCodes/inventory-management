@@ -15,15 +15,17 @@
 
 .user-approvals-content {
   padding: 2rem;
-  background: #f9f9f9;
+  background: #f9f9f9; // Light theme background
   min-height: 100vh;
   margin-top: 80px;
+  transition: all 0.3s ease;
 
   .loading {
     text-align: center;
     padding: 3rem;
     font-size: 1.2rem;
     color: #666;
+    transition: color 0.3s ease;
   }
 
   .page-header {
@@ -33,12 +35,14 @@
     margin-bottom: 2rem;
     flex-wrap: wrap;
     gap: 1rem;
+    animation: slideInDown 0.5s ease-out;
 
     h1 {
       margin: 0;
       font-size: 2rem;
       color: #333;
       font-weight: 600;
+      transition: color 0.3s ease;
     }
 
     .stats {
@@ -50,29 +54,61 @@
         border-radius: 10px;
         text-align: center;
         min-width: 100px;
+        transition: all 0.3s ease;
+        animation: fadeInUp 0.5s ease-out;
+        position: relative;
+        overflow: hidden;
+
+        &::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 4px;
+          background: linear-gradient(
+            135deg,
+            currentColor 0%,
+            transparent 100%
+          );
+          opacity: 0.8;
+        }
 
         &.pending {
           background: #fff3cd;
           border: 1px solid #ffeaa7;
+          color: #856404;
+
+          &::before {
+            background: linear-gradient(135deg, #ffc107, transparent);
+          }
         }
 
         &.approved {
           background: #d1ecf1;
           border: 1px solid #bee5eb;
+          color: #0c5460;
+
+          &::before {
+            background: linear-gradient(135deg, #17a2b8, transparent);
+          }
         }
 
         .stat-number {
           display: block;
           font-size: 1.8rem;
           font-weight: bold;
-          color: #333;
+          color: inherit;
+          transition: color 0.3s ease;
         }
 
         .stat-label {
           font-size: 0.9rem;
-          color: #666;
+          color: inherit;
           text-transform: uppercase;
           letter-spacing: 0.5px;
+          opacity: 0.8;
+          transition: color 0.3s ease;
         }
       }
     }
@@ -80,6 +116,7 @@
 
   .search-container {
     margin-bottom: 2rem;
+    animation: fadeInUp 0.5s ease-out 0.2s both;
 
     .search-input {
       width: 100%;
@@ -89,17 +126,20 @@
       border-radius: 8px;
       font-size: 1rem;
       outline: none;
-      transition: border-color 0.3s;
+      transition: all 0.3s ease;
+      background: white;
 
       &:focus {
         border-color: #007bff;
         box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        transform: translateY(-1px);
       }
     }
   }
 
   .users-section {
     margin-bottom: 3rem;
+    animation: fadeInUp 0.5s ease-out 0.3s both;
 
     h2 {
       margin: 0 0 1.5rem 0;
@@ -108,6 +148,7 @@
       font-weight: 600;
       padding-bottom: 0.5rem;
       border-bottom: 2px solid #eee;
+      transition: all 0.3s ease;
     }
 
     .empty-state {
@@ -116,16 +157,19 @@
       background: white;
       border-radius: 10px;
       border: 2px dashed #ddd;
+      transition: all 0.3s ease;
 
       p {
         margin: 0 0 0.5rem 0;
         font-size: 1.1rem;
         color: #666;
+        transition: color 0.3s ease;
       }
 
       span {
         color: #999;
         font-size: 0.9rem;
+        transition: color 0.3s ease;
       }
     }
   }
@@ -139,12 +183,38 @@
       background: white;
       border-radius: 12px;
       padding: 1.5rem;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      animation: fadeInUp 0.5s ease-out;
+      animation-fill-mode: both;
+      position: relative;
+      overflow: hidden;
+
+      @for $i from 1 through 20 {
+        &:nth-child(#{$i}) {
+          animation-delay: #{$i * 0.1}s;
+        }
+      }
+
+      &::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: #007bff;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
 
       &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+
+        &::before {
+          opacity: 1;
+        }
       }
 
       .user-info {
@@ -164,6 +234,8 @@
           font-size: 1.5rem;
           font-weight: bold;
           margin-right: 1rem;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
         }
 
         .user-details {
@@ -173,18 +245,21 @@
             margin: 0 0 0.25rem 0;
             color: #333;
             font-size: 1.2rem;
+            transition: color 0.3s ease;
           }
 
           .user-email {
             margin: 0 0 0.5rem 0;
             color: #666;
             font-size: 0.9rem;
+            transition: color 0.3s ease;
           }
 
           .user-date {
             margin: 0;
             color: #999;
             font-size: 0.8rem;
+            transition: color 0.3s ease;
           }
         }
       }
@@ -200,31 +275,60 @@
           border-radius: 6px;
           font-weight: 600;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all 0.3s ease;
           font-size: 0.9rem;
+          position: relative;
+          overflow: hidden;
+
+          &::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+              90deg,
+              transparent,
+              rgba(255, 255, 255, 0.3),
+              transparent
+            );
+            transition: left 0.5s;
+          }
+
+          &:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+
+            &::before {
+              left: 100%;
+            }
+          }
 
           &:disabled {
             opacity: 0.6;
             cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
           }
 
           &.btn-approve {
-            background: #28a745;
+            background: linear-gradient(135deg, #28a745, #20c997);
             color: white;
 
             &:hover:not(:disabled) {
-              background: #218838;
-              transform: translateY(-1px);
+              background: linear-gradient(135deg, #218838, #1e7e34);
+              box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
             }
           }
 
           &.btn-reject {
-            background: #dc3545;
+            background: linear-gradient(135deg, #dc3545, #c82333);
             color: white;
 
             &:hover:not(:disabled) {
-              background: #c82333;
-              transform: translateY(-1px);
+              background: linear-gradient(135deg, #c82333, #a71e2a);
+              box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
             }
           }
         }
@@ -244,12 +348,21 @@
       background: white;
       border-radius: 8px;
       border-left: 4px solid #28a745;
+      transition: all 0.3s ease;
+      animation: fadeInUp 0.5s ease-out;
+
+      &:hover {
+        transform: translateX(5px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
 
       .user-avatar.small {
         width: 40px;
         height: 40px;
         font-size: 1rem;
         margin-right: 1rem;
+        background: linear-gradient(135deg, #28a745, #20c997);
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
       }
 
       .user-details {
@@ -260,26 +373,238 @@
         .user-name {
           font-weight: 600;
           color: #333;
+          transition: color 0.3s ease;
         }
 
         .user-email {
           font-size: 0.9rem;
           color: #666;
+          transition: color 0.3s ease;
         }
       }
 
       .approved-badge {
-        background: #d4edda;
+        background: linear-gradient(135deg, #d4edda, #c3e6cb);
         color: #155724;
-        padding: 4px 8px;
+        padding: 6px 12px;
         border-radius: 12px;
         font-size: 0.8rem;
         font-weight: 600;
+        transition: all 0.3s ease;
       }
     }
   }
 }
 
+// ==============================
+// DARK THEME (#1a202c)
+// ==============================
+[data-theme="dark"] {
+  .user-approvals-content {
+    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+
+    .loading {
+      color: #a0aec0;
+    }
+
+    .page-header {
+      h1 {
+        color: #f7fafc;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      }
+
+      .stats {
+        .stat-card {
+          &.pending {
+            background: rgba(245, 158, 11, 0.2);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #f6ad55;
+
+            &::before {
+              background: linear-gradient(135deg, #f59e0b, transparent);
+            }
+          }
+
+          &.approved {
+            background: rgba(72, 187, 120, 0.2);
+            border: 1px solid rgba(72, 187, 120, 0.3);
+            color: #68d391;
+
+            &::before {
+              background: linear-gradient(135deg, #48bb78, transparent);
+            }
+          }
+
+          .stat-number,
+          .stat-label {
+            color: inherit;
+          }
+        }
+      }
+    }
+
+    .search-container {
+      .search-input {
+        background: #4a5568;
+        border-color: #4a5568;
+        color: #f7fafc;
+
+        &:focus {
+          border-color: #63b3ed;
+          box-shadow: 0 0 0 3px rgba(99, 179, 237, 0.2);
+        }
+
+        &::placeholder {
+          color: #a0aec0;
+        }
+      }
+    }
+
+    .users-section {
+      h2 {
+        color: #f7fafc;
+        border-bottom-color: #4a5568;
+      }
+
+      .empty-state {
+        background: #2d3748;
+        border-color: #4a5568;
+
+        p {
+          color: #cbd5e0;
+        }
+
+        span {
+          color: #a0aec0;
+        }
+      }
+    }
+
+    .users-grid {
+      .user-card {
+        background: #2d3748;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+
+        &:hover {
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        &::before {
+          background: #63b3ed;
+        }
+
+        .user-info {
+          .user-avatar {
+            background: linear-gradient(135deg, #63b3ed, #4299e1);
+            box-shadow: 0 4px 12px rgba(99, 179, 237, 0.4);
+          }
+
+          .user-details {
+            h3 {
+              color: #f7fafc;
+            }
+
+            .user-email {
+              color: #cbd5e0;
+            }
+
+            .user-date {
+              color: #a0aec0;
+            }
+          }
+        }
+
+        .user-actions {
+          button {
+            &.btn-approve {
+              background: linear-gradient(135deg, #48bb78, #38a169);
+
+              &:hover:not(:disabled) {
+                background: linear-gradient(135deg, #38a169, #2f855a);
+              }
+            }
+
+            &.btn-reject {
+              background: linear-gradient(135deg, #fc8181, #f56565);
+
+              &:hover:not(:disabled) {
+                background: linear-gradient(135deg, #f56565, #e53e3e);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .approved-users-list {
+      .approved-user-item {
+        background: #2d3748;
+        border-left-color: #48bb78;
+
+        .user-avatar.small {
+          background: linear-gradient(135deg, #48bb78, #38a169);
+          box-shadow: 0 2px 8px rgba(72, 187, 120, 0.4);
+        }
+
+        .user-details {
+          .user-name {
+            color: #f7fafc;
+          }
+
+          .user-email {
+            color: #cbd5e0;
+          }
+        }
+
+        .approved-badge {
+          background: linear-gradient(135deg, #22543d, #1a4731);
+          color: #68d391;
+        }
+      }
+    }
+  }
+}
+
+// ==============================
+// ANIMATIONS
+// ==============================
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+// ==============================
+// RESPONSIVE DESIGN
+// ==============================
 @media (max-width: 768px) {
   .user-approvals-page {
     margin-left: 0 !important;
@@ -323,4 +648,11 @@
       }
     }
   }
+}
+
+// Smooth transitions for theme switching
+.user-approvals-page,
+.user-approvals-page * {
+  transition: background-color 0.3s ease, color 0.3s ease,
+    border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
 }
