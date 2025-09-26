@@ -156,16 +156,18 @@
     }
   }
 
-  .dashboard-main {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
+  // UPDATED: Main section (Smart Recommendations) - LEFT SIDE (Larger)
+  .main-section {
+    grid-column: 1;
   }
 
-  .dashboard-sidebar {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
+  // UPDATED: Side section (Popular Products) - RIGHT SIDE (Smaller)
+  .side-section {
+    grid-column: 2;
+
+    @media (max-width: 1200px) {
+      grid-column: 1;
+    }
   }
 
   .popular-items,
@@ -195,7 +197,7 @@
         display: block;
       }
 
-      .view-rules-btn {
+      .view-all-rules-btn {
         background: #667eea;
         color: white;
         border: none;
@@ -213,7 +215,7 @@
     }
   }
 
-  // Machine Learning Recommendations Styles
+  // UPDATED: Machine Learning Recommendations Styles - Now on LEFT (main-section)
   .ml-recommendations {
     height: fit-content;
     max-height: 500px;
@@ -261,6 +263,8 @@
         justify-content: space-between;
         align-items: center;
         margin-bottom: 0.75rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
 
         .confidence-badge {
           background: #667eea;
@@ -277,17 +281,47 @@
           border-radius: 4px;
           font-weight: 500;
 
-          &.high {
+          &.very-high {
             background: #c6f6d5;
             color: #22543d;
           }
+          &.high {
+            background: #9ae6b4;
+            color: #22543d;
+          }
           &.medium {
+            background: #fef5e7;
+            color: #744210;
+          }
+          &.low {
             background: #fed7d7;
             color: #742a2a;
           }
-          &.low {
-            background: #feebcb;
-            color: #744210;
+          &.very-low {
+            background: #feb2b2;
+            color: #742a2a;
+          }
+        }
+
+        .lift-badge {
+          padding: 0.25rem 0.6rem;
+          border-radius: 12px;
+          font-size: 0.7rem;
+          font-weight: 600;
+
+          &.high-lift {
+            background-color: #10b981;
+            color: white;
+          }
+
+          &.medium-lift {
+            background-color: #f59e0b;
+            color: white;
+          }
+
+          &.low-lift {
+            background-color: #6b7280;
+            color: white;
           }
         }
       }
@@ -325,11 +359,45 @@
           gap: 0.75rem;
           font-size: 0.75rem;
           color: #718096;
+          flex-wrap: wrap;
+          margin-bottom: 0.75rem;
 
           span {
             background: #f7fafc;
             padding: 0.2rem 0.5rem;
             border-radius: 4px;
+          }
+        }
+
+        .lift-visualization {
+          margin-top: 10px;
+          padding: 10px;
+          background: #f8fafc;
+          border-radius: 8px;
+
+          .lift-scale {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.8rem;
+            color: #6b7280;
+
+            .scale-bar {
+              flex: 1;
+              height: 6px;
+              background: #e5e7eb;
+              border-radius: 3px;
+              position: relative;
+
+              .lift-indicator {
+                position: absolute;
+                top: -2px;
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                transition: left 0.3s ease;
+              }
+            }
           }
         }
       }
@@ -390,50 +458,55 @@
     }
   }
 
-  .items-list {
-    .item-row {
-      display: flex;
-      align-items: center;
-      padding: 1rem 0;
-      border-bottom: 1px solid #e2e8f0;
-      transition: background-color 0.2s ease;
+  // UPDATED: Popular Items - Now on RIGHT (side-section)
+  .popular-items {
+    height: fit-content;
 
-      &:hover {
-        background-color: #f7fafc;
+    .items-list {
+      .item-row {
+        display: flex;
+        align-items: center;
+        padding: 1rem 0;
+        border-bottom: 1px solid #e2e8f0;
+        transition: background-color 0.2s ease;
+
+        &:hover {
+          background-color: #f7fafc;
+        }
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .rank {
+          background: #edf2f7;
+          color: #4a5568;
+          font-weight: 600;
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+          margin-right: 1rem;
+          min-width: 40px;
+          text-align: center;
+        }
+
+        .item-name {
+          flex: 1;
+          font-weight: 500;
+          color: #2d3748;
+        }
+
+        .sold-count {
+          color: #718096;
+          font-weight: 600;
+        }
       }
 
-      &:last-child {
-        border-bottom: none;
-      }
-
-      .rank {
-        background: #edf2f7;
-        color: #4a5568;
-        font-weight: 600;
-        padding: 0.25rem 0.5rem;
-        border-radius: 4px;
-        margin-right: 1rem;
-        min-width: 40px;
+      .no-data {
         text-align: center;
+        color: #a0aec0;
+        font-style: italic;
+        padding: 2rem;
       }
-
-      .item-name {
-        flex: 1;
-        font-weight: 500;
-        color: #2d3748;
-      }
-
-      .sold-count {
-        color: #718096;
-        font-weight: 600;
-      }
-    }
-
-    .no-data {
-      text-align: center;
-      color: #a0aec0;
-      font-style: italic;
-      padding: 2rem;
     }
   }
 
@@ -607,7 +680,7 @@
           color: #a0aec0;
         }
 
-        .view-rules-btn {
+        .view-all-rules-btn {
           background: #5a67d8;
 
           &:hover {
@@ -624,6 +697,52 @@
 
         &:hover {
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .recommendation-header {
+          .confidence-badge {
+            background: #5a67d8;
+          }
+
+          .strength-indicator {
+            &.very-high {
+              background: #22543d;
+              color: #68d391;
+            }
+            &.high {
+              background: #22543d;
+              color: #9ae6b4;
+            }
+            &.medium {
+              background: #744210;
+              color: #f6ad55;
+            }
+            &.low {
+              background: #742a2a;
+              color: #fc8181;
+            }
+            &.very-low {
+              background: #742a2a;
+              color: #fed7d7;
+            }
+          }
+
+          .lift-badge {
+            &.high-lift {
+              background-color: #065f46;
+              color: #6ee7b7;
+            }
+
+            &.medium-lift {
+              background-color: #92400e;
+              color: #fdba74;
+            }
+
+            &.low-lift {
+              background-color: #374151;
+              color: #d1d5db;
+            }
+          }
         }
 
         .recommendation-content {
@@ -650,6 +769,22 @@
               background: #2d3748;
             }
           }
+
+          .lift-visualization {
+            background: #2d3748;
+
+            .lift-scale {
+              color: #a0aec0;
+
+              .scale-bar {
+                background: #4a5568;
+
+                .lift-indicator {
+                  background: #63b3ed;
+                }
+              }
+            }
+          }
         }
       }
 
@@ -671,30 +806,32 @@
       }
     }
 
-    .items-list {
-      .item-row {
-        border-bottom: 1px solid #4a5568;
+    .popular-items {
+      .items-list {
+        .item-row {
+          border-bottom: 1px solid #4a5568;
 
-        &:hover {
-          background-color: #4a5568;
+          &:hover {
+            background-color: #4a5568;
+          }
+
+          .rank {
+            background: #4a5568;
+            color: #e2e8f0;
+          }
+
+          .item-name {
+            color: #e2e8f0;
+          }
+
+          .sold-count {
+            color: #a0aec0;
+          }
         }
 
-        .rank {
-          background: #4a5568;
-          color: #e2e8f0;
+        .no-data {
+          color: #718096;
         }
-
-        .item-name {
-          color: #e2e8f0;
-        }
-
-        .sold-count {
-          color: #a0aec0;
-        }
-      }
-
-      .no-data {
-        color: #718096;
       }
     }
 
@@ -783,13 +920,33 @@
       gap: 1rem;
     }
 
-    .dashboard-main,
-    .dashboard-sidebar {
-      gap: 1rem;
+    // UPDATED: Mobile layout - both sections stack vertically
+    .main-section,
+    .side-section {
+      grid-column: 1;
     }
 
     .ml-recommendations {
       max-height: 400px;
+
+      .recommendation-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+
+      .recommendation-stats {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .lift-visualization {
+        .lift-scale {
+          flex-direction: column;
+          gap: 0.5rem;
+          text-align: center;
+        }
+      }
     }
   }
 }

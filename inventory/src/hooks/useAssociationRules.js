@@ -2,17 +2,29 @@ import { useState, useEffect, useCallback } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../Firebase/firebase";
 
-// Simple client-side association rules algorithm
-const generateAssociationRules = (transactions) => {
-  if (!transactions || transactions.length === 0) return [];
+// Enhanced client-side association rules algorithm with lift calculation
+const generateAssociationRules = (orders) => {
+  if (!orders || orders.length === 0) {
+    console.log("No orders provided to generate rules");
+    return [];
+  }
+
+  console.log("Generating rules from orders:", orders.length); // DEBUG
 
   const pairCounts = {};
   const itemCounts = {};
+  const totalOrders = orders.length;
 
-  transactions.forEach((transaction) => {
+  orders.forEach((order) => {
+    // Extract item names from orders - handle different possible field names
     const items =
-      transaction.items?.map((item) => item.itemId || item.id || item.name) ||
-      [];
+      order.items
+        ?.map((item) => {
+          return (
+            item.name || item.productName || item.itemName || "Unknown Item"
+          );
+        })
+        .filter((item) => item !== "Unknown Item") || [];
 
     // Count individual items
     items.forEach((item) => {
@@ -23,41 +35,53 @@ const generateAssociationRules = (transactions) => {
     for (let i = 0; i < items.length; i++) {
       for (let j = i + 1; j < items.length; j++) {
         const pair = [items[i], items[j]].sort().join("|");
-        pairCounts[pair] = (pairCounts[pair] || 0) + 1;
+        pairCounts[pair] = (pairCounts[pair] || 1) + 1; // Use 1 as base to avoid division by zero
       }
     }
   });
 
+  console.log("Item counts:", itemCounts); // DEBUG
+  console.log("Pair counts:", pairCounts); // DEBUG
+
   const rules = [];
-  const totalTransactions = transactions.length;
 
   Object.entries(pairCounts).forEach(([pair, count]) => {
     const [itemA, itemB] = pair.split("|");
-    const support = count / totalTransactions;
+    const supportAB = count / totalOrders;
+    const supportA = (itemCounts[itemA] || 1) / totalOrders;
+    const supportB = (itemCounts[itemB] || 1) / totalOrders;
+
+    // Calculate lift: lift(A → B) = support(A ∪ B) / (support(A) × support(B))
+    const lift = supportAB / (supportA * supportB);
 
     // Rule: A → B
     const confidenceAB = count / (itemCounts[itemA] || 1);
-    if (confidenceAB > 0.3 && support > 0.05) {
+    if (confidenceAB > 0.3 && supportAB > 0.05) {
       rules.push({
         antecedent: [itemA],
         consequent: [itemB],
         confidence: confidenceAB,
-        support: support,
+        support: supportAB,
+        lift: lift, // ADDED LIFT METRIC
+        rule: `${itemA} → ${itemB}`,
       });
     }
 
     // Rule: B → A
     const confidenceBA = count / (itemCounts[itemB] || 1);
-    if (confidenceBA > 0.3 && support > 0.05) {
+    if (confidenceBA > 0.3 && supportAB > 0.05) {
       rules.push({
         antecedent: [itemB],
         consequent: [itemA],
         confidence: confidenceBA,
-        support: support,
+        support: supportAB,
+        lift: lift, // ADDED LIFT METRIC
+        rule: `${itemB} → ${itemA}`,
       });
     }
   });
 
+  console.log("Final generated rules with lift:", rules); // DEBUG
   return rules.sort((a, b) => b.confidence - a.confidence);
 };
 
@@ -71,29 +95,36 @@ export const useAssociationRules = () => {
       setLoading(true);
       setError(null);
 
-      // Get recent transactions (last 90 days)
-      const ninetyDaysAgo = new Date();
-      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      console.log("Loading association rules from ORDERS collection...");
 
-      const transactionsSnapshot = await getDocs(
-        collection(db, "transactions")
-      );
-      const allTransactions = transactionsSnapshot.docs.map((doc) => ({
+      const ordersSnapshot = await getDocs(collection(db, "orders"));
+      const allOrders = ordersSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
 
-      const recentTransactions = allTransactions.filter((tx) => {
-        const txDate = tx.timestamp?.toDate?.() || tx.timestamp;
-        return new Date(txDate) >= ninetyDaysAgo;
-      });
+      console.log("All orders from Firestore:", allOrders.length);
 
-      if (recentTransactions.length === 0) {
+      if (allOrders.length === 0) {
+        console.log("No orders found in database");
         setRules([]);
         return;
       }
 
-      const generatedRules = generateAssociationRules(recentTransactions);
+      // Get recent orders (last 90 days)
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+      const recentOrders = allOrders.filter((order) => {
+        const orderDate =
+          order.timestamp?.toDate?.() || order.timestamp || order.date;
+        return orderDate ? new Date(orderDate) >= ninetyDaysAgo : true;
+      });
+
+      console.log("Recent orders (last 90 days):", recentOrders.length);
+
+      const generatedRules = generateAssociationRules(recentOrders);
+      console.log("Final rules generated:", generatedRules.length);
       setRules(generatedRules);
     } catch (err) {
       console.error("Error loading association rules:", err);
@@ -105,10 +136,15 @@ export const useAssociationRules = () => {
 
   const getRecommendations = useCallback(
     (currentItems) => {
-      if (!currentItems || currentItems.length === 0 || rules.length === 0)
+      if (!currentItems || currentItems.length === 0 || rules.length === 0) {
+        console.log("No recommendations - conditions not met:", {
+          currentItems,
+          rulesCount: rules.length,
+        });
         return [];
+      }
 
-      return rules
+      const recommendations = rules
         .filter((rule) => {
           const antecedentMatch = rule.antecedent.every((item) =>
             currentItems.includes(item)
@@ -120,17 +156,33 @@ export const useAssociationRules = () => {
         })
         .slice(0, 5)
         .map((rule) => ({
-          ...rule,
-          strength:
-            rule.confidence >= 0.7
-              ? "high"
-              : rule.confidence >= 0.4
-              ? "medium"
-              : "low",
+          antecedent: rule.antecedent,
+          consequent: rule.consequent,
+          confidence: rule.confidence,
+          support: rule.support,
+          lift: rule.lift, // INCLUDING LIFT IN RECOMMENDATIONS
+          strength: getStrength(rule.confidence, rule.lift),
+          products: rule.consequent.map((itemName) => ({
+            id: itemName,
+            name: itemName,
+          })),
+          rule: rule.rule,
         }));
+
+      console.log("Generated recommendations with lift:", recommendations);
+      return recommendations;
     },
     [rules]
   );
+
+  // Enhanced strength calculation considering both confidence and lift
+  const getStrength = (confidence, lift) => {
+    if (confidence >= 0.7 && lift >= 2.0) return "very high";
+    if (confidence >= 0.7 && lift >= 1.5) return "high";
+    if (confidence >= 0.5 && lift >= 1.2) return "medium";
+    if (confidence >= 0.3 && lift >= 1.0) return "low";
+    return "very low";
+  };
 
   useEffect(() => {
     loadRules();

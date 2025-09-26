@@ -73,6 +73,86 @@
       }
     }
 
+    // Title Toggle Button for Mobile
+    .title-toggle-btn {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 1.3rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 8px 16px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+
+      &::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(var(--accent-rgb), 0.1),
+          transparent
+        );
+        transition: left 0.6s ease;
+      }
+
+      &:hover {
+        background: var(--bg-tertiary);
+        border-color: var(--accent-color);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+
+        &::before {
+          left: 100%;
+        }
+
+        .toggle-icon {
+          transform: rotate(90deg);
+          color: var(--accent-color);
+        }
+
+        .title-text {
+          background: linear-gradient(
+            135deg,
+            var(--accent-color),
+            var(--accent-hover)
+          );
+          background-clip: text;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+      }
+
+      &:active {
+        transform: translateY(0);
+        transition: transform 0.1s ease;
+      }
+
+      .toggle-icon {
+        font-size: 1.1rem;
+        color: var(--text-secondary);
+        transition: all 0.3s ease;
+      }
+
+      .title-text {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 200px;
+        transition: all 0.3s ease;
+      }
+    }
+
     .page-title {
       margin: 0;
       font-size: 1.8rem;
@@ -231,18 +311,25 @@
     -webkit-backdrop-filter: blur(5px);
 
     .header-left {
+      gap: 0.5rem;
+
       .mobile-menu-btn {
         display: block;
         animation: bounce 2s infinite;
       }
 
-      .page-title {
-        font-size: 1.3rem;
-        animation: none;
+      .title-toggle-btn {
+        display: flex;
+        animation: pulse 2s ease-in-out infinite;
 
-        &::after {
-          display: none;
+        .title-text {
+          max-width: 150px;
+          font-size: 1.1rem;
         }
+      }
+
+      .page-title {
+        display: none;
       }
     }
 
@@ -265,8 +352,17 @@
     padding: 0 0.8rem;
 
     .header-left {
-      .page-title {
-        font-size: 1.1rem;
+      .title-toggle-btn {
+        padding: 6px 12px;
+
+        .title-text {
+          font-size: 1rem;
+          max-width: 120px;
+        }
+
+        .toggle-icon {
+          font-size: 1rem;
+        }
       }
     }
 
@@ -274,6 +370,19 @@
       .profile-pic {
         width: 32px;
         height: 32px;
+      }
+    }
+  }
+}
+
+@media (max-width: 360px) {
+  .app-header {
+    .header-left {
+      .title-toggle-btn {
+        .title-text {
+          max-width: 100px;
+          font-size: 0.9rem;
+        }
       }
     }
   }

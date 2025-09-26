@@ -58,15 +58,26 @@ export default function Dashboard() {
   // Generate recommendations based on popular items
   useEffect(() => {
     if (dashboardData.popularItems.length > 0 && associationRules.length > 0) {
-      const popularItemIds = dashboardData.popularItems
+      const popularItemNames = dashboardData.popularItems
         .slice(0, 3)
         .map((item) => item.name);
-      const recs = getRecommendations(popularItemIds);
+
+      const recs = getRecommendations(popularItemNames);
+      console.log("Generated recommendations:", recs);
       setRecommendations(recs);
+    } else {
+      setRecommendations([]);
     }
   }, [dashboardData.popularItems, associationRules, getRecommendations]);
 
-  const fetchDashboardData = async () => {
+  // Debug useEffect to see what's happening
+  useEffect(() => {
+    console.log("Association Rules:", associationRules);
+    console.log("Popular Items:", dashboardData.popularItems);
+    console.log("Recommendations:", recommendations);
+  }, [associationRules, dashboardData.popularItems, recommendations]);
+
+  const fetchDashboardData = useCallback(async () => {
     try {
       setError(null);
       const [productsSnap, ordersSnap] = await Promise.all([
@@ -79,7 +90,10 @@ export default function Dashboard() {
         ...doc.data(),
       }));
 
-      const orders = ordersSnap.docs.map((doc) => doc.data());
+      const orders = ordersSnap.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
       const lowStockCount = products.filter(
         (p) => p.stock <= userSettings.lowStockThreshold
@@ -89,9 +103,11 @@ export default function Dashboard() {
       const itemCounts = {};
 
       orders.forEach((order) => {
-        totalRevenue += order.total || 0;
+        totalRevenue += order.totalAmount || order.total || 0;
         order.items?.forEach((item) => {
-          itemCounts[item.name] = (itemCounts[item.name] || 0) + item.quantity;
+          const itemName = item.name || item.productName || "Unknown Item";
+          itemCounts[itemName] =
+            (itemCounts[itemName] || 0) + (item.quantity || 1);
         });
       });
 
@@ -113,31 +129,44 @@ export default function Dashboard() {
       setError("Failed to load dashboard data");
       setDashboardData((prev) => ({ ...prev, loading: false }));
     }
+  }, [userSettings.lowStockThreshold]);
+
+  // NEW: Enhanced strength calculation with lift
+  const getRecommendationStrength = (confidence, lift) => {
+    if (confidence >= 0.7 && lift >= 2.0) return "very-high";
+    if (confidence >= 0.7 && lift >= 1.5) return "high";
+    if (confidence >= 0.5 && lift >= 1.2) return "medium";
+    if (confidence >= 0.3 && lift >= 1.0) return "low";
+    return "very-low";
   };
 
-  const getRecommendationStrength = (confidence) => {
-    if (confidence >= 0.7) return "high";
-    if (confidence >= 0.4) return "medium";
-    return "low";
+  // NEW: Get lift interpretation text
+  const getLiftInterpretation = (lift) => {
+    if (lift > 3.0) return "Exceptional association 🚀";
+    if (lift > 2.0) return "Strong positive association ✅";
+    if (lift > 1.5) return "Positive association 👍";
+    if (lift > 1.2) return "Moderate association 📈";
+    if (lift > 1.0) return "Slight association ➕";
+    if (lift === 1.0) return "Independent items ➖";
+    return "Negative association ❌";
   };
 
   const handleApplyRecommendation = (recommendation) => {
-    // Navigate to products page with recommendation filter
     navigate("/products", {
       state: {
-        recommendedItems: recommendation.products.map((p) => p.id),
+        recommendedItems: recommendation.consequent,
         recommendationSource: `Based on association rules (${(
           recommendation.confidence * 100
-        ).toFixed(1)}% confidence)`,
+        ).toFixed(1)}% confidence, ${recommendation.lift.toFixed(2)} lift)`,
       },
     });
   };
 
   useEffect(() => {
     fetchDashboardData();
-  }, [userSettings.lowStockThreshold, associationRules]); // Re-fetch when threshold or rules change
+  }, [fetchDashboardData]);
 
-  // Navigation handlers
+  // Navigation handlers (unchanged)
   const handleAddProduct = () => {
     navigate("/products");
   };
@@ -147,7 +176,7 @@ export default function Dashboard() {
   };
 
   const handleManageOrders = () => {
-    navigate("/orderspage");
+    navigate("/transactionHistory");
   };
 
   const handleViewLowStock = () => {
@@ -155,7 +184,12 @@ export default function Dashboard() {
   };
 
   const handleViewAssociationRules = () => {
-    navigate("/association-rules"); // You can create this page later
+    navigate("/association-rules");
+  };
+
+  const handleRefreshRules = () => {
+    refreshRules();
+    fetchDashboardData();
   };
 
   if (error) {
@@ -187,11 +221,13 @@ export default function Dashboard() {
             Association Rules: <strong>{associationRules.length}</strong> active
           </span>
           <button
-            onClick={fetchDashboardData}
+            onClick={handleRefreshRules}
             className="refresh-btn"
-            disabled={dashboardData.loading}
+            disabled={dashboardData.loading || mlLoading}
           >
-            {dashboardData.loading ? "Refreshing..." : "Refresh Data"}
+            {dashboardData.loading || mlLoading
+              ? "Refreshing..."
+              : "Refresh Data"}
           </button>
         </div>
       </div>
@@ -204,6 +240,7 @@ export default function Dashboard() {
       ) : (
         <>
           <div className="stats-cards">
+            {/* ... your existing stat cards remain the same ... */}
             <div
               className="card products-card"
               onClick={handleViewInventory}
@@ -245,7 +282,119 @@ export default function Dashboard() {
           </div>
 
           <div className="dashboard-content">
-            <div className="popular-items">
+            <div className="ml-recommendations main-section">
+              <div className="section-header">
+                <h2>💡 Smart Recommendations</h2>
+              </div>
+
+              {mlLoading ? (
+                <div className="ml-loading">
+                  <div className="loading-spinner small"></div>
+                  <span>Analyzing transaction patterns...</span>
+                </div>
+              ) : recommendations.length > 0 ? (
+                <div className="recommendations-list">
+                  {recommendations.map((rec, index) => (
+                    <div key={index} className="recommendation-card">
+                      <div className="recommendation-header">
+                        <span className="confidence-badge">
+                          {(rec.confidence * 100).toFixed(1)}% Confidence
+                        </span>
+                        <span className={`strength-indicator ${rec.strength}`}>
+                          {rec.strength.replace("-", " ")} confidence
+                        </span>
+                        {/* NEW: Lift badge */}
+                        <span
+                          className={`lift-badge ${
+                            rec.lift > 2
+                              ? "high-lift"
+                              : rec.lift > 1
+                              ? "medium-lift"
+                              : "low-lift"
+                          }`}
+                        >
+                          Lift: {rec.lift?.toFixed(2) || "N/A"}
+                        </span>
+                      </div>
+
+                      <div className="recommendation-content">
+                        <p className="recommendation-text">
+                          <strong>Pattern: </strong>
+                          Customers who buy{" "}
+                          <strong>{rec.antecedent.join(", ")}</strong> often
+                          also purchase:
+                        </p>
+
+                        <div className="recommended-products">
+                          {rec.consequent.map((productName, productIndex) => (
+                            <span key={productIndex} className="product-tag">
+                              {productName}
+                            </span>
+                          ))}
+                        </div>
+
+                        <div className="recommendation-stats">
+                          <span>
+                            Support: {(rec.support * 100).toFixed(1)}%
+                          </span>
+                          <span>
+                            Lift: {rec.lift?.toFixed(2) || "N/A"} -{" "}
+                            {getLiftInterpretation(rec.lift)}
+                          </span>
+                          <span>
+                            Based on {dashboardData.totalOrders} transactions
+                          </span>
+                        </div>
+
+                        {/* NEW: Lift visualization */}
+                        <div className="lift-visualization">
+                          <div className="lift-scale">
+                            <span className="scale-label">Negative</span>
+                            <div className="scale-bar">
+                              <div
+                                className="lift-indicator"
+                                style={{
+                                  left: `${Math.min(
+                                    Math.max(rec.lift * 20, 0),
+                                    100
+                                  )}%`,
+                                  backgroundColor:
+                                    rec.lift > 1 ? "#10b981" : "#ef4444",
+                                }}
+                              ></div>
+                            </div>
+                            <span className="scale-label">Positive</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="no-recommendations">
+                  <p>No recommendations available yet.</p>
+                  <small>
+                    {associationRules.length === 0
+                      ? "Association rules will appear after analyzing transaction patterns. Make sure you have orders with items."
+                      : "Try adding more popular items or the system needs more transaction data to generate recommendations."}
+                  </small>
+                  <div
+                    style={{
+                      marginTop: "10px",
+                      fontSize: "12px",
+                      color: "#666",
+                    }}
+                  >
+                    Debug: {associationRules.length} rules loaded,{" "}
+                    {dashboardData.popularItems.length} popular items,{" "}
+                    {dashboardData.totalOrders} total orders
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Popular Products Section */}
+            <div className="popular-items side-section">
               <div className="section-header">
                 <h2>Most Popular Products</h2>
                 <span>Top 5 best sellers</span>
@@ -263,85 +412,6 @@ export default function Dashboard() {
                   <p className="no-data">No sales data available</p>
                 )}
               </div>
-            </div>
-
-            {/* Machine Learning Recommendations Section */}
-            <div className="ml-recommendations">
-              <div className="section-header">
-                <h2>💡 Smart Recommendations</h2>
-                <span>Based on association rules mining</span>
-                <button
-                  onClick={handleViewAssociationRules}
-                  className="view-rules-btn"
-                >
-                  View All Rules
-                </button>
-              </div>
-
-              {mlLoading ? (
-                <div className="ml-loading">
-                  <div className="loading-spinner small"></div>
-                  <span>Analyzing patterns...</span>
-                </div>
-              ) : recommendations.length > 0 ? (
-                <div className="recommendations-list">
-                  {recommendations.map((rec, index) => (
-                    <div key={index} className="recommendation-card">
-                      <div className="recommendation-header">
-                        <span className="confidence-badge">
-                          {(rec.confidence * 100).toFixed(1)}% Confidence
-                        </span>
-                        <span
-                          className={`strength-indicator ${getRecommendationStrength(
-                            rec.confidence
-                          )}`}
-                        >
-                          {getRecommendationStrength(rec.confidence)} confidence
-                        </span>
-                      </div>
-
-                      <div className="recommendation-content">
-                        <p className="recommendation-text">
-                          <strong>Pattern: </strong>
-                          Customers who buy popular items often also purchase:
-                        </p>
-
-                        <div className="recommended-products">
-                          {rec.products.map((product, productIndex) => (
-                            <span key={productIndex} className="product-tag">
-                              {product.name}
-                            </span>
-                          ))}
-                        </div>
-
-                        <div className="recommendation-stats">
-                          <span>
-                            Support: {(rec.support * 100).toFixed(1)}%
-                          </span>
-                          <span>
-                            Lift: {rec.rule.lift?.toFixed(2) || "N/A"}
-                          </span>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => handleApplyRecommendation(rec)}
-                        className="apply-recommendation-btn"
-                      >
-                        View Recommended Products
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="no-recommendations">
-                  <p>No recommendations available yet.</p>
-                  <small>
-                    Association rules will appear after analyzing transaction
-                    patterns.
-                  </small>
-                </div>
-              )}
             </div>
 
             <div className="quick-actions">

@@ -252,7 +252,7 @@
         background: none;
         font-size: 0.9rem;
         cursor: pointer;
-        color: var(--text-primary);
+        color: black;
         transition: color 0.3s ease;
 
         &:focus {
@@ -619,7 +619,7 @@
       display: block;
       margin-bottom: 0.5rem;
       font-weight: 600;
-      color: var(--text-primary);
+      color: black;
       transition: color 0.3s ease;
     }
 
@@ -681,7 +681,7 @@
 
         .radio-label {
           font-weight: normal;
-          color: var(--text-primary);
+          color: black;
           transition: color 0.3s ease;
         }
       }

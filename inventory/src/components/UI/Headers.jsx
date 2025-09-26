@@ -29,14 +29,23 @@ export default function Header() {
   return (
     <header className={`app-header ${isCollapsed ? "collapsed" : ""}`}>
       <div className="header-left">
-        {/* Mobile Hamburger Icon */}
+        {/* Mobile Hamburger Icon (left side) */}
         {isMobile && (
           <button className="mobile-menu-btn" onClick={toggleSidebar}>
             <FontAwesomeIcon icon={faBars} />
           </button>
         )}
 
-        <h2 className="page-title">{title}</h2>
+        {/* Title Toggle Button for Mobile */}
+        {isMobile ? (
+          <button className="title-toggle-btn" onClick={toggleSidebar}>
+            <FontAwesomeIcon icon={faBars} className="toggle-icon" />
+            <span className="title-text">{title}</span>
+          </button>
+        ) : (
+          // Regular title for desktop
+          <h2 className="page-title">{title}</h2>
+        )}
       </div>
 
       <Link to="/profile" className="header-profile">
