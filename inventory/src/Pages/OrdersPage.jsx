@@ -7,6 +7,7 @@ import {
   doc,
   query,
   where,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "../Firebase/firebase";
 import Sidebar from "../components/UI/Sidebar";
@@ -41,6 +42,7 @@ export default function OrdersPage() {
   const [recentCustomers, setRecentCustomers] = useState([]);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [pendingOrder, setPendingOrder] = useState(null);
+  const [debounceTimer, setDebounceTimer] = useState(null);
 
   const fetchProducts = async () => {
     try {
@@ -84,6 +86,105 @@ export default function OrdersPage() {
     fetchProducts();
     fetchRecentCustomers();
   }, []);
+
+  // Function to save/update customer data
+  const saveCustomerToManagement = async (customerName) => {
+    if (
+      !customerName ||
+      customerName.trim() === "" ||
+      customerName === "Walk-in Customer"
+    )
+      return;
+
+    try {
+      // Check if customer already exists
+      const customersQuery = query(
+        collection(db, "customers"),
+        where("name", "==", customerName.trim())
+      );
+      const snapshot = await getDocs(customersQuery);
+
+      if (snapshot.empty) {
+        // Create new customer
+        await addDoc(collection(db, "customers"), {
+          name: customerName.trim(),
+          phone: "",
+          address: "",
+          createdAt: new Date(),
+          totalOrders: 0,
+          totalSpent: 0,
+          lastOrderDate: null,
+        });
+        console.log("New customer created:", customerName);
+      } else {
+        console.log("Customer already exists:", customerName);
+      }
+    } catch (error) {
+      console.error("Error saving customer data:", error);
+    }
+  };
+
+  // Function to update customer stats after order
+  const updateCustomerStats = async (customerName, orderAmount) => {
+    if (
+      !customerName ||
+      customerName.trim() === "" ||
+      customerName === "Walk-in Customer"
+    )
+      return;
+
+    try {
+      // Find customer by name
+      const customersQuery = query(
+        collection(db, "customers"),
+        where("name", "==", customerName.trim())
+      );
+      const snapshot = await getDocs(customersQuery);
+
+      if (!snapshot.empty) {
+        const customerDoc = snapshot.docs[0];
+        const customerData = customerDoc.data();
+
+        // Update customer stats
+        await updateDoc(doc(db, "customers", customerDoc.id), {
+          totalOrders: (customerData.totalOrders || 0) + 1,
+          totalSpent: (customerData.totalSpent || 0) + orderAmount,
+          lastOrderDate: new Date(),
+        });
+        console.log("Customer stats updated:", customerName);
+      }
+    } catch (error) {
+      console.error("Error updating customer stats:", error);
+    }
+  };
+
+  // Debounced customer name change handler
+  const handleCustomerNameChange = (name) => {
+    setCustomerName(name);
+
+    // Clear previous timer
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+
+    // Set new timer to auto-save after user stops typing for 2 seconds
+    if (name && name.trim() !== "" && name !== "Walk-in Customer") {
+      const timer = setTimeout(() => {
+        saveCustomerToManagement(name);
+      }, 2000);
+
+      setDebounceTimer(timer);
+    }
+  };
+
+  // Cleanup timer on component unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+    };
+  }, [debounceTimer]);
 
   const handleSearch = (term, category) => {
     setSearchTerm(term.toLowerCase());
@@ -208,6 +309,15 @@ export default function OrdersPage() {
           sold: currentSold + item.quantity,
         });
       });
+
+      // Save/update customer data BEFORE creating the order
+      if (
+        pendingOrder.customerName &&
+        pendingOrder.customerName !== "Walk-in Customer"
+      ) {
+        await saveCustomerToManagement(pendingOrder.customerName);
+      }
+
       await batch.commit();
 
       // Create order record
@@ -219,6 +329,17 @@ export default function OrdersPage() {
         createdAt: new Date(),
         status: "completed",
       });
+
+      // Update customer stats AFTER order is created
+      if (
+        pendingOrder.customerName &&
+        pendingOrder.customerName !== "Walk-in Customer"
+      ) {
+        await updateCustomerStats(
+          pendingOrder.customerName,
+          pendingOrder.totalAmount
+        );
+      }
 
       // Show success message
       alert(
@@ -345,7 +466,7 @@ export default function OrdersPage() {
                   <button
                     key={index}
                     className="customer-tag"
-                    onClick={() => setCustomerName(customer)}
+                    onClick={() => handleCustomerNameChange(customer)}
                   >
                     {customer}
                   </button>
@@ -452,7 +573,7 @@ export default function OrdersPage() {
           cartItems={cartItems}
           onCheckout={handleCheckoutClick}
           customerName={customerName}
-          setCustomerName={setCustomerName}
+          setCustomerName={handleCustomerNameChange}
         />
 
         <OrderConfirmationDialog

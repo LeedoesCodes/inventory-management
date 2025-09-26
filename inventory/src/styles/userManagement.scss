@@ -103,7 +103,7 @@
   padding: 2rem;
   background: var(--bg-primary);
   min-height: 100vh;
-  margin-top: 80px;
+  margin-top: 70px;
   transition: all 0.3s ease;
 
   .page-header {
@@ -302,6 +302,20 @@
 
   .add-user-btn {
     margin-top: 1rem;
+    background: var(--gradient-primary);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 159, 235, 0.3);
+    }
   }
 }
 
@@ -318,6 +332,8 @@
   padding: 1.5rem;
   transition: all 0.3s ease;
   border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
 
   &:hover {
     box-shadow: var(--shadow-hover);
@@ -345,7 +361,7 @@
     justify-content: center;
     color: white;
     font-size: 1.2rem;
-    background: var(--gradient-primary);
+    flex-shrink: 0;
   }
 
   .user-info {
@@ -366,8 +382,6 @@
       .user-role {
         font-weight: 600;
         font-size: 0.9rem;
-        color: var(--text-secondary);
-        transition: color 0.3s ease;
       }
 
       .user-email,
@@ -387,62 +401,12 @@
       }
     }
   }
-
-  .user-actions {
-    display: flex;
-    gap: 0.5rem;
-
-    .status-btn {
-      padding: 0.25rem 0.75rem;
-      border: none;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-
-      &.active {
-        background: var(--status-bg-active);
-        color: var(--status-active);
-      }
-
-      &.inactive {
-        background: var(--status-bg-inactive);
-        color: var(--status-inactive);
-      }
-
-      &:hover {
-        transform: scale(1.05);
-      }
-    }
-
-    .action-btn {
-      padding: 0.5rem;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      color: var(--text-muted);
-      background: var(--bg-tertiary);
-
-      &:hover {
-        transform: scale(1.1);
-      }
-
-      &.edit-btn:hover {
-        color: var(--accent-primary);
-        background: rgba(59, 130, 246, 0.1);
-      }
-
-      &.delete-btn:hover {
-        color: var(--danger);
-        background: rgba(239, 68, 68, 0.1);
-      }
-    }
-  }
 }
 
 .user-details {
+  flex: 1;
+  margin-bottom: 1rem;
+
   .detail-row {
     display: flex;
     justify-content: space-between;
@@ -514,6 +478,68 @@
           color: var(--permission-denied);
         }
       }
+    }
+  }
+}
+
+.user-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: auto;
+
+  .status-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex: 1;
+    max-width: 100px;
+
+    &.active {
+      background: var(--status-bg-active);
+      color: var(--status-active);
+    }
+
+    &.inactive {
+      background: var(--status-bg-inactive);
+      color: var(--status-inactive);
+    }
+
+    &:hover {
+      transform: scale(1.05);
+    }
+  }
+
+  .action-btn {
+    padding: 0.5rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-muted);
+    background: var(--bg-tertiary);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+      transform: scale(1.1);
+    }
+
+    &.edit-btn:hover {
+      color: var(--accent-primary);
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    &.delete-btn:hover {
+      color: var(--danger);
+      background: rgba(239, 68, 68, 0.1);
     }
   }
 }
@@ -771,6 +797,11 @@
       align-self: center;
       margin-top: 1rem;
     }
+  }
+
+  .user-actions {
+    justify-content: center;
+    margin-top: 1rem;
   }
 
   .form-row {

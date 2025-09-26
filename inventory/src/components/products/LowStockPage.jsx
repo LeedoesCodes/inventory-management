@@ -1,17 +1,51 @@
-import React, { useState, useEffect } from "react";
-import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
+import React, { useState, useEffect, useContext } from "react";
+import {
+  collection,
+  getDocs,
+  updateDoc,
+  doc,
+  onSnapshot,
+} from "firebase/firestore";
 import { db } from "../../Firebase/firebase";
 import { useSidebar } from "../../context/SidebarContext";
+import { AuthContext } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import Header from "../../components/UI/Headers";
 import "../../styles/lowStock.scss";
 
 const LowStockPage = () => {
   const { isCollapsed } = useSidebar();
+  const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [lowStockProducts, setLowStockProducts] = useState([]);
+  const [userSettings, setUserSettings] = useState({
+    lowStockThreshold: 5, // Default value
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Fetch user settings in real-time
+  useEffect(() => {
+    if (!user) return;
+
+    const unsubscribe = onSnapshot(
+      doc(db, "userSettings", user.uid),
+      (doc) => {
+        if (doc.exists()) {
+          const settings = doc.data();
+          setUserSettings((prev) => ({
+            ...prev,
+            ...settings,
+          }));
+        }
+      },
+      (error) => {
+        console.error("Error listening to settings:", error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user]);
 
   const fetchLowStockProducts = async () => {
     try {
@@ -24,8 +58,9 @@ const LowStockPage = () => {
         ...docSnap.data(),
       }));
 
+      // Use dynamic threshold from user settings
       const lowStock = products
-        .filter((p) => p.stock <= 5)
+        .filter((p) => p.stock <= userSettings.lowStockThreshold)
         .sort((a, b) => a.stock - b.stock);
 
       setLowStockProducts(lowStock);
@@ -42,7 +77,7 @@ const LowStockPage = () => {
       await updateDoc(doc(db, "products", productId), {
         stock: parseInt(newStock),
       });
-      fetchLowStockProducts();
+      fetchLowStockProducts(); // Refresh the list after update
     } catch (err) {
       console.error("Error updating stock:", err);
       alert("Failed to update stock");
@@ -57,21 +92,36 @@ const LowStockPage = () => {
 
   useEffect(() => {
     fetchLowStockProducts();
-  }, []);
+  }, [userSettings.lowStockThreshold]); // Re-fetch when threshold changes
 
   const getStockLevelClass = (stock) => {
     if (stock === 0) return "out-of-stock";
     if (stock <= 2) return "critical-stock";
-    if (stock <= 5) return "low-stock";
+    if (stock <= userSettings.lowStockThreshold) return "low-stock";
     return "";
   };
 
   const getStockLevelText = (stock) => {
     if (stock === 0) return "Out of Stock";
     if (stock <= 2) return "Critical";
-    if (stock <= 5) return "Low";
+    if (stock <= userSettings.lowStockThreshold) return "Low";
     return "Adequate";
   };
+
+  // Count products by stock level
+  const getStockLevelCounts = () => {
+    const outOfStock = lowStockProducts.filter((p) => p.stock === 0).length;
+    const criticalStock = lowStockProducts.filter(
+      (p) => p.stock > 0 && p.stock <= 2
+    ).length;
+    const lowStock = lowStockProducts.filter(
+      (p) => p.stock > 2 && p.stock <= userSettings.lowStockThreshold
+    ).length;
+
+    return { outOfStock, criticalStock, lowStock };
+  };
+
+  const stockCounts = getStockLevelCounts();
 
   return (
     <div className={`low-stock-page ${isCollapsed ? "collapsed" : ""}`}>
@@ -80,9 +130,16 @@ const LowStockPage = () => {
       <div className="page-header">
         <div className="header-content">
           <h1>Low Stock Products</h1>
-          <p>Products that need immediate attention</p>
+          <p>
+            Products that need immediate attention (Threshold:{" "}
+            {userSettings.lowStockThreshold} items)
+          </p>
         </div>
         <div className="header-actions">
+          <span className="threshold-display">
+            Current Threshold: <strong>{userSettings.lowStockThreshold}</strong>{" "}
+            items
+          </span>
           <button onClick={fetchLowStockProducts} className="refresh-btn">
             Refresh
           </button>
@@ -110,21 +167,25 @@ const LowStockPage = () => {
             <div className="summary-item">
               <span className="count">{lowStockProducts.length}</span>
               <span className="label">Products Need Restocking</span>
+              <span className="threshold-info">
+                (Below {userSettings.lowStockThreshold})
+              </span>
             </div>
             <div className="summary-item">
-              <span className="count critical">
-                {lowStockProducts.filter((p) => p.stock === 0).length}
-              </span>
+              <span className="count critical">{stockCounts.outOfStock}</span>
               <span className="label">Out of Stock</span>
             </div>
             <div className="summary-item">
-              <span className="count low">
-                {
-                  lowStockProducts.filter((p) => p.stock > 0 && p.stock <= 2)
-                    .length
-                }
-              </span>
+              <span className="count low">{stockCounts.criticalStock}</span>
               <span className="label">Critical Stock</span>
+              <span className="threshold-info">(1-2 items)</span>
+            </div>
+            <div className="summary-item">
+              <span className="count warning">{stockCounts.lowStock}</span>
+              <span className="label">Low Stock</span>
+              <span className="threshold-info">
+                (3-{userSettings.lowStockThreshold} items)
+              </span>
             </div>
           </div>
 
@@ -132,7 +193,7 @@ const LowStockPage = () => {
             <div className="no-products">
               <div className="success-icon">✅</div>
               <h3>All products are well-stocked!</h3>
-              <p>No products need immediate restocking.</p>
+              <p>No products below {userSettings.lowStockThreshold} items.</p>
             </div>
           ) : (
             <div className="products-table">
@@ -180,6 +241,9 @@ const LowStockPage = () => {
                             updateStock(product.id, e.target.value)
                           }
                         />
+                        <span className="threshold-reference">
+                          / {userSettings.lowStockThreshold}
+                        </span>
                       </div>
                     </div>
 
@@ -209,7 +273,7 @@ const LowStockPage = () => {
                         Reorder
                       </button>
                       <button
-                        onClick={() => navigate("/products")}
+                        onClick={() => navigate(`/products`)}
                         className="action-btn view-btn"
                       >
                         View

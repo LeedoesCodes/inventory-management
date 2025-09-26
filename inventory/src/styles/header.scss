@@ -1,439 +1,320 @@
+// header.scss
 .app-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.8rem 2rem;
-  background: #201f1f; // Default dark background
   position: fixed;
   top: 0;
   left: 230px;
-  width: calc(100% - 230px);
+  right: 0;
+  height: 80px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
   z-index: 1000;
-  margin-top: 0;
-  border-bottom-left-radius: 10px;
-  outline: rgb(0, 0, 0) solid 2px;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 
   &.collapsed {
     left: 60px;
-    width: calc(100% - 60px);
   }
 
-  .page-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #ffffff;
-    margin: 0;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s ease;
+  // Slide-in animation when page loads
+  animation: slideDown 0.5s ease-out;
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    .mobile-menu-btn {
+      display: none;
+      background: none;
+      border: none;
+      font-size: 1.3rem;
+      color: var(--text-primary);
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 6px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+
+      &::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(var(--accent-rgb), 0.1),
+          transparent
+        );
+        transition: left 0.6s ease;
+      }
+
+      &:hover {
+        background: var(--bg-tertiary);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+        &::before {
+          left: 100%;
+        }
+      }
+
+      &:active {
+        transform: translateY(0);
+        transition: transform 0.1s ease;
+      }
+    }
+
+    .page-title {
+      margin: 0;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      background: linear-gradient(
+        135deg,
+        var(--accent-color),
+        var(--accent-hover)
+      );
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+      position: relative;
+      animation: titleGlow 3s ease-in-out infinite alternate;
+
+      &::after {
+        content: "";
+        position: absolute;
+        bottom: -5px;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background: linear-gradient(
+          90deg,
+          var(--accent-color),
+          var(--accent-hover)
+        );
+        transition: width 0.3s ease;
+      }
+
+      &:hover::after {
+        width: 100%;
+      }
+    }
   }
 
   .header-profile {
     display: flex;
     align-items: center;
-    cursor: pointer;
+    gap: 0.75rem;
     text-decoration: none;
-    color: inherit;
-    gap: 12px;
-    margin-right: 50px;
-    padding: 8px 16px;
-    border-radius: 25px;
-    transition: all 0.3s ease;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
-    overflow: hidden;
 
     &::before {
       content: "";
       position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255, 255, 255, 0.1),
-        transparent
-      );
-      transition: left 0.5s;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(var(--accent-rgb), 0.1);
+      border-radius: 50%;
+      transition: all 0.3s ease;
+      transform: translate(-50%, -50%);
     }
 
     &:hover {
+      background: var(--bg-tertiary);
       transform: translateY(-1px);
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 
       &::before {
-        left: 100%;
+        width: 100%;
+        height: 100%;
+        border-radius: 8px;
       }
-
-      .profile-pic {
-        transform: scale(1.1);
-      }
-    }
-
-    &:active {
-      transform: translateY(0);
     }
 
     .profile-pic {
-      width: 45px;
-      height: 45px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       object-fit: cover;
-      border: 3px solid rgba(255, 255, 255, 0.2);
+      border: 2px solid var(--border-color);
       transition: all 0.3s ease;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      position: relative;
+      z-index: 1;
+
+      &:hover {
+        border-color: var(--accent-color);
+        transform: scale(1.05);
+        box-shadow: 0 4px 15px rgba(var(--accent-rgb), 0.3);
+      }
     }
 
     .profile-info {
-      display: flex;
-      flex-direction: column;
-      font-size: 0.9rem;
-
-      .name {
-        font-weight: 600;
-        font-size: 0.95rem;
-        color: #ffffff;
-        transition: color 0.3s ease;
-      }
+      position: relative;
+      z-index: 1;
 
       .role {
-        font-size: 0.8rem;
-        color: rgba(255, 255, 255, 0.8);
+        margin: 0;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-secondary);
         transition: color 0.3s ease;
       }
     }
-  }
 
-  // Header actions container for additional buttons
-  .header-actions {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    margin-right: 20px;
-
-    .action-btn {
-      padding: 8px 16px;
-      border: none;
-      border-radius: 20px;
-      background: rgba(255, 255, 255, 0.1);
-      color: #ffffff;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      font-size: 0.9rem;
-      font-weight: 500;
-      backdrop-filter: blur(10px);
-
-      &:hover {
-        background: rgba(255, 255, 255, 0.2);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      }
-
-      &:active {
-        transform: translateY(0);
-      }
-
-      &.primary {
-        background: linear-gradient(135deg, #009feb 0%, #007bff 100%);
-
-        &:hover {
-          background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-        }
-      }
+    &:hover .profile-info .role {
+      color: var(--accent-color);
     }
   }
 }
 
-// ==============================
-// LIGHT THEME
-// ==============================
-[data-theme="light"] {
-  .app-header {
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-    outline: 2px solid #e2e8f0;
-    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
-
-    .page-title {
-      color: #2d3748;
-      text-shadow: none;
-      background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .header-profile {
-      background: rgba(0, 159, 235, 0.1);
-      border: 1px solid rgba(0, 159, 235, 0.2);
-
-      &:hover {
-        background: rgba(0, 159, 235, 0.2);
-        box-shadow: 0 4px 15px rgba(0, 159, 235, 0.2);
-      }
-
-      .profile-pic {
-        border-color: rgba(0, 159, 235, 0.3);
-        box-shadow: 0 2px 8px rgba(0, 159, 235, 0.2);
-      }
-
-      .profile-info {
-        .name {
-          color: #2d3748;
-        }
-
-        .role {
-          color: #718096;
-        }
-      }
-    }
-
-    .header-actions {
-      .action-btn {
-        background: rgba(0, 159, 235, 0.1);
-        color: #2d3748;
-        border: 1px solid rgba(0, 159, 235, 0.2);
-
-        &:hover {
-          background: rgba(0, 159, 235, 0.2);
-          color: #1a202c;
-        }
-
-        &.primary {
-          background: linear-gradient(135deg, #009feb 0%, #007bff 100%);
-          color: white;
-          border: none;
-
-          &:hover {
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-          }
-        }
-      }
-    }
-  }
-}
-
-// ==============================
-// DARK THEME (#1a202c)
-// ==============================
-[data-theme="dark"] {
-  .app-header {
-    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
-    outline: 2px solid #2d3748;
-    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
-
-    .page-title {
-      color: #f7fafc;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-    }
-
-    .header-profile {
-      background: rgba(99, 179, 237, 0.1);
-      border: 1px solid rgba(99, 179, 237, 0.2);
-
-      &:hover {
-        background: rgba(99, 179, 237, 0.2);
-        box-shadow: 0 4px 15px rgba(99, 179, 237, 0.3);
-
-        .profile-pic {
-          border-color: rgba(99, 179, 237, 0.5);
-        }
-      }
-
-      .profile-pic {
-        border-color: rgba(99, 179, 237, 0.3);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-      }
-
-      .profile-info {
-        .name {
-          color: #f7fafc;
-        }
-
-        .role {
-          color: #cbd5e0;
-        }
-      }
-    }
-
-    .header-actions {
-      .action-btn {
-        background: rgba(99, 179, 237, 0.1);
-        color: #cbd5e0;
-        border: 1px solid rgba(99, 179, 237, 0.2);
-
-        &:hover {
-          background: rgba(99, 179, 237, 0.2);
-          color: #f7fafc;
-        }
-
-        &.primary {
-          background: linear-gradient(135deg, #7e7f81 0%, #a3a5a7 100%);
-          color: #1a202c;
-          border: none;
-
-          &:hover {
-            background: linear-gradient(135deg, #a3a5a7 0%, #c2c3c5 100%);
-          }
-        }
-      }
-    }
-  }
-}
-
-// ==============================
-// ANIMATIONS
-// ==============================
-@keyframes slideInHeader {
-  from {
+// Keyframe Animations
+@keyframes slideDown {
+  0% {
+    transform: translateY(-100%);
     opacity: 0;
-    transform: translateY(-20px);
   }
-  to {
-    opacity: 1;
+  100% {
     transform: translateY(0);
+    opacity: 1;
   }
 }
 
-.app-header {
-  animation: slideInHeader 0.5s ease-out;
-}
-
-// ==============================
-// RESPONSIVE DESIGN
-// ==============================
-@media (max-width: 1024px) {
-  .app-header {
-    padding: 1.25rem 1.5rem;
-
-    .page-title {
-      font-size: 1.3rem;
-    }
-
-    .header-profile {
-      margin-right: 30px;
-      gap: 10px;
-
-      .profile-info {
-        .name {
-          font-size: 0.9rem;
-        }
-        .role {
-          font-size: 0.75rem;
-        }
-      }
-    }
-
-    .header-actions {
-      gap: 10px;
-
-      .action-btn {
-        padding: 6px 12px;
-        font-size: 0.85rem;
-      }
-    }
+@keyframes titleGlow {
+  0% {
+    filter: drop-shadow(0 0 5px rgba(var(--accent-rgb), 0.3));
+  }
+  100% {
+    filter: drop-shadow(0 0 15px rgba(var(--accent-rgb), 0.6));
   }
 }
 
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+// Mobile Styles
 @media (max-width: 768px) {
   .app-header {
+    position: fixed;
+    top: 0;
     left: 0 !important;
-    width: 100% !important;
-    padding: 1rem;
-    border-bottom-left-radius: 0;
-    outline: none;
-    border-bottom: 2px solid;
+    right: 0;
+    height: 60px;
+    padding: 0 1rem;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    z-index: 1999;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
 
-    &.collapsed {
-      left: 0 !important;
-      width: 100% !important;
-    }
+    .header-left {
+      .mobile-menu-btn {
+        display: block;
+        animation: bounce 2s infinite;
+      }
 
-    .page-title {
-      font-size: 1.2rem;
+      .page-title {
+        font-size: 1.3rem;
+        animation: none;
+
+        &::after {
+          display: none;
+        }
+      }
     }
 
     .header-profile {
-      margin-right: 15px;
-      padding: 6px 12px;
-
       .profile-info {
         display: none;
       }
-
-      .profile-pic {
-        width: 40px;
-        height: 40px;
-      }
-    }
-
-    .header-actions {
-      margin-right: 10px;
-      gap: 8px;
-
-      .action-btn {
-        padding: 6px 12px;
-        font-size: 0.8rem;
-        border-radius: 15px;
-
-        span {
-          display: none;
-        }
-
-        &::before {
-          content: attr(data-icon);
-          font-size: 1rem;
-        }
-      }
-    }
-  }
-
-  // Mobile theme adjustments
-  [data-theme="light"] .app-header {
-    border-bottom-color: #e2e8f0;
-  }
-
-  [data-theme="dark"] .app-header {
-    border-bottom-color: #2d3748;
-  }
-}
-
-@media (max-width: 480px) {
-  .app-header {
-    padding: 0.75rem 1rem;
-
-    .page-title {
-      font-size: 1.1rem;
-    }
-
-    .header-profile {
-      margin-right: 10px;
-      padding: 4px 8px;
 
       .profile-pic {
         width: 35px;
         height: 35px;
       }
     }
+  }
+}
 
-    .header-actions {
-      .action-btn {
-        padding: 4px 8px;
-        font-size: 0.75rem;
-        min-width: auto;
+@media (max-width: 480px) {
+  .app-header {
+    height: 55px;
+    padding: 0 0.8rem;
 
-        &::before {
-          font-size: 0.9rem;
-        }
+    .header-left {
+      .page-title {
+        font-size: 1.1rem;
+      }
+    }
+
+    .header-profile {
+      .profile-pic {
+        width: 32px;
+        height: 32px;
       }
     }
   }
 }
 
-// Smooth transitions for theme switching
-.app-header,
-.app-header * {
-  transition: background-color 0.3s ease, color 0.3s ease,
-    border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+// Mobile-specific animations
+@keyframes bounce {
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-3px);
+  }
+  60% {
+    transform: translateY(-2px);
+  }
+}
+
+// CSS Variables with RGB values for animations
+:root {
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f8f9fa;
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --border-color: #dee2e6;
+  --accent-color: #007bff;
+  --accent-hover: #0056b3;
+  --accent-rgb: 0, 123, 255;
+}
+
+[data-theme="dark"] {
+  --bg-secondary: #2d3748;
+  --bg-tertiary: #1a202c;
+  --text-primary: #ffffff;
+  --text-secondary: #a0aec0;
+  --border-color: #4a5568;
+  --accent-color: #63b3ed;
+  --accent-hover: #4299e1;
+  --accent-rgb: 99, 179, 237;
 }

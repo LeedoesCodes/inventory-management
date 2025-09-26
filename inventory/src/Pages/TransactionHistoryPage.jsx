@@ -277,19 +277,6 @@ export default function TransactionHistory() {
 
             <div className="filter-controls">
               <div className="filter-group">
-                <FontAwesomeIcon icon={faFilter} />
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                >
-                  <option value="all">All Status</option>
-                  <option value="completed">Completed</option>
-                  <option value="pending">Pending</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
-
-              <div className="filter-group">
                 <FontAwesomeIcon icon={faSort} />
                 <select
                   value={sortBy}

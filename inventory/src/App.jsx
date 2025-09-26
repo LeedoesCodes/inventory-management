@@ -1,3 +1,4 @@
+// App.jsx
 import {
   BrowserRouter,
   Routes,
@@ -11,6 +12,7 @@ import { AuthContext } from "./context/AuthContext.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import Sidebar from "./components/UI/Sidebar.jsx";
 import { SidebarProvider, SidebarContext } from "./context/SidebarContext.jsx";
+import { ThemeProvider } from "./context/ThemeContext.jsx";
 
 import Register from "./components/login-signup/register.jsx";
 import Login from "./components/login-signup/login.jsx";
@@ -25,8 +27,30 @@ import LowStockPage from "./components/products/LowStockPage.jsx";
 import CustomerManagement from "./Pages/CustomerManagement.jsx";
 import UserManagement from "./Pages/UserManagement.jsx";
 import SettingsPage from "./Pages/SettingsPage.jsx";
+import MobileBottomNav from "./components/UI/MobileBottomNav.jsx";
+import MobileHeader from "./components/UI/MobileHeader.jsx";
 
-// ✅ Updated SidebarLayout to consume SidebarContext
+/**
+ * HomeRedirect (declarative)
+ * - Reads auth state from context and returns a <Navigate/>
+ * - IMPORTANT: returns null while loading to avoid redirect loops
+ */
+function HomeRedirect() {
+  const { isLoggedIn, role, loading } = useContext(AuthContext);
+
+  if (loading) {
+    return null; // wait until auth resolves
+  }
+
+  if (!isLoggedIn) return <Navigate to="/login" replace />;
+
+  if (role === "admin" || role === "approved")
+    return <Navigate to="/dashboard" replace />;
+
+  return <Navigate to="/lobby" replace />;
+}
+
+/** SidebarLayout consumes SidebarContext to add collapsed class to main */
 function SidebarLayout() {
   const { isCollapsed } = useContext(SidebarContext);
 
@@ -43,8 +67,9 @@ function SidebarLayout() {
 }
 
 function App() {
-  const { isLoggedIn, role, loading } = useContext(AuthContext);
+  const { loading } = useContext(AuthContext);
 
+  // Keep UI stable while auth resolves
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -53,62 +78,53 @@ function App() {
     );
   }
 
-  const getDefaultRoute = () => {
-    if (!isLoggedIn) return "/login";
-    if (role === "admin" || role === "approved") return "/dashboard";
-    return "/lobby";
-  };
-
   return (
-    <BrowserRouter>
-      <SidebarProvider>
-        <Routes>
-          <Route
-            path="/"
-            element={<Navigate to={getDefaultRoute()} replace />}
-          />
+    <ThemeProvider>
+      <BrowserRouter>
+        <SidebarProvider>
+          <Routes>
+            {/* Root: do a single declarative redirect once */}
+            <Route path="/" element={<HomeRedirect />} />
 
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+            {/* Public */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
-          <Route
-            path="/lobby"
-            element={
-              <ProtectedRoute allowedRoles={["pending"]}>
-                <Lobby />
-              </ProtectedRoute>
-            }
-          />
+            {/* Lobby (no ProtectedRoute here anymore) */}
+            <Route path="/lobby" element={<Lobby />} />
 
-          <Route
-            element={
-              <ProtectedRoute allowedRoles={["approved", "admin"]}>
-                <SidebarLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/products" element={<ProductPage />} />
-            <Route path="/orderspage" element={<OrdersPage />} />
-            <Route path="/low-stock" element={<LowStockPage />} />
+            {/* Protected area with sidebar */}
             <Route
-              path="/transactionHistory"
-              element={<TransactionHistory />}
-            />
-            <Route path="/user-approvals" element={<UserApprovals />} />
-            <Route
-              path="/customer-management"
-              element={<CustomerManagement />}
-            />
-            <Route path="/user-management" element={<UserManagement />} />
-            <Route path="/settings" element={<SettingsPage />} />
-          </Route>
+              element={
+                <ProtectedRoute allowedRoles={["approved", "admin"]}>
+                  <SidebarLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/products" element={<ProductPage />} />
+              <Route path="/orderspage" element={<OrdersPage />} />
+              <Route path="/low-stock" element={<LowStockPage />} />
+              <Route
+                path="/transactionHistory"
+                element={<TransactionHistory />}
+              />
+              <Route path="/user-approvals" element={<UserApprovals />} />
+              <Route
+                path="/customer-management"
+                element={<CustomerManagement />}
+              />
+              <Route path="/user-management" element={<UserManagement />} />
+              <Route path="/settings" element={<SettingsPage />} />
+            </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </SidebarProvider>
-    </BrowserRouter>
+            {/* fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </SidebarProvider>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 

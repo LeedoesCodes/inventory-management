@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+
 import {
   collection,
   getDocs,
@@ -306,21 +307,6 @@ export default function UserManagement() {
             </div>
 
             <div className="filter-controls">
-              <div className="filter-group">
-                <FontAwesomeIcon icon={faFilter} />
-                <select
-                  value={filterRole}
-                  onChange={(e) => setFilterRole(e.target.value)}
-                >
-                  <option value="all">All Roles</option>
-                  {userRoles.map((role) => (
-                    <option key={role.value} value={role.value}>
-                      {role.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
               <button
                 className="add-user-btn"
                 onClick={() => setShowForm(true)}
@@ -380,31 +366,6 @@ export default function UserManagement() {
                           )}
                         </div>
                       </div>
-                      <div className="user-actions">
-                        <button
-                          className={`status-btn ${user.status}`}
-                          onClick={() => handleStatusToggle(user)}
-                          title={
-                            user.status === "active" ? "Deactivate" : "Activate"
-                          }
-                        >
-                          {user.status === "active" ? "Active" : "Inactive"}
-                        </button>
-                        <button
-                          className="action-btn edit-btn"
-                          onClick={() => handleEdit(user)}
-                          title="Edit User"
-                        >
-                          <FontAwesomeIcon icon={faEdit} />
-                        </button>
-                        <button
-                          className="action-btn delete-btn"
-                          onClick={() => handleDelete(user.id)}
-                          title="Delete User"
-                        >
-                          <FontAwesomeIcon icon={faTrash} />
-                        </button>
-                      </div>
                     </div>
 
                     <div className="user-details">
@@ -455,6 +416,31 @@ export default function UserManagement() {
                           )}
                         </div>
                       </div>
+                    </div>
+                    <div className="user-actions">
+                      <button
+                        className={`status-btn ${user.status}`}
+                        onClick={() => handleStatusToggle(user)}
+                        title={
+                          user.status === "active" ? "Deactivate" : "Activate"
+                        }
+                      >
+                        {user.status === "active" ? "Active" : "Inactive"}
+                      </button>
+                      <button
+                        className="action-btn edit-btn"
+                        onClick={() => handleEdit(user)}
+                        title="Edit User"
+                      >
+                        <FontAwesomeIcon icon={faEdit} />
+                      </button>
+                      <button
+                        className="action-btn delete-btn"
+                        onClick={() => handleDelete(user.id)}
+                        title="Delete User"
+                      >
+                        <FontAwesomeIcon icon={faTrash} />
+                      </button>
                     </div>
                   </div>
                 );

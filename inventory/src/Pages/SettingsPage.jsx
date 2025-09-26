@@ -3,14 +3,15 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../Firebase/firebase";
 import { AuthContext } from "../context/AuthContext";
 import { useSidebar } from "../context/SidebarContext";
+import { useTheme } from "../context/ThemeContext"; // Import useTheme
 import "../styles/settings.scss";
 import Header from "../components/UI/Headers";
 
 const SettingsPage = () => {
   const { user } = useContext(AuthContext);
-  const { isCollapsed } = useSidebar(); // ✅ Sidebar collapse state
+  const { isCollapsed } = useSidebar();
+  const { theme, toggleTheme } = useTheme(); // Get theme from context
   const [settings, setSettings] = useState({
-    theme: "light",
     lowStockThreshold: 5,
     dashboard: {
       showSales: true,
@@ -24,9 +25,8 @@ const SettingsPage = () => {
   });
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
-  const [themeChanged, setThemeChanged] = useState(false);
 
-  // Load settings
+  // Load settings (excluding theme since it's now managed by context)
   useEffect(() => {
     if (!user) return;
 
@@ -34,7 +34,10 @@ const SettingsPage = () => {
       try {
         const settingsDoc = await getDoc(doc(db, "userSettings", user.uid));
         if (settingsDoc.exists()) {
-          setSettings(settingsDoc.data());
+          const userSettings = settingsDoc.data();
+          // Don't load theme from settings since it's now managed by context
+          const { theme, ...otherSettings } = userSettings;
+          setSettings(otherSettings);
         }
       } catch (error) {
         console.error("Error loading settings:", error);
@@ -46,16 +49,8 @@ const SettingsPage = () => {
     loadSettings();
   }, [user]);
 
-  // REMOVED: Automatic theme application when settings load
-  // This was causing the theme to change immediately when opening settings page
-
   const handleChange = (key, value) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
-
-    // Track if theme was changed
-    if (key === "theme") {
-      setThemeChanged(true);
-    }
   };
 
   const handleNestedChange = (parent, child, value) => {
@@ -69,13 +64,10 @@ const SettingsPage = () => {
     if (!user) return;
 
     try {
+      // Save all settings except theme (theme is handled by context)
       await setDoc(doc(db, "userSettings", user.uid), settings);
 
-      // Apply theme ONLY after user clicks save
-      document.documentElement.setAttribute("data-theme", settings.theme);
-
       setMessage("Settings saved successfully!");
-      setThemeChanged(false);
       setTimeout(() => setMessage(""), 3000);
     } catch (error) {
       console.error("Error saving settings:", error);
@@ -126,28 +118,29 @@ const SettingsPage = () => {
           <div className="settings-grid">
             <div className="setting-item">
               <label className="setting-label">Theme</label>
-              <select
-                value={settings.theme}
-                onChange={(e) => handleChange("theme", e.target.value)}
-                className="setting-input"
-              >
-                <option value="light">🌞 Light Mode</option>
-                <option value="dark">🌙 Dark Mode</option>
-              </select>
+              <div className="theme-toggle-container">
+                <button
+                  className={`theme-toggle-btn ${
+                    theme === "light" ? "active" : ""
+                  }`}
+                  onClick={() => theme !== "light" && toggleTheme()}
+                >
+                  <span className="theme-icon">🌞</span>
+                  <span className="theme-label">Light</span>
+                </button>
+
+                <button
+                  className={`theme-toggle-btn ${
+                    theme === "dark" ? "active" : ""
+                  }`}
+                  onClick={() => theme !== "dark" && toggleTheme()}
+                >
+                  <span className="theme-icon">🌙</span>
+                  <span className="theme-label">Dark</span>
+                </button>
+              </div>
               <span className="setting-description">
-                Choose between light and dark interface themes
-                {themeChanged && (
-                  <span
-                    style={{
-                      color: "#007bff",
-                      fontWeight: "bold",
-                      display: "block",
-                      marginTop: "5px",
-                    }}
-                  >
-                    ⚠️ Theme change pending save
-                  </span>
-                )}
+                Switch between light and dark interface themes
               </span>
             </div>
           </div>
@@ -284,18 +277,6 @@ const SettingsPage = () => {
           <button onClick={handleSave} className="btn-primary">
             💾 Save Settings
           </button>
-          {themeChanged && (
-            <p
-              style={{
-                color: "#6c757d",
-                fontSize: "0.9rem",
-                marginTop: "10px",
-                textAlign: "center",
-              }}
-            >
-              Theme changes will be applied after saving
-            </p>
-          )}
         </div>
       </div>
     </div>

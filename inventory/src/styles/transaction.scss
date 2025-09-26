@@ -17,7 +17,7 @@
   padding: 2rem;
   background: #f8fafc; // Light theme background
   min-height: 100vh;
-  margin-top: 80px;
+  margin-top: 70px;
   transition: all 0.3s ease;
 
   .page-header {
@@ -127,7 +127,8 @@
   .search-container {
     position: relative;
     flex: 1;
-    min-width: 300px;
+    padding-right: 1rem;
+    margin-right: 60px;
 
     .search-icon {
       position: absolute;
@@ -182,6 +183,7 @@
         font-size: 0.9rem;
         cursor: pointer;
         transition: color 0.3s ease;
+        margin-left: 5px;
 
         &:focus {
           outline: none;
@@ -737,13 +739,13 @@
         }
 
         select {
-          color: #f7fafc;
+          color: #000000;
         }
 
         .sort-order-btn {
           background: #2d3748;
           border-color: #4a5568;
-          color: #cbd5e0;
+          color: #595d61;
 
           &:hover {
             background: #4a5568;

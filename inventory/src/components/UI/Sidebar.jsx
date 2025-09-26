@@ -12,133 +12,196 @@ import {
   faUsers,
   faUserCheck,
   faUserCog,
+  faTimes,
 } from "@fortawesome/free-solid-svg-icons";
-import fredLogo from "../../assets/images/fred-logo.png";
 import { AuthContext } from "../../context/AuthContext.jsx";
 import { useSidebar } from "../../context/SidebarContext.jsx";
 
 export default function Sidebar() {
   const { role } = useContext(AuthContext);
-  const { isCollapsed, toggleSidebar } = useSidebar();
+  const {
+    isCollapsed,
+    toggleSidebar,
+    isMobile,
+    isMobileSidebarOpen,
+    closeMobileSidebar,
+  } = useSidebar();
+
+  // Close sidebar when clicking on a link (mobile)
+  const handleNavClick = () => {
+    if (isMobile) {
+      closeMobileSidebar();
+    }
+  };
 
   return (
-    <div className={`sidebar ${isCollapsed ? "collapsed" : ""}`}>
-      <div className="sidebar-header">
-        <button className="toggle-btn" onClick={toggleSidebar}>
-          <FontAwesomeIcon icon={faBars} />
-        </button>
+    <>
+      {/* Mobile Overlay */}
+      {isMobileSidebarOpen && (
+        <div
+          className="sidebar-overlay"
+          onClick={closeMobileSidebar}
+          onKeyDown={(e) => e.key === "Escape" && closeMobileSidebar()}
+          tabIndex={-1}
+          role="button"
+          aria-label="Close sidebar"
+        />
+      )}
+
+      {/* Sidebar */}
+      <div
+        className={`sidebar ${isCollapsed ? "collapsed" : ""} ${
+          isMobileSidebarOpen ? "mobile-open" : ""
+        }`}
+        role="navigation"
+        aria-label="Main navigation"
+      >
+        <div className="sidebar-header">
+          <button
+            className="toggle-btn"
+            onClick={toggleSidebar}
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <FontAwesomeIcon icon={faBars} />
+          </button>
+
+          {/* Mobile Close Button */}
+          {isMobile && (
+            <button
+              className="mobile-close-btn"
+              onClick={closeMobileSidebar}
+              aria-label="Close sidebar"
+            >
+              <FontAwesomeIcon icon={faTimes} />
+            </button>
+          )}
+        </div>
+
+        <h1 className="app-title" aria-label="Freddie's Goodies">
+          FREDDIE'S GOODIES
+        </h1>
+
+        <nav aria-label="Sidebar menu">
+          <ul className="menu">
+            <li>
+              <NavLink
+                to="/dashboard"
+                className={({ isActive }) =>
+                  isActive ? "nav-link active" : "nav-link"
+                }
+                onClick={handleNavClick}
+                end
+              >
+                <FontAwesomeIcon icon={faHouse} aria-hidden="true" />
+                <span className="menu-text">Dashboard</span>
+              </NavLink>
+            </li>
+
+            <li>
+              <NavLink
+                to="/products"
+                className={({ isActive }) =>
+                  isActive ? "nav-link active" : "nav-link"
+                }
+                onClick={handleNavClick}
+              >
+                <FontAwesomeIcon icon={faBoxOpen} aria-hidden="true" />
+                <span className="menu-text">Products</span>
+              </NavLink>
+            </li>
+
+            <li>
+              <NavLink
+                to="/orderspage"
+                className={({ isActive }) =>
+                  isActive ? "nav-link active" : "nav-link"
+                }
+                onClick={handleNavClick}
+              >
+                <FontAwesomeIcon icon={faClipboardList} aria-hidden="true" />
+                <span className="menu-text">Orders</span>
+              </NavLink>
+            </li>
+
+            <li>
+              <NavLink
+                to="/transactionHistory"
+                className={({ isActive }) =>
+                  isActive ? "nav-link active" : "nav-link"
+                }
+                onClick={handleNavClick}
+              >
+                <FontAwesomeIcon icon={faMoneyBill} aria-hidden="true" />
+                <span className="menu-text">Transactions</span>
+              </NavLink>
+            </li>
+
+            {(role === "admin" || role === "owner") && (
+              <>
+                <li className="menu-section" role="separator">
+                  <span className="section-label">ADMIN</span>
+                </li>
+
+                <li>
+                  <NavLink
+                    to="/user-approvals"
+                    className={({ isActive }) =>
+                      isActive ? "nav-link active" : "nav-link"
+                    }
+                    onClick={handleNavClick}
+                  >
+                    <FontAwesomeIcon icon={faUserCheck} aria-hidden="true" />
+                    <span className="menu-text">User Approvals</span>
+                  </NavLink>
+                </li>
+
+                <li>
+                  <NavLink
+                    to="/customer-management"
+                    className={({ isActive }) =>
+                      isActive ? "nav-link active" : "nav-link"
+                    }
+                    onClick={handleNavClick}
+                  >
+                    <FontAwesomeIcon icon={faUsers} aria-hidden="true" />
+                    <span className="menu-text">Customer Management</span>
+                  </NavLink>
+                </li>
+
+                <li>
+                  <NavLink
+                    to="/user-management"
+                    className={({ isActive }) =>
+                      isActive ? "nav-link active" : "nav-link"
+                    }
+                    onClick={handleNavClick}
+                  >
+                    <FontAwesomeIcon icon={faUserCog} aria-hidden="true" />
+                    <span className="menu-text">User Management</span>
+                  </NavLink>
+                </li>
+              </>
+            )}
+
+            <li className="menu-section" role="separator">
+              <span className="section-label">PREFERENCES</span>
+            </li>
+
+            <li>
+              <NavLink
+                to="/settings"
+                className={({ isActive }) =>
+                  isActive ? "nav-link active" : "nav-link"
+                }
+                onClick={handleNavClick}
+              >
+                <FontAwesomeIcon icon={faGear} aria-hidden="true" />
+                <span className="menu-text">Settings</span>
+              </NavLink>
+            </li>
+          </ul>
+        </nav>
       </div>
-
-      <h1 className="app-title">{!isCollapsed && "FREDDIE'S GOODIES"}</h1>
-
-      <ul className="menu">
-        <li>
-          <NavLink
-            to="/dashboard"
-            className={({ isActive }) =>
-              isActive ? "nav-link active" : "nav-link"
-            }
-          >
-            <FontAwesomeIcon icon={faHouse} />
-            {!isCollapsed && <span className="menu-text">Dashboard</span>}
-          </NavLink>
-        </li>
-        <li>
-          <NavLink
-            to="/products"
-            className={({ isActive }) =>
-              isActive ? "nav-link active" : "nav-link"
-            }
-          >
-            <FontAwesomeIcon icon={faBoxOpen} />
-            {!isCollapsed && <span className="menu-text">Products</span>}
-          </NavLink>
-        </li>
-        <li>
-          <NavLink
-            to="/orderspage"
-            className={({ isActive }) =>
-              isActive ? "nav-link active" : "nav-link"
-            }
-          >
-            <FontAwesomeIcon icon={faClipboardList} />
-            {!isCollapsed && <span className="menu-text">Orders</span>}
-          </NavLink>
-        </li>
-        <li>
-          <NavLink
-            to="/transactionHistory"
-            className={({ isActive }) =>
-              isActive ? "nav-link active" : "nav-link"
-            }
-          >
-            <FontAwesomeIcon icon={faMoneyBill} />
-            {!isCollapsed && <span className="menu-text">Transactions</span>}
-          </NavLink>
-        </li>
-
-        {(role === "admin" || role === "owner") && (
-          <>
-            <li className="menu-section">
-              {!isCollapsed && <span className="section-label">ADMIN</span>}
-            </li>
-            <li>
-              <NavLink
-                to="/user-approvals"
-                className={({ isActive }) =>
-                  isActive ? "nav-link active" : "nav-link"
-                }
-              >
-                <FontAwesomeIcon icon={faUserCheck} />
-                {!isCollapsed && (
-                  <span className="menu-text">User Approvals</span>
-                )}
-              </NavLink>
-            </li>
-            <li>
-              <NavLink
-                to="/customer-management"
-                className={({ isActive }) =>
-                  isActive ? "nav-link active" : "nav-link"
-                }
-              >
-                <FontAwesomeIcon icon={faUsers} />
-                {!isCollapsed && (
-                  <span className="menu-text">Customer Management</span>
-                )}
-              </NavLink>
-            </li>
-            <li>
-              <NavLink
-                to="/user-management"
-                className={({ isActive }) =>
-                  isActive ? "nav-link active" : "nav-link"
-                }
-              >
-                <FontAwesomeIcon icon={faUserCog} />
-                {!isCollapsed && (
-                  <span className="menu-text">User Management</span>
-                )}
-              </NavLink>
-            </li>
-          </>
-        )}
-
-        <li className="menu-section">
-          {!isCollapsed && <span className="section-label">PREFERENCES</span>}
-        </li>
-        <li>
-          <NavLink
-            to="/settings"
-            className={({ isActive }) =>
-              isActive ? "nav-link active" : "nav-link"
-            }
-          >
-            <FontAwesomeIcon icon={faGear} />
-            {!isCollapsed && <span className="menu-text">Settings</span>}
-          </NavLink>
-        </li>
-      </ul>
-    </div>
+    </>
   );
 }

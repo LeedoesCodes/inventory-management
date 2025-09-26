@@ -1,0 +1,294 @@
+$theme-color: #2d3748;
+$theme-light: lighten($theme-color, 10%);
+$theme-lighter: lighten($theme-color, 20%);
+$theme-dark: darken($theme-color, 10%);
+$theme-darker: darken($theme-color, 20%);
+
+$text-primary: #1a202c;
+$text-secondary: #4a5568;
+$text-muted: #718096;
+$border-color: #e2e8f0;
+$bg-color: #ffffff;
+$bg-hover: #f7fafc;
+$success-color: #48bb78;
+$warning-color: #ed8936;
+$danger-color: #f56565;
+$inactive-color: #a0aec0;
+
+.user-card {
+  background: $bg-color;
+  border: 1px solid $border-color;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  overflow: hidden;
+
+  &:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+
+  &.active {
+    border-left: 4px solid $success-color;
+  }
+
+  &.inactive {
+    border-left: 4px solid $inactive-color;
+    opacity: 0.8;
+  }
+
+  .user-header {
+    display: flex;
+    align-items: center;
+    padding: 1.5rem;
+    gap: 1rem;
+    border-bottom: 1px solid $border-color;
+
+    .user-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+
+    .user-info {
+      flex: 1;
+      min-width: 0;
+
+      h3 {
+        margin: 0 0 0.5rem 0;
+        color: $text-primary;
+        font-size: 1.25rem;
+        font-weight: 600;
+      }
+
+      .user-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: center;
+
+        span {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.875rem;
+          color: $text-secondary;
+
+          &.user-role {
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            background: rgba($theme-color, 0.1);
+            border-radius: 20px;
+          }
+        }
+      }
+    }
+
+    .user-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-shrink: 0;
+
+      .status-btn {
+        padding: 0.5rem 1rem;
+        border: 1px solid $border-color;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &.active {
+          background: rgba($success-color, 0.1);
+          color: $success-color;
+          border-color: rgba($success-color, 0.3);
+
+          &:hover {
+            background: $success-color;
+            color: white;
+          }
+        }
+
+        &.inactive {
+          background: rgba($inactive-color, 0.1);
+          color: $inactive-color;
+          border-color: rgba($inactive-color, 0.3);
+
+          &:hover {
+            background: $inactive-color;
+            color: white;
+          }
+        }
+      }
+
+      .action-btn {
+        width: 36px;
+        height: 36px;
+        border: 1px solid $border-color;
+        border-radius: 4px;
+        background: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+
+        &.edit-btn {
+          color: $theme-color;
+
+          &:hover {
+            background: $theme-color;
+            color: white;
+            border-color: $theme-color;
+          }
+        }
+
+        &.delete-btn {
+          color: $danger-color;
+
+          &:hover {
+            background: $danger-color;
+            color: white;
+            border-color: $danger-color;
+          }
+        }
+      }
+    }
+  }
+
+  .user-details {
+    padding: 1.5rem;
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid $border-color;
+
+      span {
+        color: $text-secondary;
+        font-weight: 500;
+
+        &.position {
+          color: $theme-color;
+          background: rgba($theme-color, 0.1);
+          padding: 0.25rem 0.75rem;
+          border-radius: 4px;
+          font-size: 0.875rem;
+        }
+      }
+    }
+
+    .user-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+
+      .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        color: $text-muted;
+
+        svg {
+          width: 14px;
+          opacity: 0.7;
+        }
+      }
+    }
+
+    .permissions-section {
+      h4 {
+        margin: 0 0 1rem 0;
+        color: $text-primary;
+        font-size: 1rem;
+        font-weight: 600;
+      }
+
+      .permissions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 0.5rem;
+
+        .permission-item {
+          padding: 0.5rem 0.75rem;
+          border-radius: 4px;
+          font-size: 0.875rem;
+          font-weight: 500;
+          text-align: center;
+
+          &.granted {
+            background: rgba($success-color, 0.1);
+            color: $success-color;
+            border: 1px solid rgba($success-color, 0.3);
+          }
+
+          &.denied {
+            background: rgba($danger-color, 0.1);
+            color: $danger-color;
+            border: 1px solid rgba($danger-color, 0.3);
+          }
+        }
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .user-card {
+    .user-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+
+      .user-info {
+        width: 100%;
+      }
+
+      .user-actions {
+        width: 100%;
+        justify-content: flex-end;
+      }
+    }
+
+    .user-details {
+      .permissions-section {
+        .permissions-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .user-card {
+    .user-header {
+      .user-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+
+      .user-actions {
+        flex-wrap: wrap;
+      }
+    }
+
+    .user-stats {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+  }
+}

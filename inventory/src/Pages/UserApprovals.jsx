@@ -47,12 +47,13 @@ export default function UserApprovals() {
       setActionLoading(userId);
       const userRef = doc(db, "users", userId);
       await updateDoc(userRef, {
-        role: "user",
+        role: "approved", // Consistent with existing users
         approvedAt: new Date(),
       });
       setUsers(
-        users.map((u) => (u.id === userId ? { ...u, role: "user" } : u))
+        users.map((u) => (u.id === userId ? { ...u, role: "approved" } : u))
       );
+      console.log("User approved:", userId);
     } catch (error) {
       console.error("Error approving user:", error);
       alert("Error approving user. Please try again.");
@@ -82,7 +83,7 @@ export default function UserApprovals() {
 
   const pendingUsers = users.filter((u) => u.role === "pending");
   const approvedUsers = users.filter(
-    (u) => u.role === "user" || u.role === "approved"
+    (u) => u.role === "approved" || u.role === "admin" // Consistent with approveUser function
   );
 
   const filteredPendingUsers = pendingUsers.filter(
