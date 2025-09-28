@@ -1,0 +1,44 @@
+specVersion: v1beta
+name: firestore-gemini-chatbot
+version: 0.2.0
+description: Enhanced chatbot with database awareness for inventory management
+
+params:
+  - param: GEMINI_API_KEY
+    label: Gemini API Key
+    description: Your Google Gemini API key
+    type: string
+    required: true
+
+  - param: COLLECTION_PATH
+    label: Collection Path
+    description: Path to the collection for chat messages
+    type: string
+    default: "chats"
+    required: true
+
+resources:
+  - name: chatMessages
+    type: firestore.googleapis.com/Collection
+    description: Collection for chat messages
+
+apis:
+  - api: aiplatform.googleapis.com
+    reason: For accessing Gemini AI API
+
+events:
+  - type: providers/cloud.firestore/eventTypes/document.create
+    eventFilters:
+      - resource: "{{COLLECTION_PATH}}"
+        namespace: "(default)"
+
+roles:
+  - role: datastore.user
+    reason: To read and write chat messages
+
+authors:
+  - author: Your Name
+    email: your-email@example.com
+
+contributors: []
+license: Apache-2.0

@@ -7,6 +7,9 @@ import { AuthContext } from "../context/AuthContext";
 import "../styles/dashboard.scss";
 import Header from "../components/UI/Headers";
 import { useAssociationRules } from "../hooks/useAssociationRules";
+import Chatbot from "../components/Chatbot/Chatbot";
+import ChatbotToggle from "../components/Chatbot/ChatbotToggle";
+import CSVUploader from "../components/CSVUploader";
 
 export default function Dashboard() {
   const { isCollapsed } = useSidebar();
@@ -31,6 +34,9 @@ export default function Dashboard() {
   } = useAssociationRules();
   const [recommendations, setRecommendations] = useState([]);
   const [error, setError] = useState(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [showCSVUpload, setShowCSVUpload] = useState(false);
+  const [uploadedResults, setUploadedResults] = useState([]);
 
   // Fetch user settings
   useEffect(() => {
@@ -131,7 +137,7 @@ export default function Dashboard() {
     }
   }, [userSettings.lowStockThreshold]);
 
-  // NEW: Enhanced strength calculation with lift
+  // Enhanced strength calculation with lift
   const getRecommendationStrength = (confidence, lift) => {
     if (confidence >= 0.7 && lift >= 2.0) return "very-high";
     if (confidence >= 0.7 && lift >= 1.5) return "high";
@@ -140,7 +146,7 @@ export default function Dashboard() {
     return "very-low";
   };
 
-  // NEW: Get lift interpretation text
+  // Get lift interpretation text
   const getLiftInterpretation = (lift) => {
     if (lift > 3.0) return "Exceptional association 🚀";
     if (lift > 2.0) return "Strong positive association ✅";
@@ -162,11 +168,24 @@ export default function Dashboard() {
     });
   };
 
+  const handleUploadComplete = (uploadData) => {
+    setUploadedResults((prev) => [uploadData, ...prev.slice(0, 4)]); // Keep last 5
+    setShowCSVUpload(false);
+
+    // Refresh the association rules to include uploaded data
+    refreshRules();
+
+    // Show success message
+    alert(
+      `CSV processed successfully! Found ${uploadData.results.rules.length} rules from ${uploadData.results.transactions} transactions.`
+    );
+  };
+
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
-  // Navigation handlers (unchanged)
+  // Navigation handlers
   const handleAddProduct = () => {
     navigate("/products");
   };
@@ -192,6 +211,11 @@ export default function Dashboard() {
     fetchDashboardData();
   };
 
+  // Chatbot functions
+  const toggleChat = () => {
+    setIsChatOpen(!isChatOpen);
+  };
+
   if (error) {
     return (
       <div className={`dashboard-page ${isCollapsed ? "collapsed" : ""}`}>
@@ -202,6 +226,10 @@ export default function Dashboard() {
             Try Again
           </button>
         </div>
+
+        {/* Chatbot Components */}
+        <ChatbotToggle onClick={toggleChat} isOpen={isChatOpen} />
+        <Chatbot isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
       </div>
     );
   }
@@ -229,6 +257,13 @@ export default function Dashboard() {
               ? "Refreshing..."
               : "Refresh Data"}
           </button>
+          <button
+            onClick={() => setShowCSVUpload(true)}
+            className="upload-csv-btn"
+            disabled={dashboardData.loading}
+          >
+            📁 Upload CSV
+          </button>
         </div>
       </div>
 
@@ -240,7 +275,6 @@ export default function Dashboard() {
       ) : (
         <>
           <div className="stats-cards">
-            {/* ... your existing stat cards remain the same ... */}
             <div
               className="card products-card"
               onClick={handleViewInventory}
@@ -263,7 +297,7 @@ export default function Dashboard() {
 
             <div className="card revenue-card">
               <div className="card-icon">💰</div>
-              <h2>${dashboardData.totalRevenue.toLocaleString()}</h2>
+              <h2>₱{dashboardData.totalRevenue.toLocaleString()}</h2>
               <p>Total Revenue</p>
             </div>
 
@@ -285,6 +319,13 @@ export default function Dashboard() {
             <div className="ml-recommendations main-section">
               <div className="section-header">
                 <h2>💡 Smart Recommendations</h2>
+                <button
+                  className="ai-assistant-btn"
+                  onClick={toggleChat}
+                  title="Ask AI about recommendations"
+                >
+                  Ask AI Assistant
+                </button>
               </div>
 
               {mlLoading ? (
@@ -303,7 +344,6 @@ export default function Dashboard() {
                         <span className={`strength-indicator ${rec.strength}`}>
                           {rec.strength.replace("-", " ")} confidence
                         </span>
-                        {/* NEW: Lift badge */}
                         <span
                           className={`lift-badge ${
                             rec.lift > 2
@@ -346,7 +386,6 @@ export default function Dashboard() {
                           </span>
                         </div>
 
-                        {/* NEW: Lift visualization */}
                         <div className="lift-visualization">
                           <div className="lift-scale">
                             <span className="scale-label">Negative</span>
@@ -393,6 +432,44 @@ export default function Dashboard() {
               )}
             </div>
 
+            {/* Uploaded CSV Results Section */}
+            {uploadedResults.length > 0 && (
+              <div className="uploaded-results main-section">
+                <div className="section-header">
+                  <h2>📁 Recently Uploaded CSV Analyses</h2>
+                </div>
+                <div className="results-list">
+                  {uploadedResults.map((result, index) => (
+                    <div key={index} className="upload-result-card">
+                      <div className="result-header">
+                        <span className="file-name">{result.fileName}</span>
+                        <span className="result-stats">
+                          {result.results.transactions} transactions,{" "}
+                          {result.results.rules.length} rules
+                        </span>
+                      </div>
+                      <div className="result-preview">
+                        {result.results.rules
+                          .slice(0, 3)
+                          .map((rule, ruleIndex) => (
+                            <div key={ruleIndex} className="rule-preview">
+                              <strong>{rule.antecedent.join(" + ")}</strong> →{" "}
+                              {rule.consequent.join(" + ")}(
+                              {(rule.confidence * 100).toFixed(1)}% confidence)
+                            </div>
+                          ))}
+                        {result.results.rules.length > 3 && (
+                          <div className="more-rules">
+                            + {result.results.rules.length - 3} more rules
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Popular Products Section */}
             <div className="popular-items side-section">
               <div className="section-header">
@@ -438,11 +515,30 @@ export default function Dashboard() {
                 >
                   Manage Orders
                 </button>
+                <button
+                  className="action-btn ai-btn"
+                  onClick={toggleChat}
+                  title="Get AI assistance"
+                >
+                  🤖 AI Assistant
+                </button>
               </div>
             </div>
           </div>
         </>
       )}
+
+      {/* CSV Uploader Modal */}
+      {showCSVUpload && (
+        <CSVUploader
+          onUploadComplete={handleUploadComplete}
+          onClose={() => setShowCSVUpload(false)}
+        />
+      )}
+
+      {/* Chatbot Components */}
+      <ChatbotToggle onClick={toggleChat} isOpen={isChatOpen} />
+      <Chatbot isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </div>
   );
 }

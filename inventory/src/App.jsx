@@ -13,6 +13,7 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import Sidebar from "./components/UI/Sidebar.jsx";
 import { SidebarProvider, SidebarContext } from "./context/SidebarContext.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
+import "./fixProducts";
 
 import Register from "./components/login-signup/register.jsx";
 import Login from "./components/login-signup/login.jsx";

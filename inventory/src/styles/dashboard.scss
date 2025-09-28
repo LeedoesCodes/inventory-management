@@ -32,6 +32,7 @@
       display: flex;
       align-items: center;
       gap: 1rem;
+      flex-wrap: wrap;
 
       .threshold-info,
       .ml-info {
@@ -45,25 +46,48 @@
           color: #2d3748;
         }
       }
-    }
 
-    .refresh-btn {
-      background: #4299e1;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.3s ease;
+      .refresh-btn {
+        background: #4299e1;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
 
-      &:hover:not(:disabled) {
-        background: #3182ce;
-        transform: translateY(-1px);
+        &:hover:not(:disabled) {
+          background: #3182ce;
+          transform: translateY(-1px);
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
       }
 
-      &:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
+      // Upload CSV Button
+      .upload-csv-btn {
+        background: #10b981;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+
+        &:hover:not(:disabled) {
+          background: #059669;
+          transform: translateY(-1px);
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
       }
     }
   }
@@ -172,7 +196,8 @@
 
   .popular-items,
   .quick-actions,
-  .ml-recommendations {
+  .ml-recommendations,
+  .uploaded-results {
     background: #fff;
     border-radius: 12px;
     padding: 1.5rem;
@@ -458,6 +483,76 @@
     }
   }
 
+  // Uploaded Results Section
+  .uploaded-results {
+    margin-bottom: 2rem;
+
+    .results-list {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    }
+
+    .upload-result-card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 1.25rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .result-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid #f3f4f6;
+
+        .file-name {
+          font-weight: 600;
+          color: #374151;
+          font-size: 0.9rem;
+        }
+
+        .result-stats {
+          font-size: 0.75rem;
+          color: #6b7280;
+          background: #f3f4f6;
+          padding: 0.25rem 0.5rem;
+          border-radius: 12px;
+        }
+      }
+
+      .result-preview {
+        .rule-preview {
+          font-size: 0.8rem;
+          padding: 0.5rem;
+          margin-bottom: 0.5rem;
+          background: #f8fafc;
+          border-radius: 4px;
+          border-left: 3px solid #3b82f6;
+          line-height: 1.3;
+        }
+
+        .more-rules {
+          font-size: 0.75rem;
+          color: #6b7280;
+          text-align: center;
+          padding: 0.5rem;
+          font-style: italic;
+          background: #f9fafb;
+          border-radius: 4px;
+        }
+      }
+    }
+  }
+
   // UPDATED: Popular Items - Now on RIGHT (side-section)
   .popular-items {
     height: fit-content;
@@ -546,6 +641,16 @@
             transform: translateY(-1px);
           }
         }
+
+        &.ai-btn {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+
+          &:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            transform: translateY(-2px);
+          }
+        }
       }
     }
   }
@@ -611,13 +716,21 @@
             color: #e2e8f0;
           }
         }
-      }
 
-      .refresh-btn {
-        background: #3182ce;
+        .refresh-btn {
+          background: #3182ce;
 
-        &:hover:not(:disabled) {
-          background: #2c5aa0;
+          &:hover:not(:disabled) {
+            background: #2c5aa0;
+          }
+        }
+
+        .upload-csv-btn {
+          background: #059669;
+
+          &:hover:not(:disabled) {
+            background: #047857;
+          }
         }
       }
     }
@@ -667,7 +780,8 @@
 
     .popular-items,
     .quick-actions,
-    .ml-recommendations {
+    .ml-recommendations,
+    .uploaded-results {
       background: #2d3748;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 
@@ -806,6 +920,39 @@
       }
     }
 
+    .uploaded-results {
+      .upload-result-card {
+        background: #2d3748;
+        border-color: #4a5568;
+
+        .result-header {
+          border-bottom-color: #4a5568;
+
+          .file-name {
+            color: #e2e8f0;
+          }
+
+          .result-stats {
+            background: #4a5568;
+            color: #a0aec0;
+          }
+        }
+
+        .result-preview {
+          .rule-preview {
+            background: #4a5568;
+            border-left-color: #63b3ed;
+            color: #e2e8f0;
+          }
+
+          .more-rules {
+            background: #2d3748;
+            color: #a0aec0;
+          }
+        }
+      }
+    }
+
     .popular-items {
       .items-list {
         .item-row {
@@ -854,6 +1001,14 @@
               background: #718096;
             }
           }
+
+          &.ai-btn {
+            background: linear-gradient(135deg, #5a67d8 0%, #6a4190 100%);
+
+            &:hover {
+              background: linear-gradient(135deg, #4c51bf 0%, #5a3678 100%);
+            }
+          }
         }
       }
     }
@@ -892,6 +1047,60 @@
   }
 }
 
+// Chatbot specific styles for dashboard integration
+.ai-assistant-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  }
+}
+
+// Ensure chatbot appears above other content
+.chatbot-overlay {
+  z-index: 1000;
+}
+
+.chatbot-toggle {
+  z-index: 999;
+}
+
+// Responsive adjustments for chatbot
+@media (max-width: 768px) {
+  .dashboard-page {
+    .chatbot-toggle {
+      bottom: 70px;
+      right: 10px;
+    }
+
+    .chatbot-container {
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
+    }
+  }
+}
+
+// Section header with AI button
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  h2 {
+    margin: 0;
+  }
+}
+
+// Mobile responsiveness
 @media (max-width: 768px) {
   .dashboard-page {
     margin-left: 0 !important;
@@ -908,6 +1117,11 @@
         flex-direction: column;
         align-items: flex-start;
         gap: 0.5rem;
+
+        .upload-csv-btn {
+          width: 100%;
+          margin-top: 0.5rem;
+        }
       }
     }
 
@@ -945,6 +1159,20 @@
           flex-direction: column;
           gap: 0.5rem;
           text-align: center;
+        }
+      }
+    }
+
+    .uploaded-results {
+      .results-list {
+        grid-template-columns: 1fr;
+      }
+
+      .upload-result-card {
+        .result-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.5rem;
         }
       }
     }

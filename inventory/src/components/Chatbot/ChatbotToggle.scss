@@ -1,0 +1,46 @@
+.chatbot-toggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 999;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  &.open {
+    background: #6c757d;
+  }
+
+  .chatbot-toggle-icon {
+    font-size: 1.2rem;
+  }
+
+  .chatbot-toggle-text {
+    font-weight: 500;
+  }
+}
+
+@media (max-width: 768px) {
+  .chatbot-toggle {
+    bottom: 70px;
+    right: 10px;
+    padding: 10px 16px;
+
+    .chatbot-toggle-text {
+      display: none;
+    }
+  }
+}

@@ -4,10 +4,7 @@ import {
   doc,
   getDoc,
   updateDoc,
-  collection,
-  getDocs,
-  query,
-  where,
+  // Removed collection, getDocs, query, where as they were used for stats
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../Firebase/firebase";
@@ -26,16 +23,11 @@ import {
   faCamera,
   faSave,
   faTimes,
-  faChartBar,
-  faBox,
-  faReceipt,
   faCalendarAlt,
   faEnvelope,
   faPhone,
   faMapMarkerAlt,
-  faUsers,
-  faShoppingCart,
-  faDollarSign,
+  // Removed faBox, faShoppingCart, faDollarSign, faUsers
 } from "@fortawesome/free-solid-svg-icons";
 
 export default function Profile() {
@@ -45,7 +37,7 @@ export default function Profile() {
   const [showConfirm, setShowConfirm] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [userData, setUserData] = useState(null);
-  const [stats, setStats] = useState({});
+  // Removed [stats, setStats] state
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -57,11 +49,15 @@ export default function Profile() {
 
   useEffect(() => {
     fetchUserData();
-    fetchUserStats();
+    // Removed fetchUserStats()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const fetchUserData = async () => {
-    if (!user?.uid) return;
+    if (!user?.uid) {
+      setLoading(false);
+      return;
+    }
 
     try {
       const userDoc = await getDoc(doc(db, "users", user.uid));
@@ -82,48 +78,7 @@ export default function Profile() {
     }
   };
 
-  const fetchUserStats = async () => {
-    if (!user?.uid) return;
-
-    try {
-      const productsQuery = query(
-        collection(db, "products"),
-        where("addedBy", "==", user.uid)
-      );
-      const productsSnapshot = await getDocs(productsQuery);
-      const userProducts = productsSnapshot.docs.map((doc) => doc.data());
-
-      const ordersQuery = query(
-        collection(db, "orders"),
-        where("processedBy", "==", user.uid)
-      );
-      const ordersSnapshot = await getDocs(ordersQuery);
-      const processedOrders = ordersSnapshot.docs.map((doc) => doc.data());
-
-      const totalSales = processedOrders.reduce(
-        (sum, order) => sum + (order.totalAmount || 0),
-        0
-      );
-
-      let totalCustomers = 0;
-      if (role === "admin" || role === "owner") {
-        const customersSnapshot = await getDocs(collection(db, "users"));
-        totalCustomers = customersSnapshot.docs
-          .map((doc) => doc.data())
-          .filter((userData) => userData.role === "customer").length;
-      }
-
-      setStats({
-        productsAdded: userProducts.length,
-        ordersProcessed: processedOrders.length,
-        totalSales: totalSales,
-        totalCustomers: totalCustomers,
-        memberSince: userData?.createdAt?.toDate?.() || new Date(),
-      });
-    } catch (error) {
-      console.error("Error fetching user stats:", error);
-    }
-  };
+  // Removed fetchUserStats function
 
   const handleImageUpload = async (event) => {
     const file = event.target.files[0];
@@ -131,22 +86,22 @@ export default function Profile() {
 
     try {
       setSaving(true);
-      const storageRef = ref(
-        storage,
-        `profile-images/${user.uid}/${file.name}`
-      );
+      // Using fixed path to overwrite previous avatar
+      const storageRef = ref(storage, `profile-images/${user.uid}/avatar`);
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
 
       // Update in Firestore
       await updateDoc(doc(db, "users", user.uid), {
         photoURL: downloadURL,
+        updatedAt: new Date(),
       });
 
       // Update in Auth context
       await updateProfile({ photoURL: downloadURL });
 
       setUserData((prev) => ({ ...prev, photoURL: downloadURL }));
+      alert("Profile picture updated successfully!");
     } catch (error) {
       console.error("Error uploading image:", error);
       alert("Error uploading image. Please try again.");
@@ -193,6 +148,7 @@ export default function Profile() {
       owner: "Owner",
       employee: "Employee",
       manager: "Manager",
+      customer: "Customer",
     };
     return roleMap[role] || "User";
   };
@@ -347,66 +303,7 @@ export default function Profile() {
               )}
             </div>
 
-            {/* Statistics Card */}
-            <div className="stats-card">
-              <h3>Work Statistics</h3>
-              <div className="stats-grid">
-                <div className="stat-item">
-                  <FontAwesomeIcon icon={faBox} />
-                  <div className="stat-content">
-                    <span className="stat-number">
-                      {stats.productsAdded || 0}
-                    </span>
-                    <span className="stat-label">Products Added</span>
-                  </div>
-                </div>
-                <div className="stat-item">
-                  <FontAwesomeIcon icon={faShoppingCart} />
-                  <div className="stat-content">
-                    <span className="stat-number">
-                      {stats.ordersProcessed || 0}
-                    </span>
-                    <span className="stat-label">Orders Processed</span>
-                  </div>
-                </div>
-                <div className="stat-item">
-                  <FontAwesomeIcon icon={faDollarSign} />
-                  <div className="stat-content">
-                    <span className="stat-number">
-                      ₱{(stats.totalSales || 0).toFixed(2)}
-                    </span>
-                    <span className="stat-label">Total Sales</span>
-                  </div>
-                </div>
-                {(role === "admin" || role === "owner") && (
-                  <div className="stat-item">
-                    <FontAwesomeIcon icon={faUsers} />
-                    <div className="stat-content">
-                      <span className="stat-number">
-                        {stats.totalCustomers || 0}
-                      </span>
-                      <span className="stat-label">Total Customers</span>
-                    </div>
-                  </div>
-                )}
-                {!(role === "admin" || role === "owner") && (
-                  <div className="stat-item">
-                    <FontAwesomeIcon icon={faCalendarAlt} />
-                    <div className="stat-content">
-                      <span className="stat-date">
-                        {stats.memberSince?.toLocaleDateString("en-US", {
-                          month: "long",
-                          year: "numeric",
-                        })}
-                      </span>
-                      <span className="stat-label">Member Since</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Actions Card */}
+            {/* Actions Card (Moved to the right side) */}
             <div className="actions-card">
               <h3>Account Actions</h3>
               <div className="button-group">
@@ -433,6 +330,18 @@ export default function Profile() {
                 <div className="info-item">
                   <span>Permissions:</span>
                   <span>{getRoleDisplayName(role)}</span>
+                </div>
+                {/* Member Since (Moved from stats to actions/info) */}
+                <div className="info-item">
+                  <span>Member Since:</span>
+                  <span className="stat-date">
+                    {userData?.createdAt
+                      ?.toDate?.()
+                      ?.toLocaleDateString("en-US", {
+                        month: "long",
+                        year: "numeric",
+                      }) || "N/A"}
+                  </span>
                 </div>
               </div>
             </div>

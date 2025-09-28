@@ -73,29 +73,32 @@
 
   .profile-grid {
     display: grid;
+    // Updated grid: only profile (left) and actions (right)
     grid-template-columns: 1fr 1fr;
     gap: 2rem;
-    grid-template-areas:
-      "profile stats"
-      "profile actions";
+    grid-template-areas: "profile actions";
 
     @media (max-width: 1200px) {
       grid-template-columns: 1fr;
       grid-template-areas:
         "profile"
-        "stats"
-        "actions";
+        "actions"; // Stacked layout on smaller screens
     }
   }
 
-  .profile-card {
-    grid-area: profile;
+  // Common styles for the profile cards
+  .profile-card,
+  .actions-card {
     background: var(--bg-secondary);
     padding: 2rem;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-    text-align: center;
     border: 1px solid var(--border-color);
+  }
+
+  .profile-card {
+    grid-area: profile;
+    text-align: center;
 
     .avatar-section {
       position: relative;
@@ -150,10 +153,12 @@
 
       .saving-overlay {
         position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
+        // Adjust overlay position to cover the avatar circle
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 120px;
+        height: 120px;
         background: rgba(var(--bg-secondary-rgb), 0.95);
         display: flex;
         align-items: center;
@@ -287,77 +292,8 @@
     }
   }
 
-  .stats-card {
-    grid-area: stats;
-    background: var(--bg-secondary);
-    padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-    border: 1px solid var(--border-color);
-
-    h3 {
-      margin: 0 0 1.5rem 0;
-      color: var(--text-primary);
-      font-size: 1.3rem;
-    }
-
-    .stats-grid {
-      display: grid;
-      gap: 1rem;
-
-      .stat-item {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        padding: 1rem;
-        background: var(--bg-tertiary);
-        border-radius: 8px;
-        transition: all 0.3s ease;
-        border: 1px solid transparent;
-
-        &:hover {
-          transform: translateY(-2px);
-          border-color: var(--accent-color);
-          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        svg {
-          color: var(--accent-color);
-          font-size: 1.5rem;
-        }
-
-        .stat-content {
-          display: flex;
-          flex-direction: column;
-
-          .stat-number {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--text-primary);
-          }
-
-          .stat-date {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--text-primary);
-          }
-
-          .stat-label {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-          }
-        }
-      }
-    }
-  }
-
   .actions-card {
     grid-area: actions;
-    background: var(--bg-secondary);
-    padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-    border: 1px solid var(--border-color);
 
     h3 {
       margin: 0 0 1.5rem 0;
@@ -389,7 +325,10 @@
         }
       }
 
-      .delete-account-btn {
+      .delete-account-btn,
+      .user-deletion-component,
+      .account-deletion-btn,
+      .delete-btn {
         padding: 1rem;
         background: var(--danger-color);
         color: white;
@@ -399,6 +338,8 @@
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s;
+        width: 100%;
+        text-align: center;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -415,28 +356,6 @@
           color: var(--text-secondary);
           cursor: not-allowed;
           transform: none;
-        }
-      }
-
-      .user-deletion-component,
-      .account-deletion-btn,
-      .delete-btn {
-        padding: 1rem;
-        background: var(--danger-color);
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-size: 1rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s;
-        width: 100%;
-        text-align: center;
-
-        &:hover {
-          background: var(--danger-hover);
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
       }
     }
@@ -464,6 +383,13 @@
         span:first-child {
           color: var(--text-secondary);
           font-weight: 500;
+        }
+
+        // Style for the "Member Since" date
+        .stat-date {
+          font-size: 1rem;
+          font-weight: 500;
+          color: var(--text-primary);
         }
 
         code {
@@ -567,7 +493,6 @@
     }
 
     .profile-card,
-    .stats-card,
     .actions-card {
       padding: 1.5rem;
     }
@@ -587,17 +512,23 @@
   }
 }
 
-// CSS Variables for Dark Mode
+// ===================================
+// CSS Variables for Theming
+// ===================================
+
 :root {
+  // Light Mode Defaults
   --bg-primary: #f9f9f9;
   --bg-secondary: #ffffff;
   --bg-tertiary: #f8f9fa;
   --text-primary: #333333;
   --text-secondary: #666666;
   --border-color: #dee2e6;
+
+  // Colors
   --accent-color: #007bff;
   --accent-hover: #0056b3;
-  --accent-rgb: 0, 123, 255;
+  --accent-rgb: 0, 123, 255; // Used for box-shadows
   --success-color: #28a745;
   --success-hover: #218838;
   --warning-color: #e67e22;
@@ -607,12 +538,15 @@
 }
 
 [data-theme="dark"] {
+  // Dark Mode Overrides
   --bg-primary: #1a202c;
   --bg-secondary: #2d3748;
   --bg-tertiary: #4a5568;
   --text-primary: #ffffff;
   --text-secondary: #a0aec0;
   --border-color: #4a5568;
+
+  // Colors (adjusted for contrast)
   --accent-color: #63b3ed;
   --accent-hover: #4299e1;
   --accent-rgb: 99, 179, 237;

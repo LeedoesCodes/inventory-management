@@ -1,0 +1,730 @@
+// Variables for easy theme adjustments
+$primary-color: #3b82f6; // Blue
+$success-color: #10b981; // Green
+$warning-color: #f59e0b; // Amber
+$text-color-dark: #1f2937;
+$text-color-medium: #6b7280;
+$background-light: #f9fafb;
+$border-light: #e5e7eb;
+
+.csv-uploader-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.csv-uploader-modal {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh; // Prevent modal from being too tall
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid $border-light;
+    flex-shrink: 0; // Prevent header from shrinking
+
+    h3 {
+      margin: 0;
+      color: $primary-color;
+      font-size: 1.25rem;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: $text-color-medium;
+      padding: 5px;
+
+      &:hover {
+        color: $text-color-dark;
+      }
+    }
+  }
+
+  .upload-content {
+    padding: 20px;
+    overflow-y: auto; // Make content scrollable
+    max-height: calc(90vh - 80px); // Account for header height
+  }
+
+  /* --- File Upload Area --- */
+  .upload-area {
+    margin-bottom: 20px;
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .file-label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 150px;
+      padding: 20px;
+      border: 3px dashed $border-light;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+      background: $background-light;
+
+      &:hover:not([disabled]) {
+        border-color: $primary-color;
+        background: lighten($primary-color, 45%);
+      }
+
+      &[disabled] {
+        cursor: not-allowed;
+        opacity: 0.8;
+      }
+
+      .upload-icon {
+        font-size: 3rem;
+        margin-bottom: 10px;
+        color: $primary-color;
+      }
+
+      span {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: $text-color-dark;
+        margin-bottom: 5px;
+      }
+
+      small {
+        font-size: 0.8rem;
+        color: $text-color-medium;
+      }
+
+      /* Progress bar styling */
+      .upload-progress {
+        width: 100%;
+        height: 8px;
+        background: $border-light;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        overflow: hidden;
+
+        .progress-bar {
+          height: 100%;
+          background: $success-color;
+          transition: width 0.3s ease;
+        }
+      }
+    }
+  }
+
+  /* --- CSV Format Info Section --- */
+  .format-info {
+    margin-top: 10px;
+    padding: 15px;
+    background: #f0fdf4; /* Very light green background */
+    border: 1px solid #dcfce7;
+    border-radius: 8px;
+
+    h4 {
+      margin: 0 0 10px 0;
+      color: $success-color;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    pre {
+      background: #eef1f6;
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      overflow-x: auto;
+      white-space: pre;
+      max-height: 150px; // Limit pre height and make scrollable
+      overflow-y: auto;
+    }
+
+    p {
+      margin: 5px 0;
+      font-size: 0.85rem;
+      color: $text-color-medium;
+    }
+
+    .test-mode {
+      background: #fef3c7;
+      border: 1px solid $warning-color;
+      border-radius: 6px;
+      padding: 10px;
+      margin-top: 15px;
+      color: #92400e;
+      font-size: 0.85rem;
+    }
+  }
+}
+
+/* --- Results Preview (Original/Enhanced Styles) --- */
+.preview-results {
+  .preview-header {
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f0f9ff;
+    border-radius: 8px;
+
+    h4 {
+      margin: 0 0 8px 0;
+      color: #0369a1;
+    }
+
+    p {
+      margin: 0;
+      color: #0c4a6e;
+    }
+  }
+
+  .results-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+
+    .summary-item {
+      background: white;
+      border: 1px solid $border-light;
+      border-radius: 6px;
+      padding: 12px;
+      text-align: center;
+
+      span {
+        display: block;
+        font-size: 0.8rem;
+        color: $text-color-medium;
+        margin-bottom: 4px;
+      }
+
+      strong {
+        font-size: 1.1rem;
+        color: $text-color-dark;
+      }
+    }
+  }
+
+  .top-rules {
+    h5 {
+      margin: 0 0 12px 0;
+      color: #374151;
+      font-size: 1rem;
+    }
+
+    .rule-item {
+      background: white;
+      border: 1px solid $border-light;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 8px;
+
+      .rule-text {
+        font-size: 0.9rem;
+        margin-bottom: 6px;
+        line-height: 1.4;
+      }
+
+      .rule-stats {
+        font-size: 0.8rem;
+        color: #059669;
+        font-weight: 500;
+        display: flex;
+        gap: 15px;
+        align-items: center;
+
+        .support {
+          font-size: 0.75rem;
+          color: $text-color-medium; /* Mute the support */
+          font-weight: 400;
+        }
+      }
+    }
+  }
+
+  .preview-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+    position: sticky;
+    bottom: 0;
+    background: white;
+    padding-top: 10px;
+    border-top: 1px solid $border-light;
+
+    button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      min-width: 140px;
+
+      &.save-btn {
+        background: $success-color;
+        color: white;
+
+        &:hover {
+          background: #059669;
+        }
+      }
+
+      &.analyze-another-btn {
+        background: $primary-color;
+        color: white;
+
+        &:hover {
+          background: #2563eb;
+        }
+      }
+
+      &.close-preview-btn {
+        background: #6b7280;
+        color: white;
+
+        &:hover {
+          background: #4b5563;
+        }
+      }
+    }
+  }
+}
+
+/* --- Dark Theme Support --- */
+[data-theme="dark"] {
+  /* Modal Specific Styles */
+  .csv-uploader-modal {
+    background: #2d3748;
+    color: #e2e8f0;
+
+    .modal-header {
+      border-bottom-color: #4a5568;
+
+      h3 {
+        color: #90cdf4;
+      }
+
+      .close-btn {
+        color: #a0aec0;
+
+        &:hover {
+          color: #e2e8f0;
+        }
+      }
+    }
+
+    .upload-area {
+      .file-label {
+        border-color: #4a5568;
+        background: #1a202c;
+
+        &:hover:not([disabled]) {
+          border-color: #90cdf4;
+          background: #2d3748;
+        }
+
+        .upload-icon {
+          color: #90cdf4;
+        }
+
+        span {
+          color: #e2e8f0;
+        }
+
+        small {
+          color: #a0aec0;
+        }
+
+        .upload-progress {
+          background: #4a5568;
+        }
+      }
+    }
+
+    .format-info {
+      background: #1a202c;
+      border-color: #4a5568;
+
+      h4 {
+        color: $success-color;
+      }
+
+      pre {
+        background: #4a5568;
+        color: #e2e8f0;
+      }
+
+      p {
+        color: #a0aec0;
+      }
+
+      .test-mode {
+        background: #4a5568;
+        border-color: $warning-color;
+        color: #fbd38d;
+      }
+    }
+  }
+
+  /* Preview Results Dark Theme */
+  .preview-results {
+    .preview-header {
+      background: #1a202c;
+      border: 1px solid #4a5568;
+
+      h4 {
+        color: #90cdf4;
+      }
+
+      p {
+        color: #a0aec0;
+      }
+    }
+
+    .results-summary {
+      .summary-item {
+        background: #1a202c;
+        border-color: #4a5568;
+
+        span {
+          color: #a0aec0;
+        }
+
+        strong {
+          color: #e2e8f0;
+        }
+      }
+    }
+
+    .top-rules {
+      h5 {
+        color: #e2e8f0;
+      }
+
+      .rule-item {
+        background: #1a202c;
+        border-color: #4a5568;
+
+        .rule-stats {
+          color: $success-color;
+
+          .support {
+            color: #a0aec0;
+          }
+        }
+      }
+    }
+
+    .preview-actions {
+      background: #2d3748;
+      border-top-color: #4a5568;
+    }
+  }
+
+  /* Existing Dark Theme Overrides */
+  .uploaded-results {
+    .upload-result-card {
+      background: #2d3748;
+      border-color: #4a5568;
+
+      .result-header {
+        border-bottom-color: #4a5568;
+
+        .file-name {
+          color: #e2e8f0;
+        }
+
+        .result-stats {
+          background: #4a5568;
+          color: #a0aec0;
+        }
+      }
+
+      .result-preview {
+        .rule-preview {
+          background: #4a5568;
+          border-left-color: #63b3ed;
+          color: #e2e8f0;
+        }
+
+        .more-rules {
+          background: #2d3748;
+          color: #a0aec0;
+        }
+      }
+    }
+  }
+
+  .header-info {
+    .upload-csv-btn {
+      background: #059669;
+
+      &:hover:not(:disabled) {
+        background: #047857;
+      }
+    }
+  }
+}
+
+/* --- Mobile Responsiveness --- */
+@media (max-width: 768px) {
+  /* Existing Mobile Overrides */
+  .uploaded-results {
+    .results-list {
+      grid-template-columns: 1fr;
+    }
+
+    .upload-result-card {
+      .result-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+    }
+  }
+
+  .header-info {
+    .upload-csv-btn {
+      width: 100%;
+      margin-top: 0.5rem;
+    }
+  }
+
+  /* Modal Specific Mobile Overrides */
+  .csv-uploader-modal {
+    margin: 10px;
+    height: auto;
+    max-height: 95vh; // Slightly more on mobile
+  }
+
+  .upload-content {
+    max-height: calc(95vh - 80px) !important; // Adjust for mobile
+  }
+
+  .preview-results {
+    .preview-actions {
+      flex-direction: column;
+
+      button {
+        min-width: 100%;
+      }
+    }
+
+    .results-summary {
+      grid-template-columns: 1fr 1fr; // Two columns max on small screens
+    }
+  }
+}
+
+// Retain your original global .test-mode if it's not nested inside the modal styles
+// .test-mode { ... }
+// Add these styles to your existing CSVUploader.scss
+
+.rule-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+
+  .stat-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .stat-label {
+    color: #6b7280;
+    font-weight: 500;
+    min-width: 70px;
+  }
+
+  .stat-value {
+    font-weight: 500;
+
+    &.confidence {
+      color: #059669; // Green for confidence
+    }
+
+    &.support {
+      color: #6b7280; // Gray for support
+    }
+
+    &.lift {
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+
+      &.lift-strong {
+        background: #dcfce7;
+        color: #166534;
+      }
+
+      &.lift-moderate {
+        background: #f0fdf4;
+        color: #15803d;
+      }
+
+      &.lift-weak {
+        background: #fefce8;
+        color: #854d0e;
+      }
+
+      &.lift-negative {
+        background: #fef2f2;
+        color: #991b1b;
+      }
+
+      &.lift-strong-negative {
+        background: #fef2f2;
+        color: #7f1d1d;
+      }
+    }
+  }
+
+  .lift-interpretation {
+    font-size: 0.7rem;
+    color: #6b7280;
+    font-style: italic;
+  }
+}
+
+.lift-info {
+  margin-top: 20px;
+  padding: 15px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+
+  h6 {
+    margin: 0 0 12px 0;
+    color: #374151;
+    font-size: 0.9rem;
+  }
+
+  .lift-scale {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+
+    .lift-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.8rem;
+      color: #4b5563;
+
+      .lift-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+
+        &.lift-strong {
+          background: #166534;
+        }
+
+        &.lift-moderate {
+          background: #15803d;
+        }
+
+        &.lift-weak {
+          background: #ca8a04;
+        }
+
+        &.lift-negative {
+          background: #dc2626;
+        }
+      }
+    }
+  }
+}
+
+// Dark theme support for lift
+[data-theme="dark"] {
+  .rule-stats {
+    .stat-value {
+      &.lift {
+        &.lift-strong {
+          background: #166534;
+          color: #dcfce7;
+        }
+
+        &.lift-moderate {
+          background: #15803d;
+          color: #f0fdf4;
+        }
+
+        &.lift-weak {
+          background: #854d0e;
+          color: #fefce8;
+        }
+
+        &.lift-negative {
+          background: #991b1b;
+          color: #fef2f2;
+        }
+
+        &.lift-strong-negative {
+          background: #7f1d1d;
+          color: #fef2f2;
+        }
+      }
+    }
+  }
+
+  .lift-info {
+    background: #1e293b;
+    border-color: #334155;
+
+    h6 {
+      color: #e2e8f0;
+    }
+
+    .lift-scale {
+      .lift-item {
+        color: #cbd5e1;
+      }
+    }
+  }
+}
+
+// Mobile responsiveness
+@media (max-width: 768px) {
+  .rule-stats {
+    .stat-group {
+      flex-wrap: wrap;
+    }
+
+    .lift-interpretation {
+      flex-basis: 100%;
+      margin-top: 2px;
+    }
+  }
+
+  .lift-info {
+    .lift-scale {
+      grid-template-columns: 1fr;
+    }
+  }
+}
