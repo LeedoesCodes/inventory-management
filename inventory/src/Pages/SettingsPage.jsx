@@ -3,30 +3,21 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../Firebase/firebase";
 import { AuthContext } from "../context/AuthContext";
 import { useSidebar } from "../context/SidebarContext";
-import { useTheme } from "../context/ThemeContext"; // Import useTheme
+import { useTheme } from "../context/ThemeContext";
 import "../styles/settings.scss";
 import Header from "../components/UI/Headers";
 
 const SettingsPage = () => {
   const { user } = useContext(AuthContext);
   const { isCollapsed } = useSidebar();
-  const { theme, toggleTheme } = useTheme(); // Get theme from context
+  const { theme, toggleTheme } = useTheme();
   const [settings, setSettings] = useState({
     lowStockThreshold: 5,
-    dashboard: {
-      showSales: true,
-      showLowStock: true,
-      showRecentOrders: true,
-    },
-    notifications: {
-      lowStockAlerts: true,
-      newOrders: true,
-    },
   });
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
-  // Load settings (excluding theme since it's now managed by context)
+  // Load settings
   useEffect(() => {
     if (!user) return;
 
@@ -35,9 +26,10 @@ const SettingsPage = () => {
         const settingsDoc = await getDoc(doc(db, "userSettings", user.uid));
         if (settingsDoc.exists()) {
           const userSettings = settingsDoc.data();
-          // Don't load theme from settings since it's now managed by context
-          const { theme, ...otherSettings } = userSettings;
-          setSettings(otherSettings);
+          // Only load lowStockThreshold, ignore other settings
+          setSettings({
+            lowStockThreshold: userSettings.lowStockThreshold || 5,
+          });
         }
       } catch (error) {
         console.error("Error loading settings:", error);
@@ -53,20 +45,11 @@ const SettingsPage = () => {
     setSettings((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleNestedChange = (parent, child, value) => {
-    setSettings((prev) => ({
-      ...prev,
-      [parent]: { ...prev[parent], [child]: value },
-    }));
-  };
-
   const handleSave = async () => {
     if (!user) return;
 
     try {
-      // Save all settings except theme (theme is handled by context)
       await setDoc(doc(db, "userSettings", user.uid), settings);
-
       setMessage("Settings saved successfully!");
       setTimeout(() => setMessage(""), 3000);
     } catch (error) {
@@ -171,103 +154,6 @@ const SettingsPage = () => {
               <span className="setting-description">
                 Receive alerts when product quantity falls below this number
               </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Dashboard Preferences */}
-        <div className="settings-section">
-          <h2 className="section-title">
-            <span className="section-icon">📊</span>
-            Dashboard Display
-          </h2>
-          <div className="settings-grid">
-            <div className="checklist-group">
-              <label className="checkbox-item">
-                <input
-                  type="checkbox"
-                  checked={settings.dashboard.showSales}
-                  onChange={(e) =>
-                    handleNestedChange(
-                      "dashboard",
-                      "showSales",
-                      e.target.checked
-                    )
-                  }
-                />
-                <span className="check-label">Sales Overview Chart</span>
-              </label>
-
-              <label className="checkbox-item">
-                <input
-                  type="checkbox"
-                  checked={settings.dashboard.showLowStock}
-                  onChange={(e) =>
-                    handleNestedChange(
-                      "dashboard",
-                      "showLowStock",
-                      e.target.checked
-                    )
-                  }
-                />
-                <span className="check-label">Low Stock Products</span>
-              </label>
-
-              <label className="checkbox-item">
-                <input
-                  type="checkbox"
-                  checked={settings.dashboard.showRecentOrders}
-                  onChange={(e) =>
-                    handleNestedChange(
-                      "dashboard",
-                      "showRecentOrders",
-                      e.target.checked
-                    )
-                  }
-                />
-                <span className="check-label">Recent Orders</span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {/* Notification Preferences */}
-        <div className="settings-section">
-          <h2 className="section-title">
-            <span className="section-icon">🔔</span>
-            Notifications
-          </h2>
-          <div className="settings-grid">
-            <div className="checklist-group">
-              <label className="checkbox-item">
-                <input
-                  type="checkbox"
-                  checked={settings.notifications.lowStockAlerts}
-                  onChange={(e) =>
-                    handleNestedChange(
-                      "notifications",
-                      "lowStockAlerts",
-                      e.target.checked
-                    )
-                  }
-                />
-                <span className="check-label">Low Stock Alerts</span>
-              </label>
-
-              <label className="checkbox-item">
-                <input
-                  type="checkbox"
-                  checked={settings.notifications.newOrders}
-                  onChange={(e) =>
-                    handleNestedChange(
-                      "notifications",
-                      "newOrders",
-                      e.target.checked
-                    )
-                  }
-                />
-                <span className="check-label">New Order Notifications</span>
-              </label>
             </div>
           </div>
         </div>

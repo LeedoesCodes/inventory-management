@@ -1,11 +1,16 @@
-import React, { useState, useEffect, useRef, useContext } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useContext,
+  useCallback,
+} from "react";
 import {
   collection,
   addDoc,
   query,
   onSnapshot,
   where,
-  orderBy,
 } from "firebase/firestore";
 import { db } from "../../Firebase/firebase";
 import { AuthContext } from "../../context/AuthContext";
@@ -15,6 +20,17 @@ import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 import ReactMarkdown from "react-markdown";
 import "./Chatbot.scss";
 
+// Memoized Message component outside the main component to prevent re-renders
+const Message = React.memo(({ message }) => {
+  return (
+    <div className={`message ${message.role}`}>
+      <div className="message-content">
+        <ReactMarkdown>{message.content}</ReactMarkdown>
+      </div>
+    </div>
+  );
+});
+
 const Chatbot = ({ isOpen, onClose }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -23,124 +39,92 @@ const Chatbot = ({ isOpen, onClose }) => {
   const messagesEndRef = useRef(null);
   const { user } = useContext(AuthContext);
 
+  // Use refs for values that don't need to trigger re-renders
+  const loadingRef = useRef(false);
+
   // Session setup
   useEffect(() => {
-    if (user && !sessionId) {
-      const newSessionId = `session_${user.uid}_${Date.now()}`;
-      setSessionId(newSessionId);
-      console.log("🔑 New session created:", newSessionId);
+    if (user) {
+      const storedSessionId =
+        localStorage.getItem(`chatbot_session_${user.uid}`) ||
+        `session_${user.uid}_${Date.now()}`;
+      setSessionId(storedSessionId);
+      localStorage.setItem(`chatbot_session_${user.uid}`, storedSessionId);
     }
-  }, [user, sessionId]);
+  }, [user]);
 
-  // DEBUG: Message listener
+  // Message listener - COMPLETELY SEPARATED from component state
   useEffect(() => {
     if (!sessionId || !isOpen) return;
 
-    console.log("🎯 STARTING LISTENER for session:", sessionId);
+    console.log("👂 Setting up listener for session:", sessionId);
 
     const q = query(
       collection(db, "chats"),
-      where("sessionId", "==", sessionId),
-      orderBy("timestamp", "asc")
+      where("sessionId", "==", sessionId)
     );
 
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        console.log("🔥 SNAPSHOT UPDATE - Documents:", snapshot.docs.length);
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log("📨 Snapshot received, docs:", snapshot.docs.length);
 
-        const chatMessages = [];
-        let foundCompletedAI = false;
+      const allMessages = [];
 
-        snapshot.docs.forEach((doc) => {
-          const data = doc.data();
-          const docId = doc.id;
+      snapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        const docId = doc.id;
 
-          console.log("📄 DOCUMENT ANALYSIS:", {
+        // User message
+        if (data.prompt && data.prompt.trim()) {
+          allMessages.push({
+            id: docId + "_user",
+            content: data.prompt,
+            role: "user",
+            timestamp: data.timestamp,
             docId: docId,
-            prompt: data.prompt?.substring(0, 30),
-            response: data.response?.substring(0, 30),
-            state: data.state,
-            timestamp: data.timestamp?.toDate?.() || data.timestamp,
           });
-
-          // Add user message
-          if (data.prompt && data.prompt.trim()) {
-            chatMessages.push({
-              id: docId + "_user",
-              content: data.prompt,
-              role: "user",
-              timestamp: data.timestamp,
-              docId: docId,
-              state: data.state,
-            });
-            console.log("👤 ADDED USER MESSAGE");
-          }
-
-          // Add AI message - SIMPLIFIED: just check if response exists
-          if (data.response && data.response.trim()) {
-            chatMessages.push({
-              id: docId + "_ai",
-              content: data.response,
-              role: "model",
-              timestamp: data.timestamp,
-              docId: docId,
-              state: data.state,
-            });
-            console.log("🤖 ADDED AI MESSAGE");
-            if (data.state === "COMPLETED") {
-              foundCompletedAI = true;
-            }
-          }
-        });
-
-        // Remove duplicates
-        const uniqueMessages = chatMessages.filter(
-          (msg, index, self) => index === self.findIndex((m) => m.id === msg.id)
-        );
-
-        // Sort by timestamp
-        const sortedMessages = uniqueMessages.sort((a, b) => {
-          const timeA =
-            a.timestamp?.toMillis?.() || new Date(a.timestamp).getTime();
-          const timeB =
-            b.timestamp?.toMillis?.() || new Date(b.timestamp).getTime();
-          return timeA - timeB;
-        });
-
-        console.log("💬 FINAL MESSAGES ARRAY:", {
-          total: sortedMessages.length,
-          userMessages: sortedMessages.filter((m) => m.role === "user").length,
-          aiMessages: sortedMessages.filter((m) => m.role === "model").length,
-          messages: sortedMessages.map((m) => ({
-            id: m.id,
-            role: m.role,
-            content: m.content?.substring(0, 40),
-            state: m.state,
-          })),
-        });
-
-        setMessages(sortedMessages);
-
-        // Stop loading if we found completed AI messages
-        if (loading && foundCompletedAI) {
-          console.log("🛑 STOPPING LOADING - Found completed AI response");
-          setLoading(false);
-        } else if (loading) {
-          console.log("🔄 STILL LOADING - No completed AI response found");
         }
-      },
-      (error) => {
-        console.error("💥 FIRESTORE ERROR:", error);
-        setLoading(false);
-      }
-    );
 
-    return () => {
-      console.log("🧹 Cleaning up listener");
-      unsubscribe();
-    };
-  }, [sessionId, isOpen, loading]);
+        // AI message
+        if (data.response && data.response.trim()) {
+          allMessages.push({
+            id: docId + "_ai",
+            content: data.response,
+            role: "model",
+            timestamp: data.timestamp,
+            docId: docId,
+          });
+        }
+      });
+
+      // Manual sort by timestamp
+      const sorted = allMessages.sort((a, b) => {
+        const timeA =
+          a.timestamp?.toMillis?.() || new Date(a.timestamp).getTime();
+        const timeB =
+          b.timestamp?.toMillis?.() || new Date(b.timestamp).getTime();
+        return timeA - timeB;
+      });
+
+      console.log("💬 Setting messages:", sorted.length);
+
+      // Batch update - set messages only once
+      setMessages(sorted);
+
+      // Use ref to check loading state without causing re-render
+      if (loadingRef.current && sorted.some((msg) => msg.role === "model")) {
+        console.log("✅ Stopping loading - AI response found");
+        setLoading(false);
+        loadingRef.current = false;
+      }
+    });
+
+    return unsubscribe;
+  }, [sessionId, isOpen]); // Only depend on sessionId and isOpen
+
+  // Sync loading ref with loading state
+  useEffect(() => {
+    loadingRef.current = loading;
+  }, [loading]);
 
   // Auto-scroll
   useEffect(() => {
@@ -149,16 +133,17 @@ const Chatbot = ({ isOpen, onClose }) => {
     }
   }, [messages]);
 
-  // Send message
+  // Simple send message
   const sendMessage = async (e) => {
     e.preventDefault();
-    if (!input.trim() || loading || !sessionId) return;
+    if (!input.trim() || loading) return;
 
     const userMessage = input.trim();
-    console.log("🚀 SENDING MESSAGE:", userMessage);
+    console.log("📤 Sending message:", userMessage);
 
     setInput("");
     setLoading(true);
+    loadingRef.current = true;
 
     try {
       const docRef = await addDoc(collection(db, "chats"), {
@@ -170,39 +155,33 @@ const Chatbot = ({ isOpen, onClose }) => {
         state: "PENDING",
       });
 
-      console.log("✅ USER MESSAGE SAVED:", docRef.id);
-
+      console.log("✅ User message saved:", docRef.id);
       await sendChatMessage(userMessage, sessionId, user, docRef.id);
     } catch (error) {
-      console.error("❌ SEND MESSAGE ERROR:", error);
+      console.error("❌ Error sending message:", error);
       setLoading(false);
+      loadingRef.current = false;
     }
   };
 
-  // Message component
-  const Message = ({ message }) => {
-    return (
-      <div className={`message ${message.role}`}>
-        <div className="message-content">
-          <ReactMarkdown>{String(message.content || "")}</ReactMarkdown>
-        </div>
-        <div className="message-debug">
-          {message.role} | {message.state} | {message.id}
-        </div>
-      </div>
-    );
-  };
-
+  // Simple clear chat
   const clearChat = () => {
-    console.log("🗑️ CLEARING CHAT");
     setMessages([]);
     setLoading(false);
+    loadingRef.current = false;
     if (user) {
       const newSessionId = `session_${user.uid}_${Date.now()}`;
       setSessionId(newSessionId);
+      localStorage.setItem(`chatbot_session_${user.uid}`, newSessionId);
     }
   };
 
+  // Simple input handler
+  const handleInputChange = (e) => {
+    setInput(e.target.value);
+  };
+
+  // Simple suggested question handler
   const handleSuggestedQuestion = (question) => {
     setInput(question);
   };
@@ -215,7 +194,7 @@ const Chatbot = ({ isOpen, onClose }) => {
         <div className="chatbot-header">
           <div className="chatbot-title">
             <span className="chatbot-icon">🤖</span>
-            <h3>Chat Assistant [DEBUG]</h3>
+            <h3>Chat Assistant</h3>
           </div>
           <div className="chatbot-actions">
             <button
@@ -237,11 +216,7 @@ const Chatbot = ({ isOpen, onClose }) => {
               <div className="welcome-header">
                 <h3>🤖 Hello!</h3>
                 <p>How can I help you today?</p>
-                <p style={{ fontSize: "12px", color: "#666" }}>
-                  Session: {sessionId}
-                </p>
               </div>
-
               <div className="suggested-questions">
                 <button
                   onClick={() => handleSuggestedQuestion("Hello! Who are you?")}
@@ -276,9 +251,6 @@ const Chatbot = ({ isOpen, onClose }) => {
                   <span></span>
                   <span></span>
                 </div>
-                <div style={{ fontSize: "12px", marginTop: "5px" }}>
-                  Loading... (check console)
-                </div>
               </div>
             </div>
           )}
@@ -289,7 +261,7 @@ const Chatbot = ({ isOpen, onClose }) => {
           <input
             type="text"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={handleInputChange}
             placeholder="Type your message..."
             disabled={loading}
           />
