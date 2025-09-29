@@ -13,6 +13,8 @@ import {
   faUserCheck,
   faUserCog,
   faTimes,
+  faChartLine, // Add analytics icon
+  faChartBar, // Alternative analytics icon
 } from "@fortawesome/free-solid-svg-icons";
 import { AuthContext } from "../../context/AuthContext.jsx";
 import { useSidebar } from "../../context/SidebarContext.jsx";
@@ -76,10 +78,10 @@ export default function Sidebar() {
             </button>
           )}
         </div>
-
+        {/*       <div className="sidebar-brand">
         <h1 className="app-title" aria-label="Freddie's Goodies">
-          FREDDIE'S GOODIES
-        </h1>
+          FREDDIE'S GOODIES 
+        </h1> */}
 
         <nav aria-label="Sidebar menu">
           <ul className="menu">
@@ -94,6 +96,20 @@ export default function Sidebar() {
               >
                 <FontAwesomeIcon icon={faHouse} aria-hidden="true" />
                 <span className="menu-text">Dashboard</span>
+              </NavLink>
+            </li>
+
+            {/* NEW Analytics Link */}
+            <li>
+              <NavLink
+                to="/analytics"
+                className={({ isActive }) =>
+                  isActive ? "nav-link active" : "nav-link"
+                }
+                onClick={handleNavClick}
+              >
+                <FontAwesomeIcon icon={faChartLine} aria-hidden="true" />
+                <span className="menu-text">Analytics</span>
               </NavLink>
             </li>
 

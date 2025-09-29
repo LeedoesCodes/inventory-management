@@ -30,6 +30,7 @@ import UserManagement from "./Pages/UserManagement.jsx";
 import SettingsPage from "./Pages/SettingsPage.jsx";
 import MobileBottomNav from "./components/UI/MobileBottomNav.jsx";
 import MobileHeader from "./components/UI/MobileHeader.jsx";
+import Analytics from "./Pages/Analytics.jsx";
 
 /**
  * HomeRedirect (declarative)
@@ -103,6 +104,7 @@ function App() {
               }
             >
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/analytics" element={<Analytics />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/products" element={<ProductPage />} />
               <Route path="/orderspage" element={<OrdersPage />} />
