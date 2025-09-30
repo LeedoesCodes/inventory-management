@@ -79,7 +79,9 @@ export default function ProductsPage() {
         price: Number(productData.price),
         stock: Number(productData.stock),
         category: productData.category || "none",
+        barcode: productData.barcode || "", // ✅ ADDED THIS LINE
         imageUrl,
+        updatedAt: new Date(),
       };
 
       if (selectedProduct) {
@@ -88,6 +90,7 @@ export default function ProductsPage() {
           productPayload
         );
       } else {
+        productPayload.createdAt = new Date();
         await addDoc(collection(db, "products"), productPayload);
       }
 
