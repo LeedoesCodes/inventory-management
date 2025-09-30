@@ -13,25 +13,40 @@ const ProductPerformance = ({ data }) => {
   const maxSales = Math.max(...data.map((item) => item.sales));
 
   return (
-    <div className="product-list">
-      {data.map((product, index) => (
-        <div key={index} className="product-item">
-          <div className="product-info">
-            <div className="product-rank">#{index + 1}</div>
-            <div className="product-name">{product.name}</div>
-          </div>
-          <div className="product-stats">
-            <div className="stat">
-              <div className="value">{product.sales}</div>
-              <div className="label">Sold</div>
+    <div className="product-performance">
+      {/* Y-axis label for the list */}
+      <div
+        style={{
+          fontSize: "12px",
+          color: "var(--text-secondary)",
+          marginBottom: "10px",
+          textAlign: "center",
+          fontWeight: "600",
+        }}
+      >
+        Top Products by Units Sold
+      </div>
+
+      <div className="product-list">
+        {data.map((product, index) => (
+          <div key={index} className="product-item">
+            <div className="product-info">
+              <div className="product-rank">#{index + 1}</div>
+              <div className="product-name">{product.name}</div>
             </div>
-            <div className="stat">
-              <div className="value">₱{product.revenue.toFixed(2)}</div>
-              <div className="label">Revenue</div>
+            <div className="product-stats">
+              <div className="stat">
+                <div className="value">{product.sales}</div>
+                <div className="label">Units Sold</div>
+              </div>
+              <div className="stat">
+                <div className="value">₱{product.revenue.toFixed(2)}</div>
+                <div className="label">Revenue</div>
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 };
