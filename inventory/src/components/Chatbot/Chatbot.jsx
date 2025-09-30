@@ -53,7 +53,7 @@ const Chatbot = ({ isOpen, onClose }) => {
     }
   }, [user]);
 
-  // Message listener - COMPLETELY SEPARATED from component state
+  // Updated message listener for new document structure
   useEffect(() => {
     if (!sessionId || !isOpen) return;
 
@@ -67,33 +67,14 @@ const Chatbot = ({ isOpen, onClose }) => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       console.log("📨 Snapshot received, docs:", snapshot.docs.length);
 
-      const allMessages = [];
-
-      snapshot.docs.forEach((doc) => {
+      const allMessages = snapshot.docs.map((doc) => {
         const data = doc.data();
-        const docId = doc.id;
-
-        // User message
-        if (data.prompt && data.prompt.trim()) {
-          allMessages.push({
-            id: docId + "_user",
-            content: data.prompt,
-            role: "user",
-            timestamp: data.timestamp,
-            docId: docId,
-          });
-        }
-
-        // AI message
-        if (data.response && data.response.trim()) {
-          allMessages.push({
-            id: docId + "_ai",
-            content: data.response,
-            role: "model",
-            timestamp: data.timestamp,
-            docId: docId,
-          });
-        }
+        return {
+          id: doc.id,
+          content: data.content, // Now a single 'content' field
+          role: data.role, // Now an explicit 'role' field
+          timestamp: data.timestamp,
+        };
       });
 
       // Manual sort by timestamp
@@ -133,7 +114,7 @@ const Chatbot = ({ isOpen, onClose }) => {
     }
   }, [messages]);
 
-  // Simple send message
+  // Updated sendMessage function with new structure
   const sendMessage = async (e) => {
     e.preventDefault();
     if (!input.trim() || loading) return;
@@ -145,18 +126,32 @@ const Chatbot = ({ isOpen, onClose }) => {
     setLoading(true);
     loadingRef.current = true;
 
+    // 1. Get the current conversation history to pass to the helper
+    const history = messages.map((msg) => ({
+      role: msg.role,
+      parts: [{ text: msg.content }],
+    }));
+
+    // 2. Add the NEW user message to the history for the AI call
+    history.push({
+      role: "user",
+      parts: [{ text: userMessage }],
+    });
+
     try {
-      const docRef = await addDoc(collection(db, "chats"), {
-        prompt: userMessage,
-        response: "",
+      // SAVE *only* the user message to Firestore (New Structure)
+      const userDocRef = await addDoc(collection(db, "chats"), {
+        content: userMessage, // The message content
+        role: "user", // Explicitly 'user'
         sessionId: sessionId,
         userId: user.uid,
         timestamp: new Date(),
-        state: "PENDING",
       });
 
-      console.log("✅ User message saved:", docRef.id);
-      await sendChatMessage(userMessage, sessionId, user, docRef.id);
+      console.log("✅ User message saved:", userDocRef.id);
+
+      // Pass history to the helper
+      await sendChatMessage(history, userDocRef.id, sessionId, user.uid);
     } catch (error) {
       console.error("❌ Error sending message:", error);
       setLoading(false);
