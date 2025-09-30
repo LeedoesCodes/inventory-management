@@ -1,5 +1,8 @@
 /* global.scss */
-
+* {
+  margin: 0;
+  padding: 0;
+}
 html {
   font-size: 16px; // base size for rem units
   scroll-behavior: smooth;
@@ -13,6 +16,40 @@ body {
   color: #000;
   line-height: 1.5;
   box-sizing: border-box;
+}
+
+/* Add these specific styles for login/register pages */
+body.login-page-body,
+body.register-page-body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+
+  /* Ensure the pages take full viewport */
+  .login-page,
+  .register-page {
+    height: 100vh;
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+
+    .split-container {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+
+      .logo-side {
+        margin: 0;
+        padding: 0;
+      }
+    }
+  }
+}
+
+html,
+body {
+  height: 100%;
 }
 
 *,
