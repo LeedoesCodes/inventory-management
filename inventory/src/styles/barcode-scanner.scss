@@ -1,0 +1,637 @@
+.barcode-scanner-section {
+  background: linear-gradient(135deg, #009feb 0%, #007bff 100%);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+  border: none;
+  color: white;
+  box-shadow: 0 4px 15px rgba(0, 159, 235, 0.3);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+
+  .scanner-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+
+    h3 {
+      margin: 0;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1.2rem;
+    }
+
+    .scanner-status {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+  }
+
+  .scanner-controls {
+    display: flex;
+    gap: 15px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    width: 100%;
+
+    .barcode-input-group {
+      display: flex;
+      gap: 10px;
+      flex: 1;
+      min-width: 300px;
+      max-width: 100%;
+
+      .barcode-input {
+        flex: 1;
+        padding: 12px 15px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 8px;
+        font-size: 14px;
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        backdrop-filter: blur(10px);
+        box-sizing: border-box;
+        max-width: 100%;
+
+        &::placeholder {
+          color: rgba(255, 255, 255, 0.7);
+        }
+
+        &:focus {
+          outline: none;
+          border-color: rgba(255, 255, 255, 0.7);
+          background: rgba(255, 255, 255, 0.15);
+          box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+        }
+      }
+
+      .scan-button {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        padding: 12px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+        white-space: nowrap;
+        box-sizing: border-box;
+
+        // Enabled state
+        &:not(:disabled) {
+          &:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.6);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+          }
+        }
+
+        // Disabled state
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          background: rgba(255, 255, 255, 0.1);
+          border-color: rgba(255, 255, 255, 0.2);
+
+          &:hover {
+            transform: none;
+            background: rgba(255, 255, 255, 0.1);
+          }
+        }
+      }
+    }
+
+    .scanner-options {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+
+      .camera-scan-btn {
+        background: rgba(255, 255, 255, 0.15);
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        padding: 12px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+        white-space: nowrap;
+        box-sizing: border-box;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.25);
+          border-color: rgba(255, 255, 255, 0.5);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+        }
+      }
+
+      .stop-camera-btn {
+        background: rgba(220, 53, 69, 0.8);
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        padding: 12px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+        white-space: nowrap;
+        box-sizing: border-box;
+
+        &:hover {
+          background: rgba(220, 53, 69, 1);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+        }
+      }
+    }
+  }
+
+  .scan-history {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    font-size: 12px;
+    border-left: 3px solid rgba(255, 255, 255, 0.5);
+  }
+}
+
+.camera-scanner-area {
+  margin-top: 20px;
+  text-align: center;
+  width: 100%;
+  max-width: 100%;
+
+  &.active {
+    .camera-container {
+      border-color: #28a745;
+      box-shadow: 0 0 20px rgba(40, 167, 69, 0.3);
+
+      &::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border: 2px solid #00ff00;
+        border-radius: 10px;
+        pointer-events: none;
+        animation: pulse 2s infinite;
+      }
+    }
+  }
+
+  .camera-container {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    border: 2px solid #007bff;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #000;
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-sizing: border-box;
+
+    .camera-placeholder {
+      color: rgba(255, 255, 255, 0.7);
+      padding: 40px 20px;
+      font-style: italic;
+      text-align: center;
+    }
+  }
+
+  .camera-instruction {
+    margin: 15px 0;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 10px;
+    border-radius: 5px;
+
+    small {
+      opacity: 0.8;
+      font-size: 12px;
+    }
+  }
+
+  .camera-error {
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.1);
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+    border: 1px solid #ff6b6b;
+  }
+}
+
+// Quagga scanner container styles
+#scanner-container {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+
+  video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+  }
+
+  canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    &.drawingBuffer {
+      width: 100% !important;
+      height: 100% !important;
+    }
+  }
+}
+
+.scanning-overlay {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  margin: 10px auto;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  overflow: hidden;
+
+  .scan-line {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      #00ff00 50%,
+      transparent 100%
+    );
+    animation: scan 2s linear infinite;
+  }
+}
+
+.scanning-tips {
+  margin-top: 15px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  border-left: 4px solid #ffeb3b;
+
+  h4 {
+    margin: 0 0 10px 0;
+    color: #ffeb3b;
+    font-size: 14px;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.8);
+
+    li {
+      margin: 5px 0;
+    }
+  }
+}
+
+// Animations
+@keyframes scan {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    border-color: #00ff00;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+  }
+  50% {
+    border-color: #00cc00;
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.8);
+  }
+}
+
+// Loading states
+.loading-scanner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+  color: rgba(255, 255, 255, 0.8);
+
+  .spinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top: 3px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+// Success states
+.scan-success {
+  background: rgba(40, 167, 69, 0.2) !important;
+  border-color: rgba(40, 167, 69, 0.5) !important;
+  color: #28a745 !important;
+}
+
+// Error states
+.scan-error {
+  background: rgba(220, 53, 69, 0.2) !important;
+  border-color: rgba(220, 53, 69, 0.5) !important;
+  color: #dc3545 !important;
+}
+
+// Continuous scanning indicator
+.continuous-scanning {
+  background: rgba(40, 167, 69, 0.2);
+  border-left: 4px solid #28a745;
+  padding: 10px 15px;
+  margin: 10px 0;
+  border-radius: 4px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+// Space bar hint
+.barcode-input::placeholder {
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-size: 13px;
+}
+
+// ==============================
+// DARK THEME
+// ==============================
+[data-theme="dark"] {
+  .barcode-scanner-section {
+    background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+
+    .scanner-header {
+      h3 {
+        color: #f7fafc;
+      }
+
+      .scanner-status {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: rgba(255, 255, 255, 0.25);
+        color: #f7fafc;
+      }
+    }
+
+    .scanner-controls {
+      .barcode-input-group {
+        .barcode-input {
+          background: rgba(255, 255, 255, 0.1);
+          border-color: rgba(255, 255, 255, 0.25);
+          color: #f7fafc;
+
+          &:focus {
+            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+          }
+
+          &::placeholder {
+            color: #a0aec0;
+          }
+        }
+
+        .scan-button {
+          background: rgba(255, 255, 255, 0.15);
+          border-color: rgba(255, 255, 255, 0.25);
+          color: #f7fafc;
+
+          &:not(:disabled):hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.4);
+          }
+
+          &:disabled {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+          }
+        }
+      }
+
+      .scanner-options {
+        .camera-scan-btn {
+          background: rgba(255, 255, 255, 0.15);
+          border-color: rgba(255, 255, 255, 0.25);
+          color: #f7fafc;
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.4);
+          }
+        }
+
+        .stop-camera-btn {
+          background: rgba(220, 53, 69, 0.7);
+          border-color: rgba(255, 255, 255, 0.25);
+          color: #f7fafc;
+
+          &:hover {
+            background: rgba(220, 53, 69, 0.9);
+          }
+        }
+      }
+    }
+
+    .scan-history {
+      background: rgba(255, 255, 255, 0.1);
+      border-left-color: rgba(255, 255, 255, 0.4);
+      color: #cbd5e0;
+    }
+  }
+
+  .camera-scanner-area {
+    .camera-instruction {
+      background: rgba(0, 0, 0, 0.5);
+      color: #cbd5e0;
+    }
+
+    .camera-error {
+      background: rgba(220, 53, 69, 0.2);
+      border-color: #e53e3e;
+      color: #fc8181;
+    }
+  }
+
+  .scanning-tips {
+    background: rgba(255, 255, 255, 0.1);
+    border-left-color: #f6e05e;
+
+    h4 {
+      color: #f6e05e;
+    }
+
+    ul {
+      color: #cbd5e0;
+    }
+  }
+
+  .scanning-overlay {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .loading-scanner {
+    color: #cbd5e0;
+
+    .spinner {
+      border-color: rgba(255, 255, 255, 0.3);
+      border-top-color: #cbd5e0;
+    }
+  }
+
+  .continuous-scanning {
+    background: rgba(72, 187, 120, 0.2);
+    border-left-color: #68d391;
+    color: #cbd5e0;
+  }
+}
+
+// ==============================
+// RESPONSIVE DESIGN
+// ==============================
+@media (max-width: 768px) {
+  .barcode-scanner-section {
+    padding: 15px;
+
+    .scanner-header {
+      flex-direction: column;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .scanner-controls {
+      flex-direction: column;
+
+      .barcode-input-group {
+        min-width: 100%;
+
+        .scan-button {
+          padding: 12px 15px;
+          font-size: 13px;
+        }
+      }
+
+      .scanner-options {
+        width: 100%;
+        justify-content: center;
+
+        .camera-scan-btn,
+        .stop-camera-btn {
+          padding: 12px 15px;
+          font-size: 13px;
+          flex: 1;
+          justify-content: center;
+        }
+      }
+    }
+  }
+
+  .camera-scanner-area {
+    .camera-container {
+      max-width: 100%;
+      min-height: 250px;
+    }
+
+    #scanner-container {
+      height: 250px;
+    }
+  }
+
+  .scanning-tips {
+    ul {
+      font-size: 11px;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .barcode-scanner-section {
+    .scanner-controls {
+      .barcode-input-group {
+        flex-direction: column;
+
+        .barcode-input {
+          margin-bottom: 10px;
+        }
+
+        .scan-button {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+
+      .scanner-options {
+        flex-direction: column;
+
+        .camera-scan-btn,
+        .stop-camera-btn {
+          width: 100%;
+        }
+      }
+    }
+  }
+}
+
+// Smooth transitions for theme switching
+.barcode-scanner-section,
+.barcode-scanner-section * {
+  transition: background-color 0.3s ease, color 0.3s ease,
+    border-color 0.3s ease, box-shadow 0.3s ease;
+}

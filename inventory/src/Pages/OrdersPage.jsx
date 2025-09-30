@@ -16,10 +16,10 @@ import { useSidebar } from "../context/SidebarContext";
 import FloatingCheckout from "../components/UI/FloatingCheckout";
 import ProductSearch from "../components/products/ProductSearch";
 import OrderConfirmationDialog from "../components/UI/OrderConfirmationDialog";
+import BarcodeScanner from "../components/UI/BarcodeScanning";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSearch,
-  faFilter,
   faSort,
   faEye,
   faEyeSlash,
@@ -44,6 +44,7 @@ export default function OrdersPage() {
   const [pendingOrder, setPendingOrder] = useState(null);
   const [debounceTimer, setDebounceTimer] = useState(null);
 
+  // Fetch products
   const fetchProducts = async () => {
     try {
       setLoading(true);
@@ -60,6 +61,7 @@ export default function OrdersPage() {
     }
   };
 
+  // Fetch recent customers
   const fetchRecentCustomers = async () => {
     try {
       const oneWeekAgo = new Date();
@@ -82,12 +84,45 @@ export default function OrdersPage() {
     }
   };
 
-  useEffect(() => {
-    fetchProducts();
-    fetchRecentCustomers();
-  }, []);
+  // Handle barcode scans from the BarcodeScanner component
+  const handleBarcodeScanned = (barcode) => {
+    if (!barcode || barcode.trim() === "") return;
 
-  // Function to save/update customer data
+    console.log("Barcode scanned:", barcode);
+
+    // Find product by barcode
+    const product = products.find((p) => {
+      if (!p.barcode) return false;
+      const productBarcode = p.barcode.toString().replace(/\D/g, "").trim();
+      return productBarcode === barcode;
+    });
+
+    if (product) {
+      const currentQty = cart[product.id]?.quantity || 0;
+
+      if (currentQty > 0) {
+        // Increment existing item
+        changeQuantity(product.id, 1);
+      } else {
+        // Add new item
+        setCart((prev) => ({
+          ...prev,
+          [product.id]: {
+            checked: true,
+            quantity: 1,
+          },
+        }));
+      }
+
+      console.log(`✅ Added ${product.name} to cart via barcode`);
+      alert(`✅ Added ${product.name} to cart!`);
+    } else {
+      console.warn(`❌ No product found with barcode: ${barcode}`);
+      alert(`❌ No product found with barcode: ${barcode}`);
+    }
+  };
+
+  // Customer management functions
   const saveCustomerToManagement = async (customerName) => {
     if (
       !customerName ||
@@ -97,7 +132,6 @@ export default function OrdersPage() {
       return;
 
     try {
-      // Check if customer already exists
       const customersQuery = query(
         collection(db, "customers"),
         where("name", "==", customerName.trim())
@@ -105,7 +139,6 @@ export default function OrdersPage() {
       const snapshot = await getDocs(customersQuery);
 
       if (snapshot.empty) {
-        // Create new customer
         await addDoc(collection(db, "customers"), {
           name: customerName.trim(),
           phone: "",
@@ -116,15 +149,12 @@ export default function OrdersPage() {
           lastOrderDate: null,
         });
         console.log("New customer created:", customerName);
-      } else {
-        console.log("Customer already exists:", customerName);
       }
     } catch (error) {
       console.error("Error saving customer data:", error);
     }
   };
 
-  // Function to update customer stats after order
   const updateCustomerStats = async (customerName, orderAmount) => {
     if (
       !customerName ||
@@ -134,7 +164,6 @@ export default function OrdersPage() {
       return;
 
     try {
-      // Find customer by name
       const customersQuery = query(
         collection(db, "customers"),
         where("name", "==", customerName.trim())
@@ -145,52 +174,34 @@ export default function OrdersPage() {
         const customerDoc = snapshot.docs[0];
         const customerData = customerDoc.data();
 
-        // Update customer stats
         await updateDoc(doc(db, "customers", customerDoc.id), {
           totalOrders: (customerData.totalOrders || 0) + 1,
           totalSpent: (customerData.totalSpent || 0) + orderAmount,
           lastOrderDate: new Date(),
         });
-        console.log("Customer stats updated:", customerName);
       }
     } catch (error) {
       console.error("Error updating customer stats:", error);
     }
   };
 
-  // Debounced customer name change handler
+  // Customer name change handler
   const handleCustomerNameChange = (name) => {
     setCustomerName(name);
 
-    // Clear previous timer
     if (debounceTimer) {
       clearTimeout(debounceTimer);
     }
 
-    // Set new timer to auto-save after user stops typing for 2 seconds
     if (name && name.trim() !== "" && name !== "Walk-in Customer") {
       const timer = setTimeout(() => {
         saveCustomerToManagement(name);
       }, 2000);
-
       setDebounceTimer(timer);
     }
   };
 
-  // Cleanup timer on component unmount
-  useEffect(() => {
-    return () => {
-      if (debounceTimer) {
-        clearTimeout(debounceTimer);
-      }
-    };
-  }, [debounceTimer]);
-
-  const handleSearch = (term, category) => {
-    setSearchTerm(term.toLowerCase());
-    setSelectedCategory(category);
-  };
-
+  // Product selection and quantity functions
   const toggleProduct = (id) => {
     const product = products.find((p) => p.id === id);
     if (product && product.stock === 0) return;
@@ -236,6 +247,13 @@ export default function OrdersPage() {
     }));
   };
 
+  // Search handler
+  const handleSearch = (term, category) => {
+    setSearchTerm(term.toLowerCase());
+    setSelectedCategory(category);
+  };
+
+  // Totals calculation
   const getTotals = () => {
     let totalItems = 0;
     let totalAmount = 0;
@@ -251,13 +269,13 @@ export default function OrdersPage() {
 
   const { totalItems, totalAmount } = getTotals();
 
+  // Checkout functions
   const handleCheckoutClick = () => {
     if (totalItems === 0) {
       alert("Please select some products first.");
       return;
     }
 
-    // Prepare order summary for confirmation
     const orderItems = products
       .filter((p) => cart[p.id]?.checked)
       .map((p) => ({
@@ -268,7 +286,6 @@ export default function OrdersPage() {
         subtotal: p.price * cart[p.id].quantity,
       }));
 
-    // Set pending order and show confirmation dialog
     setPendingOrder({
       items: orderItems,
       customerName: customerName || "Walk-in Customer",
@@ -310,7 +327,7 @@ export default function OrdersPage() {
         });
       });
 
-      // Save/update customer data BEFORE creating the order
+      // Save/update customer data
       if (
         pendingOrder.customerName &&
         pendingOrder.customerName !== "Walk-in Customer"
@@ -330,7 +347,7 @@ export default function OrdersPage() {
         status: "completed",
       });
 
-      // Update customer stats AFTER order is created
+      // Update customer stats
       if (
         pendingOrder.customerName &&
         pendingOrder.customerName !== "Walk-in Customer"
@@ -369,6 +386,21 @@ export default function OrdersPage() {
     setPendingOrder(null);
   };
 
+  // Effects
+  useEffect(() => {
+    fetchProducts();
+    fetchRecentCustomers();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+    };
+  }, [debounceTimer]);
+
+  // Filter and sort products
   const filteredAndSortedProducts = products
     .filter((p) => {
       const matchesSearch = p.name.toLowerCase().includes(searchTerm);
@@ -406,8 +438,14 @@ export default function OrdersPage() {
 
         <div className="orders-content">
           <div className="page-header">
-            <h2>Create new orders </h2>
+            <h2>Create new orders</h2>
           </div>
+
+          {/* Barcode Scanner Component */}
+          <BarcodeScanner
+            onBarcodeScanned={handleBarcodeScanned}
+            products={products}
+          />
 
           <div className="search-container">
             <ProductSearch onSearch={handleSearch} />
@@ -507,6 +545,11 @@ export default function OrdersPage() {
                         />
                         <span className="product-name">{p.name}</span>
                         <span className="product-category">{p.category}</span>
+                        {p.barcode && (
+                          <span className="product-barcode">
+                            📊 {p.barcode}
+                          </span>
+                        )}
                       </div>
 
                       <div className="product-details">

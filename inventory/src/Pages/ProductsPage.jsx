@@ -15,18 +15,16 @@ import ProductForm from "../components/products/ProductForm";
 import ProductSearch from "../components/products/ProductSearch";
 import Header from "../components/UI/Headers";
 import Sidebar from "../components/UI/Sidebar";
-import { useSidebar } from "../context/SidebarContext"; // Import the hook
+import { useSidebar } from "../context/SidebarContext";
 import "../styles/products.scss";
 
 export default function ProductsPage() {
-  const { isCollapsed } = useSidebar(); // Use the context hook
+  const { isCollapsed } = useSidebar();
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [categories, setCategories] = useState([]);
-
-  // Remove the local collapsed state since we're using context
 
   const fetchProducts = async () => {
     const snapshot = await getDocs(collection(db, "products"));
@@ -120,38 +118,47 @@ export default function ProductsPage() {
   };
 
   return (
-    <div className={`products-page ${isCollapsed ? "collapsed" : ""}`}>
-      <Header />
+    <div className="page-container">
       <Sidebar />
-      <div className="products-content">
-        <div className="search-container">
-          <ProductSearch onSearch={handleSearch} categories={categories} />
-        </div>
-
-        <ProductList
-          products={filteredProducts}
-          onEdit={handleEditProduct}
-          onDelete={handleDeleteProduct}
-        />
-
-        <button className="fab" onClick={handleAddProduct}>
-          +
-        </button>
-
-        {showForm && (
-          <div className="modal-overlay">
-            <div className="modal">
-              <button className="close-btn" onClick={() => setShowForm(false)}>
-                ✕
-              </button>
-              <ProductForm
-                selectedProduct={selectedProduct}
-                onSave={handleSave}
-                onClose={() => setShowForm(false)}
-              />
-            </div>
+      <div className={`products-page ${isCollapsed ? "collapsed" : ""}`}>
+        <Header />
+        <div className="products-content">
+          <div className="header">
+            <h1>Products Management</h1>
           </div>
-        )}
+
+          <div className="search-container">
+            <ProductSearch onSearch={handleSearch} categories={categories} />
+          </div>
+
+          <ProductList
+            products={filteredProducts}
+            onEdit={handleEditProduct}
+            onDelete={handleDeleteProduct}
+          />
+
+          <button className="fab" onClick={handleAddProduct}>
+            +
+          </button>
+
+          {showForm && (
+            <div className="modal-overlay">
+              <div className="modal">
+                <button
+                  className="close-btn"
+                  onClick={() => setShowForm(false)}
+                >
+                  ✕
+                </button>
+                <ProductForm
+                  selectedProduct={selectedProduct}
+                  onSave={handleSave}
+                  onClose={() => setShowForm(false)}
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

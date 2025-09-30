@@ -7,7 +7,7 @@ const categories = [
   "BEERMATCH",
   "SUNDAYS",
   "MARSHMALLOW",
-  "BREADPANDAN 100/24G",
+  "BREADPAN 100/24G",
   "PINATSU",
   "FROOZE",
   "SMART C+ 500ML",
@@ -30,6 +30,7 @@ export default function ProductForm({ selectedProduct, onSave, onClose }) {
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
   const [category, setCategory] = useState("");
+  const [barcode, setBarcode] = useState("");
   const [imageFile, setImageFile] = useState(null);
 
   useEffect(() => {
@@ -39,6 +40,7 @@ export default function ProductForm({ selectedProduct, onSave, onClose }) {
       setPrice(selectedProduct.price || "");
       setStock(selectedProduct.stock || "");
       setCategory(selectedProduct.category || "");
+      setBarcode(selectedProduct.barcode || "");
       setImageFile(null);
     } else {
       setName("");
@@ -46,13 +48,14 @@ export default function ProductForm({ selectedProduct, onSave, onClose }) {
       setPrice("");
       setStock("");
       setCategory("");
+      setBarcode("");
       setImageFile(null);
     }
   }, [selectedProduct]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave({ name, description, price, stock, category }, imageFile);
+    onSave({ name, description, price, stock, category, barcode }, imageFile);
   };
 
   return (
@@ -60,10 +63,18 @@ export default function ProductForm({ selectedProduct, onSave, onClose }) {
       <input
         type="text"
         value={name}
-        placeholder="Name"
+        placeholder="Product Name"
         onChange={(e) => setName(e.target.value)}
         required
       />
+
+      <input
+        type="text"
+        value={barcode}
+        placeholder="Barcode Number (e.g., 4800016022361)"
+        onChange={(e) => setBarcode(e.target.value)}
+      />
+
       <input
         type="number"
         value={price}
@@ -71,13 +82,15 @@ export default function ProductForm({ selectedProduct, onSave, onClose }) {
         onChange={(e) => setPrice(e.target.value)}
         required
       />
+
       <input
         type="number"
         value={stock}
-        placeholder="Stock"
+        placeholder="Stock Quantity"
         onChange={(e) => setStock(e.target.value)}
         required
       />
+
       <select
         value={category}
         onChange={(e) => setCategory(e.target.value)}
@@ -92,16 +105,18 @@ export default function ProductForm({ selectedProduct, onSave, onClose }) {
           </option>
         ))}
       </select>
-      <input type="file" onChange={(e) => setImageFile(e.target.files[0])} />
-      <div style={{ display: "flex", gap: "10px" }}>
+
+      <input
+        type="file"
+        onChange={(e) => setImageFile(e.target.files[0])}
+        accept="image/*"
+      />
+
+      <div className="form-buttons">
         <button type="submit">
           {selectedProduct ? "Update" : "Add"} Product
         </button>
-        <button
-          type="button"
-          onClick={onClose}
-          style={{ background: "#f44336" }}
-        >
+        <button type="button" onClick={onClose}>
           Cancel
         </button>
       </div>

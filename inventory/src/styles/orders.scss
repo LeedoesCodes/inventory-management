@@ -1,6 +1,8 @@
 .page-container {
   display: flex;
   min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .orders-page {
@@ -10,26 +12,33 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  width: calc(100% - 230px);
+  max-width: 100%;
 
   &.collapsed {
     margin-left: 60px;
+    width: calc(100% - 60px);
   }
 }
 
 .orders-content {
   padding: 2rem;
-  background: #f8fafc; // Light theme background
+  background: #f8fafc;
   flex: 1;
   margin-top: 50px;
   padding-bottom: 2rem;
   margin-bottom: 90px;
   transition: all 0.3s ease;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 
   .page-header {
     margin-bottom: 2rem;
     animation: slideInDown 0.5s ease-out;
+    width: 100%;
 
-    h1 {
+    h2 {
       margin: 0;
       color: #2d3748;
       font-size: 2.2rem;
@@ -45,6 +54,7 @@
 
   .search-container {
     width: 100%;
+    max-width: 100%;
     padding: 15px 20px;
     background: linear-gradient(135deg, #009feb 0%, #007bff 100%);
     display: flex;
@@ -54,6 +64,7 @@
     margin-bottom: 20px;
     z-index: 100;
     animation: slideInDown 0.6s ease-out 0.1s both;
+    box-sizing: border-box;
 
     input {
       flex: 1;
@@ -62,9 +73,10 @@
       border-radius: 6px;
       font-size: 1rem;
       outline: none;
-      width: 95%;
+      max-width: 100%;
       background: rgba(255, 255, 255, 0.95);
       transition: all 0.3s ease;
+      box-sizing: border-box;
 
       &:focus {
         box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5);
@@ -77,6 +89,7 @@
       align-items: center;
       gap: 0.75rem;
       flex-wrap: wrap;
+      max-width: 100%;
 
       .filter-label {
         display: flex;
@@ -99,9 +112,11 @@
         backdrop-filter: blur(10px);
         font-size: 0.95rem;
         min-width: 200px;
+        max-width: 100%;
         cursor: pointer;
         transition: all 0.3s ease;
         color: white;
+        box-sizing: border-box;
 
         &:focus {
           outline: none;
@@ -175,6 +190,9 @@
   gap: 1rem;
   transition: all 0.3s ease;
   animation: fadeInUp 0.5s ease-out 0.2s both;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 
   .control-group {
     display: flex;
@@ -197,6 +215,7 @@
       background: white;
       font-size: 0.9rem;
       transition: all 0.3s ease;
+      box-sizing: border-box;
 
       &:focus {
         outline: none;
@@ -241,6 +260,9 @@
   margin-bottom: 1.5rem;
   transition: all 0.3s ease;
   animation: fadeInUp 0.5s ease-out 0.3s both;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 
   h3 {
     margin: 0 0 1rem 0;
@@ -295,6 +317,10 @@
 }
 
 .products-grid {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+
   h2 {
     color: #2d3748;
     margin-bottom: 1.5rem;
@@ -321,6 +347,8 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
     gap: 1.5rem;
+    width: 100%;
+    max-width: 100%;
 
     .product-card {
       background: white;
@@ -332,6 +360,7 @@
       overflow: hidden;
       animation: fadeInUp 0.5s ease-out;
       animation-fill-mode: both;
+      box-sizing: border-box;
 
       @for $i from 1 through 20 {
         &:nth-child(#{$i}) {
@@ -399,6 +428,14 @@
           font-size: 0.8rem;
           color: #4a5568;
           transition: all 0.3s ease;
+        }
+
+        .product-barcode {
+          font-size: 11px;
+          background: rgba(0, 0, 0, 0.1);
+          padding: 2px 6px;
+          border-radius: 4px;
+          color: #666;
         }
       }
 
@@ -478,6 +515,7 @@
             border-radius: 6px;
             font-size: 1rem;
             transition: all 0.3s ease;
+            box-sizing: border-box;
 
             &:focus {
               outline: none;
@@ -525,10 +563,15 @@
   z-index: 1000;
   transition: all 0.3s ease;
   animation: slideInUp 0.5s ease-out;
+  width: calc(100% - 230px);
+  box-sizing: border-box;
 
   .checkout-content {
     padding: 1.5rem 2rem;
     border-top: 3px solid #009feb;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 
     .checkout-summary {
       display: flex;
@@ -536,6 +579,8 @@
       align-items: center;
       flex-wrap: wrap;
       gap: 1rem;
+      width: 100%;
+      max-width: 100%;
 
       .summary-info {
         display: flex;
@@ -572,7 +617,9 @@
             border-radius: 8px;
             font-size: 1rem;
             min-width: 300px;
+            max-width: 100%;
             transition: all 0.3s ease;
+            box-sizing: border-box;
 
             &:focus {
               outline: none;
@@ -650,6 +697,285 @@
 .orders-page.collapsed {
   .floating-checkout {
     left: 60px;
+    width: calc(100% - 60px);
+  }
+}
+
+// Barcode Scanner Styles
+.barcode-scanner-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+  border: none;
+  color: white;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+
+  .scanner-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+
+    h3 {
+      margin: 0;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1.2rem;
+    }
+
+    .scanner-status {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+  }
+
+  .scanner-controls {
+    display: flex;
+    gap: 15px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    width: 100%;
+
+    .barcode-input-group {
+      display: flex;
+      gap: 10px;
+      flex: 1;
+      min-width: 300px;
+      max-width: 100%;
+
+      .barcode-input {
+        flex: 1;
+        padding: 12px 15px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 8px;
+        font-size: 14px;
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        backdrop-filter: blur(10px);
+        box-sizing: border-box;
+        max-width: 100%;
+
+        &::placeholder {
+          color: rgba(255, 255, 255, 0.7);
+        }
+
+        &:focus {
+          outline: none;
+          border-color: rgba(255, 255, 255, 0.7);
+          background: rgba(255, 255, 255, 0.15);
+        }
+      }
+
+      .scan-button {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        padding: 12px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+
+        &:hover:not(:disabled) {
+          background: rgba(255, 255, 255, 0.3);
+          border-color: rgba(255, 255, 255, 0.6);
+          transform: translateY(-2px);
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
+    }
+
+    .scanner-options {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+
+      .camera-scan-btn {
+        background: rgba(255, 255, 255, 0.15);
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        padding: 12px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.25);
+          border-color: rgba(255, 255, 255, 0.5);
+          transform: translateY(-2px);
+        }
+      }
+
+      .stop-camera-btn {
+        background: rgba(220, 53, 69, 0.8);
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        padding: 12px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+
+        &:hover {
+          background: rgba(220, 53, 69, 1);
+          transform: translateY(-2px);
+        }
+      }
+
+      .test-scan-btn {
+        background: rgba(255, 193, 7, 0.2);
+        color: white;
+        border: 2px solid rgba(255, 193, 7, 0.4);
+        padding: 10px 15px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+
+        &:hover {
+          background: rgba(255, 193, 7, 0.3);
+          border-color: rgba(255, 193, 7, 0.6);
+        }
+      }
+    }
+  }
+
+  .scan-history {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    font-size: 12px;
+    border-left: 3px solid rgba(255, 255, 255, 0.5);
+  }
+}
+
+.camera-scanner-area {
+  margin-top: 20px;
+  text-align: center;
+  width: 100%;
+  max-width: 100%;
+
+  &.active {
+    .camera-container {
+      border-color: #28a745;
+    }
+  }
+
+  .camera-container {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    border: 2px solid #007bff;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #000;
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+
+    video {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      max-height: 400px;
+    }
+
+    .camera-placeholder {
+      color: rgba(255, 255, 255, 0.7);
+      padding: 40px 20px;
+      font-style: italic;
+    }
+  }
+
+  .camera-instruction {
+    margin: 15px 0;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 10px;
+    border-radius: 5px;
+  }
+
+  .manual-scan-section {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+
+    h4 {
+      margin: 0 0 10px 0;
+      color: white;
+      font-size: 1rem;
+    }
+
+    .manual-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+
+      button {
+        background: rgba(40, 167, 69, 0.2);
+        color: white;
+        border: 1px solid rgba(40, 167, 69, 0.4);
+        padding: 8px 12px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.3s ease;
+
+        &:hover {
+          background: rgba(40, 167, 69, 0.3);
+          border-color: rgba(40, 167, 69, 0.6);
+        }
+      }
+    }
+  }
+
+  .camera-error {
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.1);
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+    border: 1px solid #ff6b6b;
   }
 }
 
@@ -985,13 +1311,16 @@
 @media (max-width: 768px) {
   .orders-page {
     margin-left: 0 !important;
+    width: 100% !important;
 
     &.collapsed {
       margin-left: 0 !important;
+      width: 100% !important;
     }
 
     .floating-checkout {
       left: 0 !important;
+      width: 100% !important;
     }
   }
 
@@ -999,14 +1328,26 @@
     margin-top: 70px;
     padding: 1rem;
     padding-bottom: 2rem;
+    width: 100%;
 
     .search-container {
       flex-direction: column;
       align-items: stretch;
       gap: 1rem;
+      width: 100%;
+
+      input {
+        width: 100%;
+      }
 
       .categories-filter {
         justify-content: space-between;
+        width: 100%;
+
+        .categories-select {
+          min-width: 100%;
+          width: 100%;
+        }
       }
 
       .search-actions {
@@ -1018,6 +1359,7 @@
       flex-direction: column;
       align-items: stretch;
       gap: 1rem;
+      width: 100%;
 
       .control-group {
         justify-content: space-between;
@@ -1026,6 +1368,7 @@
 
     .products-list {
       grid-template-columns: 1fr;
+      width: 100%;
     }
 
     .product-card {
@@ -1040,11 +1383,13 @@
       .checkout-summary {
         flex-direction: column;
         align-items: stretch;
+        width: 100%;
 
         .summary-info {
           justify-content: center;
           text-align: center;
           gap: 1rem;
+          width: 100%;
 
           .customer-section {
             flex-direction: column;
@@ -1059,13 +1404,50 @@
 
         .checkout-actions {
           justify-content: center;
+          width: 100%;
 
           .checkout-btn {
             flex: 1;
             padding: 1rem;
+            width: 100%;
           }
         }
       }
+    }
+  }
+
+  .barcode-scanner-section {
+    padding: 15px;
+
+    .scanner-header {
+      flex-direction: column;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .scanner-controls {
+      flex-direction: column;
+      width: 100%;
+
+      .barcode-input-group {
+        min-width: 100%;
+        width: 100%;
+      }
+
+      .scanner-options {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  }
+
+  .camera-scanner-area {
+    .camera-container {
+      max-width: 100%;
+    }
+
+    .manual-scan-section .manual-buttons {
+      flex-direction: column;
     }
   }
 }
