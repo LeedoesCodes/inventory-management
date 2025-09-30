@@ -28,13 +28,14 @@ export const sendChatMessage = async (
       throw new Error("Gemini API Key is missing");
     }
 
-    // 1. Construct the API payload with history and system instruction
+    // Corrected payload structure for the REST API
     const payload = {
+      // 1. Correct: systemInstruction is a top-level string field.
+      systemInstruction: SYSTEM_INSTRUCTION, // Directly use the string
+
+      // 2. The rest of your payload remains the same
       contents: history, // The full conversation history
       generationConfig: {
-        systemInstruction: {
-          parts: [{ text: SYSTEM_INSTRUCTION }],
-        },
         temperature: 0.7,
         maxOutputTokens: 1000,
       },

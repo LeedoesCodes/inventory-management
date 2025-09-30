@@ -12,7 +12,7 @@ export default function ProductSearch({ onSearch }) {
     "BEERMATCH",
     "SUNDAYS",
     "MARSHMALLOW",
-    "BREADPANDAN 100/24G",
+    "BREADPAN 100/24G",
     "PINATSU",
     "FROOZE",
     "SMART C+ 500ML",
