@@ -257,6 +257,7 @@ export default function Dashboard() {
               ? "Refreshing..."
               : "Refresh Data"}
           </button>
+          {/*}
           <button
             onClick={() => setShowCSVUpload(true)}
             className="upload-csv-btn"
@@ -264,6 +265,7 @@ export default function Dashboard() {
           >
             📁 Upload CSV
           </button>
+*/}
         </div>
       </div>
 
