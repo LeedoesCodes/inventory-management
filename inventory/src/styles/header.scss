@@ -20,8 +20,8 @@
     left: 60px;
   }
 
-  // Slide-in animation when page loads
-  animation: slideDown 0.5s ease-out;
+  // REMOVED: Slide-in animation when page loads
+  // animation: slideDown 0.5s ease-out;
 
   .header-left {
     display: flex;
@@ -168,7 +168,8 @@
       -webkit-text-fill-color: transparent;
       color: transparent;
       position: relative;
-      animation: titleGlow 3s ease-in-out infinite alternate;
+      animation: titleGlow 3s ease-in-out infinite alternate,
+        fadeInUp 0.8s ease-out;
 
       &::after {
         content: "";
@@ -263,16 +264,17 @@
 }
 
 // Keyframe Animations
-@keyframes slideDown {
-  0% {
-    transform: translateY(-100%);
-    opacity: 0;
-  }
-  100% {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
+// REMOVED: slideDown animation for entire header
+// @keyframes slideDown {
+//   0% {
+//     transform: translateY(-100%);
+//     opacity: 0;
+//   }
+//   100% {
+//     transform: translateY(0);
+//     opacity: 1;
+//   }
+// }
 
 @keyframes titleGlow {
   0% {
@@ -280,6 +282,17 @@
   }
   100% {
     filter: drop-shadow(0 0 15px rgba(var(--accent-rgb), 0.6));
+  }
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -295,7 +308,7 @@
   }
 }
 
-// Mobile Styles
+// In your header.scss - Mobile Styles section
 @media (max-width: 768px) {
   .app-header {
     position: fixed;
@@ -312,24 +325,38 @@
 
     .header-left {
       gap: 0.5rem;
+      display: flex;
+      align-items: center;
 
+      // Force the mobile menu button to always be visible on mobile
       .mobile-menu-btn {
-        display: block;
-        animation: bounce 2s infinite;
-      }
+        display: flex !important; // Important to override any other styles
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        font-size: 1.3rem;
+        color: var(--text-primary);
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 6px;
+        transition: all 0.3s ease;
+        min-width: 40px;
+        min-height: 40px;
 
-      .title-toggle-btn {
-        display: flex;
-        animation: pulse 2s ease-in-out infinite;
-
-        .title-text {
-          max-width: 150px;
-          font-size: 1.1rem;
+        &:hover {
+          background: var(--bg-tertiary);
         }
       }
 
       .page-title {
-        display: none;
+        display: block !important;
+        font-size: 1.2rem;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 200px;
       }
     }
 
@@ -341,6 +368,29 @@
       .profile-pic {
         width: 35px;
         height: 35px;
+      }
+    }
+  }
+}
+
+// Extra small screens
+@media (max-width: 480px) {
+  .app-header {
+    .header-left {
+      .page-title {
+        font-size: 1.1rem;
+        max-width: 150px;
+      }
+    }
+  }
+}
+
+@media (max-width: 360px) {
+  .app-header {
+    .header-left {
+      .page-title {
+        font-size: 1rem;
+        max-width: 120px;
       }
     }
   }

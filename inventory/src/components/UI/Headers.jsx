@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext.jsx";
 import { useSidebar } from "../../context/SidebarContext";
@@ -26,26 +26,33 @@ export default function Header() {
 
   const title = pageTitles[location.pathname] || "Welcome";
 
+  // Debug log to see header state on each render
+  useEffect(() => {
+    console.log(
+      "Header rendered - isMobile:",
+      isMobile,
+      "path:",
+      location.pathname
+    );
+  }, [isMobile, location.pathname]);
+
   return (
     <header className={`app-header ${isCollapsed ? "collapsed" : ""}`}>
       <div className="header-left">
-        {/* Mobile Hamburger Icon (left side) */}
+        {/* Mobile Hamburger Icon (left side) - ALWAYS show if mobile */}
         {isMobile && (
-          <button className="mobile-menu-btn" onClick={toggleSidebar}>
+          <button
+            className="mobile-menu-btn"
+            onClick={toggleSidebar}
+            aria-label="Toggle sidebar"
+            style={{ display: "block" }} // Force display
+          >
             <FontAwesomeIcon icon={faBars} />
           </button>
         )}
 
-        {/* Title Toggle Button for Mobile */}
-        {isMobile ? (
-          <button className="title-toggle-btn" onClick={toggleSidebar}>
-            <FontAwesomeIcon icon={faBars} className="toggle-icon" />
-            <span className="title-text">{title}</span>
-          </button>
-        ) : (
-          // Regular title for desktop
-          <h2 className="page-title">{title}</h2>
-        )}
+        {/* Show page title for both mobile and desktop */}
+        <h2 className="page-title">{title}</h2>
       </div>
 
       <Link to="/profile" className="header-profile">
@@ -54,9 +61,11 @@ export default function Header() {
           alt="User"
           className="profile-pic"
         />
-        <div className="profile-info">
-          <p className="role">{role === "admin" ? "Admin" : "User"}</p>
-        </div>
+        {!isMobile && (
+          <div className="profile-info">
+            <p className="role">{role === "admin" ? "Admin" : "User"}</p>
+          </div>
+        )}
       </Link>
     </header>
   );

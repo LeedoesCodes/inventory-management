@@ -5,8 +5,9 @@ import {
   Route,
   Navigate,
   Outlet,
+  useLocation,
 } from "react-router-dom";
-import { useContext } from "react";
+import { useContext, useEffect } from "react";
 import { AuthContext } from "./context/AuthContext.jsx";
 
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -33,23 +34,73 @@ import MobileHeader from "./components/UI/MobileHeader.jsx";
 import Analytics from "./Pages/Analytics.jsx";
 
 /**
- * HomeRedirect (declarative)
- * - Reads auth state from context and returns a <Navigate/>
- * - IMPORTANT: returns null while loading to avoid redirect loops
+ * HomeRedirect - Improved with better navigation logic
  */
 function HomeRedirect() {
-  const { isLoggedIn, role, loading } = useContext(AuthContext);
+  const { isLoggedIn, role, loading, user } = useContext(AuthContext);
+  const location = useLocation();
+
+  // Don't redirect if we're already on a valid route
+  const currentPath = location.pathname;
 
   if (loading) {
-    return null; // wait until auth resolves
+    console.log("HomeRedirect: Loading auth state...");
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p>Loading...</p>
+      </div>
+    );
   }
 
-  if (!isLoggedIn) return <Navigate to="/login" replace />;
+  console.log("HomeRedirect - Auth state:", {
+    isLoggedIn,
+    role,
+    userEmail: user?.email,
+    currentPath,
+  });
 
-  if (role === "admin" || role === "approved")
-    return <Navigate to="/dashboard" replace />;
+  // If not logged in, go to login
+  if (!isLoggedIn) {
+    if (currentPath !== "/login" && currentPath !== "/register") {
+      console.log("HomeRedirect: Not logged in, redirecting to login");
+      return <Navigate to="/login" replace />;
+    }
+    return null; // Stay on login/register page
+  }
 
-  return <Navigate to="/lobby" replace />;
+  // If logged in but on public pages, redirect based on role
+  if (currentPath === "/login" || currentPath === "/register") {
+    if (role === "admin" || role === "approved") {
+      console.log(
+        "HomeRedirect: On auth page as admin/approved, redirecting to dashboard"
+      );
+      return <Navigate to="/dashboard" replace />;
+    } else {
+      console.log(
+        "HomeRedirect: On auth page as regular user, redirecting to lobby"
+      );
+      return <Navigate to="/lobby" replace />;
+    }
+  }
+
+  // Handle root path redirect
+  if (currentPath === "/") {
+    if (role === "admin" || role === "approved") {
+      console.log(
+        "HomeRedirect: Root path as admin/approved, redirecting to dashboard"
+      );
+      return <Navigate to="/dashboard" replace />;
+    } else {
+      console.log(
+        "HomeRedirect: Root path as regular user, redirecting to lobby"
+      );
+      return <Navigate to="/lobby" replace />;
+    }
+  }
+
+  // If we're already on a valid route, don't redirect
+  console.log("HomeRedirect: Staying on current route:", currentPath);
+  return null;
 }
 
 /** SidebarLayout consumes SidebarContext to add collapsed class to main */
@@ -69,13 +120,20 @@ function SidebarLayout() {
 }
 
 function App() {
-  const { loading } = useContext(AuthContext);
+  const { loading, isLoggedIn, role, user } = useContext(AuthContext);
+
+  console.log("App - Auth state:", {
+    loading,
+    isLoggedIn,
+    role,
+    userEmail: user?.email,
+  });
 
   // Keep UI stable while auth resolves
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <p>Loading...</p>
+        <p>Loading application...</p>
       </div>
     );
   }
@@ -88,14 +146,21 @@ function App() {
             {/* Root: do a single declarative redirect once */}
             <Route path="/" element={<HomeRedirect />} />
 
-            {/* Public */}
+            {/* Public routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
 
-            {/* Lobby (no ProtectedRoute here anymore) */}
-            <Route path="/lobby" element={<Lobby />} />
+            {/* Lobby - accessible to all logged-in users */}
+            <Route
+              path="/lobby"
+              element={
+                <ProtectedRoute>
+                  <Lobby />
+                </ProtectedRoute>
+              }
+            />
 
-            {/* Protected area with sidebar */}
+            {/* Protected area with sidebar - for approved users and admins */}
             <Route
               element={
                 <ProtectedRoute allowedRoles={["approved", "admin"]}>
@@ -113,16 +178,26 @@ function App() {
                 path="/transactionHistory"
                 element={<TransactionHistory />}
               />
-              <Route path="/user-approvals" element={<UserApprovals />} />
-              <Route
-                path="/customer-management"
-                element={<CustomerManagement />}
-              />
-              <Route path="/user-management" element={<UserManagement />} />
               <Route path="/settings" element={<SettingsPage />} />
+
+              {/* Admin-only routes */}
+              <Route
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <Outlet />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="/user-approvals" element={<UserApprovals />} />
+                <Route
+                  path="/customer-management"
+                  element={<CustomerManagement />}
+                />
+                <Route path="/user-management" element={<UserManagement />} />
+              </Route>
             </Route>
 
-            {/* fallback */}
+            {/* Fallback for unknown routes */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </SidebarProvider>

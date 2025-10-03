@@ -17,6 +17,7 @@ import FloatingCheckout from "../components/UI/FloatingCheckout";
 import ProductSearch from "../components/products/ProductSearch";
 import OrderConfirmationDialog from "../components/UI/OrderConfirmationDialog";
 import BarcodeScanner from "../components/UI/BarcodeScanning";
+import SuccessAnimation from "../components/UI/SuccessAnimation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSearch,
@@ -25,6 +26,7 @@ import {
   faEyeSlash,
   faShoppingCart,
   faExclamationTriangle,
+  faTimes,
 } from "@fortawesome/free-solid-svg-icons";
 import "../styles/orders.scss";
 
@@ -43,6 +45,7 @@ export default function OrdersPage() {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [pendingOrder, setPendingOrder] = useState(null);
   const [debounceTimer, setDebounceTimer] = useState(null);
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
   // Fetch products
   const fetchProducts = async () => {
@@ -84,9 +87,9 @@ export default function OrdersPage() {
     }
   };
 
-  // Handle barcode scans from the BarcodeScanner component
+  // Fixed: Handle barcode scans from the BarcodeScanner component
   const handleBarcodeScanned = (barcode) => {
-    if (!barcode || barcode.trim() === "") return;
+    if (!barcode || barcode.trim() === "") return false;
 
     console.log("Barcode scanned:", barcode);
 
@@ -99,26 +102,32 @@ export default function OrdersPage() {
 
     if (product) {
       const currentQty = cart[product.id]?.quantity || 0;
+      const newQty = currentQty + 1;
 
-      if (currentQty > 0) {
-        // Increment existing item
-        changeQuantity(product.id, 1);
-      } else {
-        // Add new item
-        setCart((prev) => ({
-          ...prev,
-          [product.id]: {
-            checked: true,
-            quantity: 1,
-          },
-        }));
+      // Check stock availability
+      if (newQty > product.stock) {
+        console.warn(
+          `❌ Not enough stock for ${product.name}. Only ${product.stock} available.`
+        );
+        return false;
       }
 
-      console.log(`✅ Added ${product.name} to cart via barcode`);
-      alert(`✅ Added ${product.name} to cart!`);
+      // Always update quantity - this will create or update the cart item
+      setCart((prev) => ({
+        ...prev,
+        [product.id]: {
+          checked: true,
+          quantity: newQty,
+        },
+      }));
+
+      console.log(
+        `✅ Updated ${product.name} in cart. New quantity: ${newQty}`
+      );
+      return true;
     } else {
       console.warn(`❌ No product found with barcode: ${barcode}`);
-      alert(`❌ No product found with barcode: ${barcode}`);
+      return false;
     }
   };
 
@@ -247,6 +256,25 @@ export default function OrdersPage() {
     }));
   };
 
+  // Remove item from cart
+  const removeFromCart = (id) => {
+    setCart((prev) => {
+      const newCart = { ...prev };
+      delete newCart[id];
+      return newCart;
+    });
+  };
+
+  // Handle quantity changes from confirmation dialog
+  const handleDialogQuantityChange = (itemId, delta) => {
+    changeQuantity(itemId, delta);
+  };
+
+  // Handle remove item from confirmation dialog
+  const handleDialogRemoveItem = (itemId) => {
+    removeFromCart(itemId);
+  };
+
   // Search handler
   const handleSearch = (term, category) => {
     setSearchTerm(term.toLowerCase());
@@ -296,6 +324,7 @@ export default function OrdersPage() {
     setShowConfirmation(true);
   };
 
+  // Fixed: Order confirmation with success animation
   const handleConfirmOrder = async () => {
     if (!pendingOrder) return;
 
@@ -358,22 +387,12 @@ export default function OrdersPage() {
         );
       }
 
-      // Show success message
-      alert(
-        `Order completed successfully!\n\nCustomer: ${
-          pendingOrder.customerName
-        }\nTotal Items: ${
-          pendingOrder.totalItems
-        }\nTotal Amount: ₱${pendingOrder.totalAmount.toFixed(2)}`
-      );
+      // Order completed successfully - Show animation
+      console.log("✅ Order completed successfully!");
 
-      // Reset everything
-      setCart({});
-      setCustomerName("");
+      // Close confirmation dialog and show success animation
       setShowConfirmation(false);
-      setPendingOrder(null);
-      fetchProducts();
-      fetchRecentCustomers();
+      setShowSuccessAnimation(true);
     } catch (err) {
       console.error("Checkout error:", err);
       alert("Something went wrong while completing the order.");
@@ -381,9 +400,33 @@ export default function OrdersPage() {
     }
   };
 
-  const handleCancelOrder = () => {
+  // Handle when success animation completes
+  const handleSuccessAnimationComplete = () => {
+    // Reset everything after animation completes
+    setCart({});
+    setCustomerName("");
+    setPendingOrder(null);
+    setShowSuccessAnimation(false);
+    fetchProducts();
+    fetchRecentCustomers();
+  };
+
+  const handleCancelOrderDialog = () => {
     setShowConfirmation(false);
     setPendingOrder(null);
+  };
+
+  // Cancel entire order
+  const handleCancelEntireOrder = () => {
+    if (
+      window.confirm(
+        "Are you sure you want to cancel this order? All items will be removed."
+      )
+    ) {
+      setCart({});
+      setCustomerName("");
+      console.log("Order cancelled");
+    }
   };
 
   // Effects
@@ -399,6 +442,28 @@ export default function OrdersPage() {
       }
     };
   }, [debounceTimer]);
+
+  // Update pending order when cart changes AND dialog is open
+  useEffect(() => {
+    if (showConfirmation) {
+      const orderItems = products
+        .filter((p) => cart[p.id]?.checked)
+        .map((p) => ({
+          id: p.id,
+          name: p.name,
+          price: p.price,
+          quantity: cart[p.id].quantity,
+          subtotal: p.price * cart[p.id].quantity,
+        }));
+
+      setPendingOrder((prev) => ({
+        ...prev,
+        items: orderItems,
+        totalItems: getTotals().totalItems,
+        totalAmount: getTotals().totalAmount,
+      }));
+    }
+  }, [cart, showConfirmation, products]);
 
   // Filter and sort products
   const filteredAndSortedProducts = products
@@ -428,7 +493,13 @@ export default function OrdersPage() {
       }
     });
 
-  const cartItems = products.filter((p) => cart[p.id]?.checked);
+  const cartItems = products
+    .filter((p) => cart[p.id]?.checked)
+    .map((p) => ({
+      ...p,
+      quantity: cart[p.id].quantity,
+      subtotal: p.price * cart[p.id].quantity,
+    }));
 
   return (
     <div className="page-container">
@@ -615,6 +686,9 @@ export default function OrdersPage() {
           totalAmount={totalAmount}
           cartItems={cartItems}
           onCheckout={handleCheckoutClick}
+          onCancelOrder={handleCancelEntireOrder}
+          onQuantityChange={changeQuantity}
+          onRemoveItem={removeFromCart}
           customerName={customerName}
           setCustomerName={handleCustomerNameChange}
         />
@@ -622,11 +696,19 @@ export default function OrdersPage() {
         <OrderConfirmationDialog
           isOpen={showConfirmation}
           onConfirm={handleConfirmOrder}
-          onCancel={handleCancelOrder}
+          onCancel={handleCancelOrderDialog}
           orderDetails={pendingOrder?.items || []}
           customerName={pendingOrder?.customerName}
           totalItems={pendingOrder?.totalItems || 0}
           totalAmount={pendingOrder?.totalAmount || 0}
+          onQuantityChange={handleDialogQuantityChange}
+          onRemoveItem={handleDialogRemoveItem}
+        />
+
+        {/* Success Animation */}
+        <SuccessAnimation
+          isVisible={showSuccessAnimation}
+          onComplete={handleSuccessAnimationComplete}
         />
       </div>
     </div>
