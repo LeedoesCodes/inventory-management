@@ -9,6 +9,8 @@
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+  position: relative; // Added for stability
+  overflow: hidden; // Prevent content overflow
 
   .scanner-header {
     display: flex;
@@ -181,11 +183,31 @@
   }
 }
 
+// FIXED: Scanner Preview Container - Added fixed height and overflow control
+.scanner-preview-container {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 100%;
+  min-height: 400px; // Fixed minimum height to prevent bobbing
+  position: relative;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    min-height: 600px; // Taller for mobile layout
+  }
+}
+
+// FIXED: Camera Scanner Area - Fixed height and positioning
 .camera-scanner-area {
   margin-top: 20px;
   text-align: center;
   width: 100%;
   max-width: 100%;
+  height: auto; // Let content determine height
+  min-height: 0; // Reset min-height
+  transition: all 0.3s ease; // Smooth transitions
 
   &.active {
     .camera-container {
@@ -208,25 +230,33 @@
   }
 
   .camera-container {
-    width: 100%;
-    max-width: 500px;
-    margin: 0 auto;
-    border: 2px solid #007bff;
-    border-radius: 10px;
-    overflow: hidden;
-    background: #000;
-    min-height: 300px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    box-sizing: border-box;
+    flex: 1;
+    min-width: 0;
+    position: relative; // Added for proper positioning
+
+    .scanner-view {
+      width: 100%;
+      height: 400px; // Increased height for better visibility
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+      box-sizing: border-box; // Ensure padding doesn't affect dimensions
+    }
 
     .camera-placeholder {
       color: rgba(255, 255, 255, 0.7);
-      padding: 40px 20px;
-      font-style: italic;
+      padding: 20px;
       text-align: center;
+      font-style: italic;
+      width: 100%;
+      box-sizing: border-box;
+      word-wrap: break-word; // Prevent text cutoff
+      overflow-wrap: break-word;
+      line-height: 1.4;
     }
   }
 
@@ -235,8 +265,12 @@
     color: rgba(255, 255, 255, 0.9);
     font-size: 14px;
     background: rgba(0, 0, 0, 0.3);
-    padding: 10px;
+    padding: 10px 15px; // Increased horizontal padding
     border-radius: 5px;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+    word-wrap: break-word; // Prevent text cutoff
 
     small {
       opacity: 0.8;
@@ -247,21 +281,26 @@
   .camera-error {
     color: #ff6b6b;
     background: rgba(255, 107, 107, 0.1);
-    padding: 10px;
+    padding: 10px 15px; // Increased horizontal padding
     border-radius: 5px;
     margin: 10px 0;
     border: 1px solid #ff6b6b;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+    word-wrap: break-word; // Prevent text cutoff
   }
 }
 
-// Quagga scanner container styles
+// FIXED: Quagga scanner container - Prevent text cutoff
 #scanner-container {
   position: relative;
   width: 100%;
-  height: 300px;
+  height: 100%; // Use full height of parent
   background: #000;
   border-radius: 8px;
   overflow: hidden;
+  box-sizing: border-box;
 
   video {
     width: 100% !important;
@@ -273,6 +312,8 @@
     position: absolute;
     top: 0;
     left: 0;
+    width: 100% !important; // Ensure full width
+    height: 100% !important; // Ensure full height
 
     &.drawingBuffer {
       width: 100% !important;
@@ -281,6 +322,144 @@
   }
 }
 
+// FIXED: Product Preview Sidebar - Consistent height
+.product-preview-sidebar {
+  width: 280px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  height: fit-content; // Adjust height to content
+  min-height: 300px; // Minimum height for consistency
+  box-sizing: border-box;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    margin-top: 20px;
+    min-height: 200px; // Smaller minimum height on mobile
+  }
+
+  h4 {
+    margin: 0 0 15px 0;
+    color: white;
+    font-size: 1.1rem;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    padding-bottom: 10px;
+  }
+}
+
+.scanned-product-card {
+  text-align: center;
+}
+
+.product-image-preview {
+  position: relative;
+  margin-bottom: 15px;
+
+  .compressed-image {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .image-placeholder {
+    width: 120px;
+    height: 120px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px dashed rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0 auto;
+
+    svg {
+      font-size: 2rem;
+      margin-bottom: 5px;
+    }
+
+    span {
+      font-size: 0.8rem;
+    }
+  }
+}
+
+.product-info-preview {
+  .product-name {
+    margin: 0 0 8px 0;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .product-category {
+    margin: 0 0 10px 0;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.85rem;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 4px 8px;
+    border-radius: 12px;
+    display: inline-block;
+  }
+
+  .product-details-preview {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+
+    .product-price {
+      color: #68d391;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .stock-badge {
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: rgba(104, 211, 145, 0.2);
+      color: #68d391;
+
+      &.low-stock {
+        background: rgba(245, 101, 101, 0.2);
+        color: #fc8181;
+        animation: pulse 2s infinite;
+      }
+    }
+  }
+
+  .product-barcode-preview {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.75rem;
+  }
+}
+
+.no-product-preview {
+  text-align: center;
+  padding: 40px 20px;
+  color: rgba(255, 255, 255, 0.7);
+
+  svg {
+    margin-bottom: 15px;
+    opacity: 0.5;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+}
+
+// FIXED: Scanning overlay - Better positioning
 .scanning-overlay {
   position: relative;
   width: 100%;
@@ -541,6 +720,44 @@
     border-left-color: #68d391;
     color: #cbd5e0;
   }
+
+  // Dark theme for product preview sidebar
+  .product-preview-sidebar {
+    background: rgba(45, 55, 72, 0.9);
+    border-color: #4a5568;
+
+    h4 {
+      color: #f7fafc;
+      border-bottom-color: #4a5568;
+    }
+  }
+
+  .scanned-product-card {
+    .product-name {
+      color: #f7fafc;
+    }
+
+    .product-category {
+      color: #cbd5e0;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .product-barcode-preview {
+      color: #a0aec0;
+    }
+  }
+
+  .no-product-preview {
+    color: #a0aec0;
+  }
+
+  .product-image-preview {
+    .image-placeholder {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: #4a5568;
+      color: #a0aec0;
+    }
+  }
 }
 
 // ==============================
@@ -585,12 +802,9 @@
 
   .camera-scanner-area {
     .camera-container {
-      max-width: 100%;
-      min-height: 250px;
-    }
-
-    #scanner-container {
-      height: 250px;
+      .scanner-view {
+        height: 300px; // Consistent height on mobile
+      }
     }
   }
 
@@ -627,6 +841,16 @@
       }
     }
   }
+
+  // FIXED: Ensure text doesn't get cut off on very small screens
+  .camera-scanner-area {
+    .camera-instruction,
+    .camera-error {
+      padding: 10px 10px;
+      font-size: 13px;
+      line-height: 1.3;
+    }
+  }
 }
 
 // Smooth transitions for theme switching
@@ -634,4 +858,37 @@
 .barcode-scanner-section * {
   transition: background-color 0.3s ease, color 0.3s ease,
     border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+// NEW: Add scan result feedback styles
+.scan-result {
+  padding: 12px 15px;
+  border-radius: 8px;
+  margin: 10px 0;
+  font-weight: 600;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+
+  &.success {
+    background: rgba(40, 167, 69, 0.2);
+    border: 1px solid rgba(40, 167, 69, 0.5);
+    color: #28a745;
+  }
+
+  &.error {
+    background: rgba(220, 53, 69, 0.2);
+    border: 1px solid rgba(220, 53, 69, 0.5);
+    color: #dc3545;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

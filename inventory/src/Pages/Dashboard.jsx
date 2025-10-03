@@ -319,13 +319,6 @@ export default function Dashboard() {
             <div className="ml-recommendations main-section">
               <div className="section-header">
                 <h2>💡 Smart Recommendations</h2>
-                <button
-                  className="ai-assistant-btn"
-                  onClick={toggleChat}
-                  title="Ask AI about recommendations"
-                >
-                  Ask AI Assistant
-                </button>
               </div>
 
               {mlLoading ? (

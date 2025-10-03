@@ -5,6 +5,9 @@ import {
   faQrcode,
   faCamera,
   faCameraRetro,
+  faCheckCircle,
+  faExclamationTriangle,
+  faImage,
 } from "@fortawesome/free-solid-svg-icons";
 import Quagga from "quagga";
 import "../../styles/barcode-scanner.scss";
@@ -15,43 +18,168 @@ const BarcodeScanner = ({ onBarcodeScanned, products }) => {
   const [isScanning, setIsScanning] = useState(false);
   const [cameraError, setCameraError] = useState("");
   const [scanningStatus, setScanningStatus] = useState("Ready");
+  const [lastScannedCode, setLastScannedCode] = useState("");
+  const [scanCount, setScanCount] = useState(0);
+  const [scanResult, setScanResult] = useState({ type: null, message: "" });
+  const [scannedProduct, setScannedProduct] = useState(null);
   const scannerContainerRef = useRef(null);
+  const quaggaInitializedRef = useRef(false);
+  const scanCooldownRef = useRef(false);
+  const audioContextRef = useRef(null);
+
+  // Initialize audio context for beep sound
+  useEffect(() => {
+    audioContextRef.current = new (window.AudioContext ||
+      window.webkitAudioContext)();
+    return () => {
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+    };
+  }, []);
+
+  // Play beep sound
+  const playBeep = (type = "success") => {
+    try {
+      if (!audioContextRef.current) return;
+
+      const oscillator = audioContextRef.current.createOscillator();
+      const gainNode = audioContextRef.current.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContextRef.current.destination);
+
+      oscillator.frequency.value = type === "success" ? 800 : 400;
+      oscillator.type = "sine";
+
+      gainNode.gain.setValueAtTime(0.3, audioContextRef.current.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(
+        0.01,
+        audioContextRef.current.currentTime + 0.2
+      );
+
+      oscillator.start(audioContextRef.current.currentTime);
+      oscillator.stop(audioContextRef.current.currentTime + 0.2);
+    } catch (error) {
+      console.log("Beep sound not supported:", error);
+    }
+  };
+
+  // Function to get compressed image URL
+  const getCompressedImageUrl = (imageUrl) => {
+    if (!imageUrl) return null;
+
+    if (imageUrl.includes("firebasestorage.googleapis.com")) {
+      // Compress image: max width 150px, max height 150px
+      return `${imageUrl}?alt=media&width=150&height=150`;
+    }
+
+    return imageUrl;
+  };
 
   // Process barcode scan
   const processBarcodeScan = (barcode) => {
-    if (!barcode || barcode.trim() === "") return;
+    if (!barcode || barcode.trim() === "" || scanCooldownRef.current)
+      return false;
 
-    // Clean the barcode - remove any non-numeric characters except digits
     const cleanBarcode = barcode.toString().replace(/\D/g, "").trim();
 
     if (cleanBarcode.length === 0) {
-      alert("Invalid barcode format");
-      return;
+      setScanResult({
+        type: "error",
+        message: "Invalid barcode format",
+      });
+      playBeep("error");
+      setTimeout(() => setScanResult({ type: null, message: "" }), 2000);
+      return false;
+    }
+
+    const now = Date.now();
+    // FIXED: 1-second cooldown for same barcode, but allows increments after cooldown
+    if (lastScannedCode === cleanBarcode && now - scanCount < 1000) {
+      console.log(
+        "🔄 Ignoring rapid duplicate scan (1s cooldown):",
+        cleanBarcode
+      );
+      return false;
     }
 
     console.log("📷 Camera scanned barcode:", cleanBarcode);
 
-    // Call the parent component's handler
-    if (onBarcodeScanned) {
-      onBarcodeScanned(cleanBarcode);
+    scanCooldownRef.current = true;
+    setTimeout(() => {
+      scanCooldownRef.current = false;
+    }, 1000);
+
+    let scanSuccess = false;
+    let foundProduct = null;
+
+    // Find product first
+    foundProduct = products.find((p) => {
+      if (!p.barcode) return false;
+      const productBarcode = p.barcode.toString().replace(/\D/g, "").trim();
+      return productBarcode === cleanBarcode;
+    });
+
+    if (foundProduct) {
+      setScannedProduct(foundProduct);
+
+      // Call the parent component's handler
+      if (onBarcodeScanned) {
+        scanSuccess = onBarcodeScanned(cleanBarcode);
+
+        if (scanSuccess) {
+          setScanResult({
+            type: "success",
+            message: `Added ${foundProduct.name}!`,
+          });
+          playBeep("success");
+        } else {
+          setScanResult({
+            type: "error",
+            message: `Not enough stock for ${foundProduct.name}`,
+          });
+          playBeep("error");
+        }
+      }
+    } else {
+      setScannedProduct(null);
+      setScanResult({
+        type: "error",
+        message: `Product not found: ${cleanBarcode}`,
+      });
+      playBeep("error");
     }
 
-    // Add to scan history
-    setScanHistory((prev) => [...prev.slice(-4), cleanBarcode]);
+    setLastScannedCode(cleanBarcode);
+    setScanCount(now);
 
-    // Show success feedback
-    setScanningStatus(`✅ Found: ${cleanBarcode}`);
+    setScanHistory((prev) => {
+      const newHistory = [...prev, cleanBarcode];
+      return newHistory.slice(-5);
+    });
+
+    setScanningStatus(`Scanned: ${cleanBarcode}`);
     setTimeout(() => {
       if (isScanning) setScanningStatus("Scanning...");
-    }, 2000);
+    }, 1500);
+
+    // Clear scan result and product after 3 seconds
+    setTimeout(() => {
+      setScanResult({ type: null, message: "" });
+      setScannedProduct(null);
+    }, 3000);
+
+    return scanSuccess;
   };
 
-  // Initialize Quagga barcode scanner
+  // Improved Quagga initialization
   const initQuagga = () => {
-    if (!scannerContainerRef.current) {
-      console.error("Scanner container not found");
+    if (!scannerContainerRef.current || quaggaInitializedRef.current) {
       return;
     }
+
+    console.log("🎯 Initializing Quagga scanner...");
 
     Quagga.init(
       {
@@ -64,6 +192,12 @@ const BarcodeScanner = ({ onBarcodeScanned, products }) => {
             height: 480,
             facingMode: "environment",
           },
+          area: {
+            top: "0%",
+            right: "0%",
+            left: "0%",
+            bottom: "0%",
+          },
         },
         decoder: {
           readers: [
@@ -74,69 +208,95 @@ const BarcodeScanner = ({ onBarcodeScanned, products }) => {
             "code_128_reader",
             "code_39_reader",
           ],
+          multiple: false,
         },
         locator: {
           patchSize: "medium",
           halfSample: true,
         },
         locate: true,
-        numOfWorkers: 2,
+        numOfWorkers: navigator.hardwareConcurrency || 2,
+        frequency: 10,
       },
       (err) => {
         if (err) {
-          console.error("Quagga initialization error:", err);
+          console.error("❌ Quagga initialization error:", err);
           setCameraError(`Scanner error: ${err.message}`);
           setIsScanning(false);
+          quaggaInitializedRef.current = false;
           return;
         }
+
         console.log("✅ Quagga initialized successfully");
+        quaggaInitializedRef.current = true;
+
         Quagga.start();
         setScanningStatus("Scanning...");
+        scanCooldownRef.current = false;
       }
     );
 
-    // Handle detected barcodes
     Quagga.onDetected((result) => {
-      if (result.codeResult && result.codeResult.code) {
+      if (result?.codeResult?.code) {
         const barcode = result.codeResult.code;
         console.log("🔍 Quagga detected barcode:", barcode);
+        processBarcodeScan(barcode);
+      }
+    });
 
-        // Check if this is a new barcode (not recently scanned)
-        const isNewBarcode =
-          !scanHistory.includes(barcode) &&
-          !scanHistory.slice(-2).includes(barcode);
+    Quagga.onProcessed((result) => {
+      if (result) {
+        const ctx = Quagga.canvas.ctx.overlay;
+        const canvas = Quagga.canvas.dom.overlay;
 
-        if (isNewBarcode) {
-          processBarcodeScan(barcode);
+        if (ctx && canvas) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-          // Briefly pause scanning to prevent duplicates
-          Quagga.stop();
-          setTimeout(() => {
-            if (isScanning) {
-              Quagga.start();
-              setScanningStatus("Scanning...");
-            }
-          }, 1000);
+          if (result.boxes) {
+            ctx.strokeStyle = "#00FF00";
+            ctx.lineWidth = 2;
+            result.boxes.forEach((box) => {
+              if (box !== result.box) {
+                ctx.strokeRect(
+                  box[0],
+                  box[1],
+                  box[2] - box[0],
+                  box[3] - box[1]
+                );
+              }
+            });
+          }
+
+          if (result.box) {
+            ctx.strokeStyle = "#FF0000";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(
+              result.box[0],
+              result.box[1],
+              result.box[2] - result.box[0],
+              result.box[3] - result.box[1]
+            );
+          }
         }
       }
     });
   };
 
-  // Camera barcode scanner function
+  // Improved camera scanner function
   const startCameraScanner = async () => {
     try {
       setIsScanning(true);
       setCameraError("");
       setScanningStatus("Starting camera...");
+      setScannedProduct(null);
+      quaggaInitializedRef.current = false;
 
-      // Check if browser supports media devices
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         setCameraError("Camera not supported in this browser");
         setIsScanning(false);
         return;
       }
 
-      // Test camera access first
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: "environment",
@@ -145,20 +305,18 @@ const BarcodeScanner = ({ onBarcodeScanned, products }) => {
         },
       });
 
-      // Stop the test stream
       stream.getTracks().forEach((track) => track.stop());
 
-      // Wait for the container to be ready
-      setTimeout(() => {
-        if (scannerContainerRef.current) {
-          console.log("🎯 Scanner container ready, initializing Quagga...");
-          initQuagga();
-        } else {
-          console.error("❌ Scanner container not available");
-          setCameraError("Scanner initialization failed");
-          setIsScanning(false);
-        }
-      }, 100);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      if (scannerContainerRef.current) {
+        console.log("🎯 Scanner container ready, initializing Quagga...");
+        initQuagga();
+      } else {
+        console.error("❌ Scanner container not available");
+        setCameraError("Scanner initialization failed");
+        setIsScanning(false);
+      }
     } catch (error) {
       console.error("Camera error:", error);
       setCameraError(`Camera error: ${error.message}`);
@@ -170,28 +328,40 @@ const BarcodeScanner = ({ onBarcodeScanned, products }) => {
   const stopCameraScanner = () => {
     console.log("🛑 Stopping scanner...");
 
-    // Stop Quagga
-    try {
-      Quagga.stop();
-      Quagga.offDetected();
-      Quagga.offProcessed();
-    } catch (error) {
-      console.log("Quagga cleanup:", error);
-    }
-
     setIsScanning(false);
     setCameraError("");
     setScanningStatus("Ready");
+    setScannedProduct(null);
+    quaggaInitializedRef.current = false;
+    scanCooldownRef.current = false;
+
+    try {
+      Quagga.offDetected();
+      Quagga.offProcessed();
+      Quagga.stop();
+    } catch (error) {
+      console.log("Quagga cleanup completed");
+    }
+
+    if (scannerContainerRef.current) {
+      scannerContainerRef.current.innerHTML = "";
+    }
   };
 
   // Manual barcode handling
   const handleBarcodeScan = () => {
     if (barcodeInput.trim() === "") {
-      alert("Please enter a barcode");
-      return;
+      setScanResult({
+        type: "error",
+        message: "Please enter a barcode",
+      });
+      playBeep("error");
+      setTimeout(() => setScanResult({ type: null, message: "" }), 2000);
+      return false;
     }
-    processBarcodeScan(barcodeInput);
+    const success = processBarcodeScan(barcodeInput);
     setBarcodeInput("");
+    return success;
   };
 
   // Handle Enter key press
@@ -204,7 +374,7 @@ const BarcodeScanner = ({ onBarcodeScanned, products }) => {
   // Handle space bar press on input
   const handleKeyDown = (e) => {
     if (e.key === " ") {
-      e.preventDefault(); // Prevent space from adding to input
+      e.preventDefault();
       handleBarcodeScan();
     }
   };
@@ -213,6 +383,14 @@ const BarcodeScanner = ({ onBarcodeScanned, products }) => {
   const handleInputChange = (e) => {
     setBarcodeInput(e.target.value);
   };
+
+  // Auto-focus input when not scanning
+  useEffect(() => {
+    if (!isScanning) {
+      const input = document.querySelector(".barcode-input");
+      if (input) input.focus();
+    }
+  }, [isScanning]);
 
   // Cleanup on component unmount
   useEffect(() => {
@@ -233,6 +411,20 @@ const BarcodeScanner = ({ onBarcodeScanned, products }) => {
         </div>
       </div>
 
+      {/* Scan Result Feedback */}
+      {scanResult.type && (
+        <div className={`scan-result ${scanResult.type}`}>
+          <FontAwesomeIcon
+            icon={
+              scanResult.type === "success"
+                ? faCheckCircle
+                : faExclamationTriangle
+            }
+          />
+          {scanResult.message}
+        </div>
+      )}
+
       <div className="scanner-controls">
         <div className="barcode-input-group">
           <input
@@ -243,6 +435,7 @@ const BarcodeScanner = ({ onBarcodeScanned, products }) => {
             onKeyPress={handleKeyPress}
             onKeyDown={handleKeyDown}
             className="barcode-input"
+            autoFocus={!isScanning}
           />
           <button
             onClick={handleBarcodeScan}
@@ -269,33 +462,91 @@ const BarcodeScanner = ({ onBarcodeScanned, products }) => {
         </div>
       </div>
 
-      {/* Camera Scanner Area - Only shown when scanning */}
+      {/* Camera Scanner Area with Product Preview */}
       {isScanning && (
         <div className="camera-scanner-area active">
-          <div className="camera-container">
-            <div
-              ref={scannerContainerRef}
-              id="scanner-container"
-              style={{
-                width: "100%",
-                height: "300px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "#000",
-                borderRadius: "8px",
-              }}
-            >
-              <div style={{ color: "white", textAlign: "center" }}>
-                Initializing camera...
+          <div className="scanner-preview-container">
+            {/* Camera Preview */}
+            <div className="camera-container">
+              <div
+                ref={scannerContainerRef}
+                id="scanner-container"
+                className="scanner-view"
+              >
+                <div className="camera-placeholder">
+                  {scanningStatus.includes("Starting")
+                    ? "Initializing camera..."
+                    : "Camera active - scanning..."}
+                </div>
               </div>
+
+              <p className="camera-instruction">
+                📷 Point camera at barcodes. Items auto-add to order.
+              </p>
+            </div>
+
+            {/* Product Preview Sidebar */}
+            <div className="product-preview-sidebar">
+              <h4>Scanned Product</h4>
+
+              {scannedProduct ? (
+                <div className="scanned-product-card">
+                  {scannedProduct.imageUrl ? (
+                    <div className="product-image-preview">
+                      <img
+                        src={getCompressedImageUrl(scannedProduct.imageUrl)}
+                        alt={scannedProduct.name}
+                        className="compressed-image"
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                          e.target.nextSibling.style.display = "flex";
+                        }}
+                      />
+                      <div className="image-placeholder">
+                        <FontAwesomeIcon icon={faImage} />
+                        <span>No Image</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="image-placeholder">
+                      <FontAwesomeIcon icon={faImage} />
+                      <span>No Image</span>
+                    </div>
+                  )}
+
+                  <div className="product-info-preview">
+                    <h5 className="product-name">{scannedProduct.name}</h5>
+                    <p className="product-category">
+                      {scannedProduct.category}
+                    </p>
+                    <div className="product-details-preview">
+                      <span className="product-price">
+                        ₱{scannedProduct.price?.toFixed(2)}
+                      </span>
+                      <span
+                        className={`stock-badge ${
+                          scannedProduct.stock < 5 ? "low-stock" : ""
+                        }`}
+                      >
+                        Stock: {scannedProduct.stock}
+                      </span>
+                    </div>
+                    {scannedProduct.barcode && (
+                      <small className="product-barcode-preview">
+                        Barcode: {scannedProduct.barcode}
+                      </small>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="no-product-preview">
+                  <FontAwesomeIcon icon={faBarcode} size="2x" />
+                  <p>Scan a barcode to see product details</p>
+                </div>
+              )}
             </div>
           </div>
 
-          <p className="camera-instruction">
-            📷 Point your camera at barcodes. Scanner pauses briefly after each
-            scan.
-          </p>
           <div className="scanning-overlay">
             <div className="scan-line"></div>
           </div>
@@ -318,8 +569,9 @@ const BarcodeScanner = ({ onBarcodeScanned, products }) => {
             <li>Hold barcode steady in camera view</li>
             <li>Ensure good, even lighting</li>
             <li>Move closer if the barcode is small</li>
-            <li>Scanner auto-resumes after each scan</li>
+            <li>Items automatically add to order</li>
             <li>Press Space or Enter to add manual entries</li>
+            <li>Same barcode can be scanned after 1-second cooldown</li>
           </ul>
         </div>
       )}
