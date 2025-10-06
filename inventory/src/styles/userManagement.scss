@@ -1078,3 +1078,254 @@
   transition: background-color 0.3s ease, color 0.3s ease,
     border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
 }
+// Add these styles to your existing userManagement.scss
+
+.user-avatar {
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &.has-photo {
+    background-color: transparent !important;
+
+    .profile-photo {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+  }
+
+  .profile-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    color: white;
+
+    svg {
+      font-size: 1rem;
+    }
+  }
+
+  &:hover .profile-overlay {
+    opacity: 1;
+  }
+}
+
+.user-name.clickable {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #007bff;
+
+    .name-link-icon {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+}
+
+.name-link-icon {
+  opacity: 0;
+  transform: translateX(-5px);
+  transition: all 0.2s ease;
+  font-size: 0.8rem;
+  color: #007bff;
+}
+// User actions layout with toggle switch
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+
+  .toggle-switch {
+    margin-right: auto;
+    flex-shrink: 0;
+  }
+
+  .action-btn {
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-muted);
+    background: var(--bg-tertiary);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    &:hover:not(:disabled) {
+      transform: scale(1.1);
+    }
+
+    &.edit-btn:hover:not(:disabled) {
+      color: var(--accent-primary);
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    &.delete-btn:hover:not(:disabled) {
+      color: var(--danger);
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+  }
+}
+
+// Toggle switch styles for user cards (same as form)
+.user-card .toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 80px;
+  height: 40px;
+
+  .toggle-input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+
+    &:checked + .toggle-label {
+      background: var(--success);
+
+      .toggle-handle {
+        transform: translateX(60px);
+      }
+
+      .toggle-text.active {
+        opacity: 1;
+      }
+
+      .toggle-text.inactive {
+        opacity: 0;
+      }
+    }
+
+    &:focus + .toggle-label {
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3);
+    }
+
+    &:disabled + .toggle-label {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  .toggle-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+    background: var(--danger);
+    border-radius: 25px;
+    padding: 0 10px;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+
+    .toggle-handle {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: 32px;
+      height: 32px;
+      background: white;
+      border-radius: 50%;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      z-index: 2;
+    }
+
+    .toggle-text {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: white;
+      transition: opacity 0.3s ease;
+      z-index: 1;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+      flex: 1;
+      text-align: center;
+
+      &.active {
+        opacity: 0;
+      }
+
+      &.inactive {
+        opacity: 1;
+      }
+    }
+  }
+
+  // Hover effects
+  &:hover:not(:has(.toggle-input:disabled)) {
+    .toggle-label {
+      transform: scale(1.02);
+    }
+
+    .toggle-handle {
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25);
+    }
+  }
+}
+
+// Dark theme adjustments for toggle switch
+[data-theme="dark"] {
+  .user-card .toggle-switch {
+    .toggle-label {
+      .toggle-handle {
+        background: #f8fafc;
+      }
+    }
+  }
+}
+
+// Responsive design for user cards
+@media (max-width: 768px) {
+  .user-actions {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+
+    .toggle-switch {
+      order: -1;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      margin-bottom: 0.5rem;
+
+      .toggle-label {
+        margin: 0 auto;
+      }
+    }
+
+    .action-btn {
+      flex: 1;
+      text-align: center;
+    }
+  }
+}

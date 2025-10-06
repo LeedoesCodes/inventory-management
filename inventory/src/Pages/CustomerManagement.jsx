@@ -13,6 +13,7 @@ import { db } from "../Firebase/firebase";
 import Sidebar from "../components/UI/Sidebar";
 import Header from "../components/UI/Headers";
 import { useSidebar } from "../context/SidebarContext";
+import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUser,
@@ -24,17 +25,22 @@ import {
   faCalendar,
   faShoppingCart,
   faDollarSign,
+  faExternalLinkAlt,
+  faEye, // Add eye icon for profile view
 } from "@fortawesome/free-solid-svg-icons";
+import CustomerProfileModal from "../components/Customer/CustomerProfileModal"; // Import the new component
 import "../styles/customerManagement.scss";
 
 export default function CustomerManagement() {
   const { isCollapsed } = useSidebar();
+  const navigate = useNavigate();
   const [customers, setCustomers] = useState([]);
   const [orders, setOrders] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [selectedCustomer, setSelectedCustomer] = useState(null); // Add state for selected customer
 
   // Form state (only name, phone, address)
   const [formData, setFormData] = useState({
@@ -96,6 +102,39 @@ export default function CustomerManagement() {
       customerOrders.length > 0 ? customerOrders[0].createdAt : null;
 
     return { totalOrders, totalSpent, lastOrder, customerOrders };
+  };
+
+  // Handle customer profile click
+  const handleCustomerProfileClick = (customer) => {
+    const customerOrders = orders.filter(
+      (order) =>
+        order.customerName?.toLowerCase() === customer.name.toLowerCase()
+    );
+    setSelectedCustomer({
+      ...customer,
+      orders: customerOrders,
+    });
+  };
+
+  // Handle order click from profile modal
+  const handleOrderClickFromModal = (orderId) => {
+    setSelectedCustomer(null); // Close the modal
+    navigate("/transactionHistory", {
+      state: {
+        highlightedOrder: orderId,
+        scrollToOrder: true,
+      },
+    });
+  };
+
+  // Fixed navigation function - using the correct route from App.jsx
+  const handleOrderClick = (orderId) => {
+    navigate("/transactionHistory", {
+      state: {
+        highlightedOrder: orderId,
+        scrollToOrder: true,
+      },
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -216,8 +255,15 @@ export default function CustomerManagement() {
                 return (
                   <div key={customer.id} className="customer-card">
                     <div className="customer-header">
-                      <div className="customer-avatar">
+                      <div
+                        className="customer-avatar clickable"
+                        onClick={() => handleCustomerProfileClick(customer)}
+                        title="View customer profile and order history"
+                      >
                         <FontAwesomeIcon icon={faUser} />
+                        <div className="avatar-overlay">
+                          <FontAwesomeIcon icon={faEye} />
+                        </div>
                       </div>
                       <div className="customer-info">
                         <h3>{customer.name}</h3>
@@ -291,7 +337,12 @@ export default function CustomerManagement() {
                         <h4>Recent Orders</h4>
                         <div className="orders-list">
                           {stats.customerOrders.slice(0, 3).map((order) => (
-                            <div key={order.id} className="order-item">
+                            <div
+                              key={order.id}
+                              className="order-item clickable-order"
+                              onClick={() => handleOrderClick(order.id)}
+                              title="Click to view transaction details"
+                            >
                               <span className="order-date">
                                 {order.createdAt.toLocaleDateString()}
                               </span>
@@ -301,6 +352,10 @@ export default function CustomerManagement() {
                               <span className="order-items">
                                 {order.totalItems} items
                               </span>
+                              <FontAwesomeIcon
+                                icon={faExternalLinkAlt}
+                                className="order-link-icon"
+                              />
                             </div>
                           ))}
                         </div>
@@ -389,6 +444,16 @@ export default function CustomerManagement() {
               </form>
             </div>
           </div>
+        )}
+
+        {/* Customer Profile Modal */}
+        {selectedCustomer && (
+          <CustomerProfileModal
+            customer={selectedCustomer}
+            customerOrders={selectedCustomer.orders}
+            onClose={() => setSelectedCustomer(null)}
+            onOrderClick={handleOrderClickFromModal}
+          />
         )}
       </div>
     </div>

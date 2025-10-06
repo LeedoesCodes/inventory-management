@@ -1,11 +1,6 @@
 import React, { useState, useContext, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  doc,
-  getDoc,
-  updateDoc,
-  // Removed collection, getDocs, query, where as they were used for stats
-} from "firebase/firestore";
+import { useNavigate, useParams } from "react-router-dom";
+import { doc, getDoc, updateDoc, onSnapshot } from "firebase/firestore"; // Add onSnapshot
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../Firebase/firebase";
 import avatar from "../assets/images/avatar-default.png";
@@ -27,19 +22,24 @@ import {
   faEnvelope,
   faPhone,
   faMapMarkerAlt,
-  // Removed faBox, faShoppingCart, faDollarSign, faUsers
+  faArrowLeft,
+  faCheckCircle,
+  faTimesCircle,
+  faSync,
 } from "@fortawesome/free-solid-svg-icons";
 
 export default function Profile() {
   const navigate = useNavigate();
+  const { userId } = useParams(); // Get userId from URL params
   const { user, logout, role, updateProfile } = useContext(AuthContext);
   const { isCollapsed } = useSidebar();
   const [showConfirm, setShowConfirm] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [userData, setUserData] = useState(null);
-  // Removed [stats, setStats] state
+  const [targetUserRole, setTargetUserRole] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [editForm, setEditForm] = useState({
     displayName: "",
     email: "",
@@ -47,46 +47,60 @@ export default function Profile() {
     address: "",
   });
 
-  useEffect(() => {
-    fetchUserData();
-    // Removed fetchUserStats()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  // Determine if we're viewing current user or another user
+  const isCurrentUser = !userId || userId === user?.uid;
+  const targetUserId = userId || user?.uid;
 
-  const fetchUserData = async () => {
-    if (!user?.uid) {
+  // Real-time listener for user data
+  useEffect(() => {
+    if (!targetUserId) {
       setLoading(false);
       return;
     }
 
-    try {
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        setUserData(data);
-        setEditForm({
-          displayName: data.displayName || "",
-          email: data.email || "",
-          phone: data.phone || "",
-          address: data.address || "",
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    setLoading(true);
 
-  // Removed fetchUserStats function
+    const unsubscribe = onSnapshot(
+      doc(db, "users", targetUserId),
+      (doc) => {
+        if (doc.exists()) {
+          const data = doc.data();
+          setUserData(data);
+          setTargetUserRole(data.role || "");
+          setEditForm({
+            displayName: data.displayName || "",
+            email: data.email || "",
+            phone: data.phone || "",
+            address: data.address || "",
+          });
+        } else {
+          console.error("User not found");
+          setUserData(null);
+        }
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error in real-time listener:", error);
+        setLoading(false);
+      }
+    );
+
+    // Cleanup listener on component unmount
+    return () => unsubscribe();
+  }, [targetUserId]);
 
   const handleImageUpload = async (event) => {
+    // Only allow image upload for current user
+    if (!isCurrentUser) {
+      alert("You can only update your own profile picture");
+      return;
+    }
+
     const file = event.target.files[0];
     if (!file) return;
 
     try {
       setSaving(true);
-      // Using fixed path to overwrite previous avatar
       const storageRef = ref(storage, `profile-images/${user.uid}/avatar`);
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
@@ -100,7 +114,7 @@ export default function Profile() {
       // Update in Auth context
       await updateProfile({ photoURL: downloadURL });
 
-      setUserData((prev) => ({ ...prev, photoURL: downloadURL }));
+      // No need to setUserData manually - real-time listener will update it
       alert("Profile picture updated successfully!");
     } catch (error) {
       console.error("Error uploading image:", error);
@@ -111,8 +125,16 @@ export default function Profile() {
   };
 
   const handleSaveProfile = async () => {
+    // Only allow editing for current user
+    if (!isCurrentUser) {
+      alert("You can only edit your own profile");
+      return;
+    }
+
     try {
       setSaving(true);
+      setSyncing(true);
+
       await updateDoc(doc(db, "users", user.uid), {
         displayName: editForm.displayName,
         phone: editForm.phone,
@@ -124,7 +146,6 @@ export default function Profile() {
         await updateProfile({ displayName: editForm.displayName });
       }
 
-      setUserData((prev) => ({ ...prev, ...editForm }));
       setIsEditing(false);
       alert("Profile updated successfully!");
     } catch (error) {
@@ -132,7 +153,12 @@ export default function Profile() {
       alert("Error updating profile. Please try again.");
     } finally {
       setSaving(false);
+      setSyncing(false);
     }
+  };
+
+  const handleBackClick = () => {
+    navigate(-1); // Go back to previous page
   };
 
   const handleLogoutClick = () => setShowConfirm("logout");
@@ -149,8 +175,35 @@ export default function Profile() {
       employee: "Employee",
       manager: "Manager",
       customer: "Customer",
+      approved: "Approved User",
+      pending: "Pending Approval",
     };
     return roleMap[role] || "User";
+  };
+
+  // Get status display information
+  const getStatusInfo = (status) => {
+    const statusMap = {
+      active: {
+        label: "Active",
+        class: "status-active",
+        icon: faCheckCircle,
+        color: "#10b981",
+      },
+      inactive: {
+        label: "Inactive",
+        class: "status-inactive",
+        icon: faTimesCircle,
+        color: "#ef4444",
+      },
+      pending: {
+        label: "Pending",
+        class: "status-pending",
+        icon: faSync,
+        color: "#f59e0b",
+      },
+    };
+    return statusMap[status] || statusMap.active;
   };
 
   if (loading) {
@@ -160,12 +213,38 @@ export default function Profile() {
         <div className={`profile-page ${isCollapsed ? "collapsed" : ""}`}>
           <Header />
           <div className="profile-content">
-            <div className="loading">Loading profile...</div>
+            <div className="loading">
+              <FontAwesomeIcon icon={faSync} className="spinning" />
+              Loading profile...
+            </div>
           </div>
         </div>
       </div>
     );
   }
+
+  if (!userData) {
+    return (
+      <div className="page-container">
+        <Sidebar />
+        <div className={`profile-page ${isCollapsed ? "collapsed" : ""}`}>
+          <Header />
+          <div className="profile-content">
+            <div className="error-message">
+              <h2>User Not Found</h2>
+              <p>The user profile you're looking for doesn't exist.</p>
+              <button className="back-btn" onClick={handleBackClick}>
+                <FontAwesomeIcon icon={faArrowLeft} />
+                Go Back
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const statusInfo = getStatusInfo(userData.status || "active");
 
   return (
     <div className="page-container">
@@ -175,14 +254,39 @@ export default function Profile() {
 
         <div className="profile-content">
           <div className="profile-header">
-            <h1>My Profile</h1>
-            <button
-              className={`edit-toggle-btn ${isEditing ? "editing" : ""}`}
-              onClick={() => setIsEditing(!isEditing)}
-            >
-              <FontAwesomeIcon icon={isEditing ? faTimes : faUserPen} />
-              {isEditing ? "Cancel" : "Edit Profile"}
-            </button>
+            <div className="header-left">
+              {!isCurrentUser && (
+                <button className="back-btn" onClick={handleBackClick}>
+                  <FontAwesomeIcon icon={faArrowLeft} />
+                  Back
+                </button>
+              )}
+              <h1>
+                {isCurrentUser
+                  ? "My Profile"
+                  : `${userData.displayName || "User"} Profile`}
+              </h1>
+            </div>
+
+            <div className="header-right">
+              {syncing && (
+                <div className="sync-indicator">
+                  <FontAwesomeIcon icon={faSync} className="spinning" />
+                  <span>Syncing...</span>
+                </div>
+              )}
+
+              {isCurrentUser && (
+                <button
+                  className={`edit-toggle-btn ${isEditing ? "editing" : ""}`}
+                  onClick={() => setIsEditing(!isEditing)}
+                  disabled={saving}
+                >
+                  <FontAwesomeIcon icon={isEditing ? faTimes : faUserPen} />
+                  {isEditing ? "Cancel" : "Edit Profile"}
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="profile-grid">
@@ -191,24 +295,29 @@ export default function Profile() {
               <div className="avatar-section">
                 <div className="avatar-wrapper">
                   <img
-                    src={userData?.photoURL || user?.photoURL || avatar}
+                    src={userData?.photoURL || avatar}
                     alt="User Avatar"
                     className="profile-avatar"
                   />
-                  <label className="avatar-upload">
-                    <FontAwesomeIcon icon={faCamera} />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      disabled={saving}
-                    />
-                  </label>
+                  {isCurrentUser && (
+                    <label className="avatar-upload">
+                      <FontAwesomeIcon icon={faCamera} />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        disabled={saving}
+                      />
+                    </label>
+                  )}
+                  <div className={`status-indicator ${statusInfo.class}`}>
+                    <FontAwesomeIcon icon={statusInfo.icon} />
+                  </div>
                 </div>
                 {saving && <div className="saving-overlay">Uploading...</div>}
               </div>
 
-              {isEditing ? (
+              {isEditing && isCurrentUser ? (
                 <div className="edit-form">
                   <div className="form-group">
                     <label>Full Name</label>
@@ -222,6 +331,7 @@ export default function Profile() {
                         }))
                       }
                       placeholder="Enter your full name"
+                      disabled={saving}
                     />
                   </div>
                   <div className="form-group">
@@ -246,6 +356,7 @@ export default function Profile() {
                         }))
                       }
                       placeholder="Enter your phone number"
+                      disabled={saving}
                     />
                   </div>
                   <div className="form-group">
@@ -260,6 +371,7 @@ export default function Profile() {
                       }
                       placeholder="Enter your address"
                       rows="3"
+                      disabled={saving}
                     />
                   </div>
                   <button
@@ -267,24 +379,39 @@ export default function Profile() {
                     onClick={handleSaveProfile}
                     disabled={saving}
                   >
-                    <FontAwesomeIcon icon={faSave} />
-                    {saving ? "Saving..." : "Save Changes"}
+                    {saving ? (
+                      <>
+                        <FontAwesomeIcon icon={faSync} className="spinning" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <FontAwesomeIcon icon={faSave} />
+                        Save Changes
+                      </>
+                    )}
                   </button>
                 </div>
               ) : (
                 <div className="profile-info">
-                  <h2 className="profile-name">
-                    {userData?.displayName || user?.displayName || user?.email}
-                  </h2>
+                  <div className="profile-header-info">
+                    <h2 className="profile-name">
+                      {userData?.displayName || userData?.email}
+                    </h2>
+                    <span className={`status-badge ${statusInfo.class}`}>
+                      <FontAwesomeIcon icon={statusInfo.icon} />
+                      {statusInfo.label}
+                    </span>
+                  </div>
                   <p className="profile-role">
                     <FontAwesomeIcon icon={faUserPen} />
-                    {getRoleDisplayName(role)}
+                    {getRoleDisplayName(isCurrentUser ? role : targetUserRole)}
                   </p>
 
                   <div className="contact-info">
                     <div className="contact-item">
                       <FontAwesomeIcon icon={faEnvelope} />
-                      <span>{userData?.email || user?.email}</span>
+                      <span>{userData?.email}</span>
                     </div>
                     {userData?.phone && (
                       <div className="contact-item">
@@ -303,48 +430,91 @@ export default function Profile() {
               )}
             </div>
 
-            {/* Actions Card (Moved to the right side) */}
-            <div className="actions-card">
-              <h3>Account Actions</h3>
-              <div className="button-group">
-                <button className="logout-btn" onClick={handleLogoutClick}>
-                  Logout
-                </button>
-                <UserAccountDeletion user={user} />
-              </div>
+            {/* Actions Card - Only show for current user */}
+            {isCurrentUser && (
+              <div className="actions-card">
+                <h3>Account Actions</h3>
+                <div className="button-group">
+                  <button
+                    className="logout-btn"
+                    onClick={handleLogoutClick}
+                    disabled={saving}
+                  >
+                    Logout
+                  </button>
+                  <UserAccountDeletion user={user} />
+                </div>
 
-              <div className="account-info">
-                <h4>Account Information</h4>
-                <div className="info-item">
-                  <span>User ID:</span>
-                  <code>{user?.uid}</code>
-                </div>
-                <div className="info-item">
-                  <span>Last Login:</span>
-                  <span>{new Date().toLocaleDateString()}</span>
-                </div>
-                <div className="info-item">
-                  <span>Account Status:</span>
-                  <span className="status-active">Active</span>
-                </div>
-                <div className="info-item">
-                  <span>Permissions:</span>
-                  <span>{getRoleDisplayName(role)}</span>
-                </div>
-                {/* Member Since (Moved from stats to actions/info) */}
-                <div className="info-item">
-                  <span>Member Since:</span>
-                  <span className="stat-date">
-                    {userData?.createdAt
-                      ?.toDate?.()
-                      ?.toLocaleDateString("en-US", {
-                        month: "long",
-                        year: "numeric",
-                      }) || "N/A"}
-                  </span>
+                <div className="account-info">
+                  <h4>Account Information</h4>
+                  <div className="info-item">
+                    <span>User ID:</span>
+                    <code>{user?.uid}</code>
+                  </div>
+                  <div className="info-item">
+                    <span>Last Login:</span>
+                    <span>{new Date().toLocaleDateString()}</span>
+                  </div>
+                  <div className="info-item">
+                    <span>Account Status:</span>
+                    <span className={statusInfo.class}>
+                      <FontAwesomeIcon icon={statusInfo.icon} />
+                      {statusInfo.label}
+                    </span>
+                  </div>
+                  <div className="info-item">
+                    <span>Permissions:</span>
+                    <span>{getRoleDisplayName(role)}</span>
+                  </div>
+                  <div className="info-item">
+                    <span>Member Since:</span>
+                    <span className="stat-date">
+                      {userData?.createdAt
+                        ?.toDate?.()
+                        ?.toLocaleDateString("en-US", {
+                          month: "long",
+                          year: "numeric",
+                        }) || "N/A"}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* View-only info for other users */}
+            {!isCurrentUser && (
+              <div className="actions-card view-only-card">
+                <h3>User Information</h3>
+                <div className="account-info">
+                  <div className="info-item">
+                    <span>User ID:</span>
+                    <code>{targetUserId}</code>
+                  </div>
+                  <div className="info-item">
+                    <span>Account Status:</span>
+                    <span className={statusInfo.class}>
+                      <FontAwesomeIcon icon={statusInfo.icon} />
+                      {statusInfo.label}
+                    </span>
+                  </div>
+                  <div className="info-item">
+                    <span>Role:</span>
+                    <span>{getRoleDisplayName(targetUserRole)}</span>
+                  </div>
+                  <div className="info-item">
+                    <span>Member Since:</span>
+                    <span className="stat-date">
+                      {userData?.createdAt
+                        ?.toDate?.()
+                        ?.toLocaleDateString("en-US", {
+                          month: "long",
+                          year: "numeric",
+                        }) || "N/A"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   collection,
   getDocs,
@@ -25,6 +26,32 @@ export default function ProductsPage() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [highlightedProductId, setHighlightedProductId] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+
+  // Check for highlighted product on component mount and URL changes
+  useEffect(() => {
+    const highlightId = searchParams.get("highlight");
+    if (highlightId) {
+      console.log("Highlighting product:", highlightId);
+      setHighlightedProductId(highlightId);
+
+      // Clear search filters to ensure the product is visible
+      setSearchTerm("");
+      setSelectedCategory("");
+
+      // Clear the URL parameter after 5 seconds to allow time for scrolling
+      const timer = setTimeout(() => {
+        searchParams.delete("highlight");
+        setSearchParams(searchParams, { replace: true });
+        setHighlightedProductId(null);
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, setSearchParams]);
 
   const fetchProducts = async () => {
     const snapshot = await getDocs(collection(db, "products"));
@@ -79,7 +106,7 @@ export default function ProductsPage() {
         price: Number(productData.price),
         stock: Number(productData.stock),
         category: productData.category || "none",
-        barcode: productData.barcode || "", // ✅ ADDED THIS LINE
+        barcode: productData.barcode || "",
         imageUrl,
         updatedAt: new Date(),
       };
@@ -103,6 +130,9 @@ export default function ProductsPage() {
   };
 
   const handleSearch = (term, category) => {
+    setSearchTerm(term);
+    setSelectedCategory(category);
+
     let filtered = products;
 
     if (term) {
@@ -120,6 +150,11 @@ export default function ProductsPage() {
     setFilteredProducts(filtered);
   };
 
+  // Check if the highlighted product exists in the filtered list
+  const isHighlightedProductVisible =
+    highlightedProductId &&
+    filteredProducts.some((p) => p.id === highlightedProductId);
+
   return (
     <div className="page-container">
       <Sidebar />
@@ -132,12 +167,19 @@ export default function ProductsPage() {
 
           <div className="search-container">
             <ProductSearch onSearch={handleSearch} categories={categories} />
+            {(searchTerm || selectedCategory) && highlightedProductId && (
+              <button
+                className="clear-filters-btn"
+                onClick={() => handleSearch("", "")}
+              ></button>
+            )}
           </div>
 
           <ProductList
             products={filteredProducts}
             onEdit={handleEditProduct}
             onDelete={handleDeleteProduct}
+            highlightedProductId={highlightedProductId}
           />
 
           <button className="fab" onClick={handleAddProduct}>

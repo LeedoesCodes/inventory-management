@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   collection,
   getDocs,
@@ -12,6 +12,7 @@ import { db } from "../Firebase/firebase";
 import Sidebar from "../components/UI/Sidebar";
 import Header from "../components/UI/Headers";
 import { useSidebar } from "../context/SidebarContext";
+import { useLocation } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSearch,
@@ -32,6 +33,7 @@ import "../styles/transaction.scss";
 
 export default function TransactionHistory() {
   const { isCollapsed } = useSidebar();
+  const location = useLocation();
   const [orders, setOrders] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -40,6 +42,9 @@ export default function TransactionHistory() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [highlightedOrderId, setHighlightedOrderId] = useState(null);
+
+  const orderRefs = useRef({});
 
   const fetchOrders = async () => {
     try {
@@ -64,6 +69,44 @@ export default function TransactionHistory() {
   useEffect(() => {
     fetchOrders();
   }, []);
+
+  // Handle navigation state for highlighted order
+  useEffect(() => {
+    if (location.state?.highlightedOrder) {
+      setHighlightedOrderId(location.state.highlightedOrder);
+
+      // Clear the state to prevent re-highlighting on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
+
+  // Scroll to and highlight the order when it's available
+  useEffect(() => {
+    if (
+      highlightedOrderId &&
+      orderRefs.current[highlightedOrderId] &&
+      !loading
+    ) {
+      const orderElement = orderRefs.current[highlightedOrderId];
+
+      // Scroll to the order
+      orderElement.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+
+      // Add highlight class
+      orderElement.classList.add("highlighted-order");
+
+      // Remove highlight after 5 seconds
+      const timer = setTimeout(() => {
+        orderElement.classList.remove("highlighted-order");
+        setHighlightedOrderId(null);
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [highlightedOrderId, loading]);
 
   const handleDeleteOrder = async (orderId) => {
     if (
@@ -310,7 +353,13 @@ export default function TransactionHistory() {
           ) : (
             <div className="transaction-list">
               {filteredOrders.map((order) => (
-                <div key={order.id} className="transaction-card">
+                <div
+                  key={order.id}
+                  ref={(el) => (orderRefs.current[order.id] = el)}
+                  className={`transaction-card ${
+                    highlightedOrderId === order.id ? "highlighted-order" : ""
+                  }`}
+                >
                   <div className="transaction-header">
                     <div className="order-info">
                       <span className="order-id">
@@ -365,7 +414,6 @@ export default function TransactionHistory() {
                         <span>{order.totalItems} items</span>
                       </div>
                       <div className="detail-item">
-                        <FontAwesomeIcon icon={faDollarSign} />
                         <span>₱{order.totalAmount.toFixed(2)}</span>
                       </div>
                     </div>

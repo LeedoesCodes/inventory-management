@@ -8,11 +8,13 @@ import {
   deleteDoc,
   query,
   where,
+  onSnapshot,
 } from "firebase/firestore";
 import { db } from "../Firebase/firebase";
 import Sidebar from "../components/UI/Sidebar";
 import Header from "../components/UI/Headers";
 import { useSidebar } from "../context/SidebarContext";
+import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUser,
@@ -32,11 +34,16 @@ import {
   faFilter,
   faSort,
   faLock,
+  faExternalLinkAlt,
+  faCheckCircle,
+  faTimesCircle,
+  faSync,
 } from "@fortawesome/free-solid-svg-icons";
 import "../styles/userManagement.scss";
 
 export default function UserManagement() {
   const { isCollapsed } = useSidebar();
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -47,7 +54,8 @@ export default function UserManagement() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
-  const [passwordChangeStep, setPasswordChangeStep] = useState("idle"); // idle, verifying, changing
+  const [passwordChangeStep, setPasswordChangeStep] = useState("idle");
+  const [syncing, setSyncing] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -89,31 +97,37 @@ export default function UserManagement() {
     "Operations",
   ];
 
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      const snapshot = await getDocs(collection(db, "users"));
-      const usersData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setUsers(usersData);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Real-time listener for users collection
   useEffect(() => {
-    fetchUsers();
+    setLoading(true);
+
+    const unsubscribe = onSnapshot(
+      collection(db, "users"),
+      (snapshot) => {
+        const usersData = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setUsers(usersData);
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error in real-time listener:", error);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
   }, []);
 
   const getRoleInfo = (role) => {
-    return userRoles.find((r) => r.value === role) || userRoles[2]; // Default to employee
+    return userRoles.find((r) => r.value === role) || userRoles[2];
   };
 
-  // Verify current password before allowing password change
+  const handleProfileClick = (userId) => {
+    navigate(`/profile/${userId}`);
+  };
+
   const verifyCurrentPassword = async () => {
     if (!currentPassword) {
       alert("Please enter your current password");
@@ -122,17 +136,12 @@ export default function UserManagement() {
 
     try {
       setPasswordChangeStep("verifying");
-
-      // In a real app, you would verify against the actual user's password
-      // This is a simulation - you'd typically use Firebase Auth for this
       const userDoc = await getDocs(
         query(collection(db, "users"), where("id", "==", editingUser.id))
       );
 
       if (!userDoc.empty) {
         const userData = userDoc.docs[0].data();
-        // Note: In production, you should use Firebase Auth to verify passwords
-        // This is just a basic check - you'll need to implement proper authentication
         if (userData.password === currentPassword) {
           setPasswordChangeStep("changing");
           return true;
@@ -166,7 +175,6 @@ export default function UserManagement() {
       return;
     }
 
-    // If editing user and password is provided, verify current password first
     if (editingUser && password) {
       if (passwordChangeStep !== "changing") {
         const verified = await verifyCurrentPassword();
@@ -175,6 +183,7 @@ export default function UserManagement() {
     }
 
     try {
+      setSyncing(true);
       const userData = {
         ...formData,
         updatedAt: new Date(),
@@ -183,19 +192,17 @@ export default function UserManagement() {
       };
 
       if (editingUser) {
-        // Update existing user
         if (password) {
-          userData.password = password; // In real app, hash this password
+          userData.password = password;
         }
         await updateDoc(doc(db, "users", editingUser.id), userData);
         alert("User updated successfully!");
       } else {
-        // Create new user
         await addDoc(collection(db, "users"), {
           ...userData,
-          password: password, // In real app, hash this password
+          password: password,
           createdAt: new Date(),
-          createdBy: "current-user-id", // You'd get this from auth context
+          createdBy: "current-user-id",
         });
         alert("User created successfully!");
       }
@@ -221,10 +228,11 @@ export default function UserManagement() {
       setPassword("");
       setCurrentPassword("");
       setPasswordChangeStep("idle");
-      fetchUsers();
     } catch (error) {
       console.error("Error saving user:", error);
       alert("Error saving user. Please try again.");
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -246,9 +254,9 @@ export default function UserManagement() {
         settings: false,
       },
     });
-    setPassword(""); // Don't show existing password
-    setCurrentPassword(""); // Reset current password field
-    setPasswordChangeStep("idle"); // Reset password change flow
+    setPassword("");
+    setCurrentPassword("");
+    setPasswordChangeStep("idle");
     setShowForm(true);
   };
 
@@ -259,32 +267,36 @@ export default function UserManagement() {
       )
     ) {
       try {
+        setSyncing(true);
         await deleteDoc(doc(db, "users", userId));
         alert("User deleted successfully!");
-        fetchUsers();
       } catch (error) {
         console.error("Error deleting user:", error);
         alert("Error deleting user. Please try again.");
+      } finally {
+        setSyncing(false);
       }
     }
   };
 
-  const handleStatusToggle = async (user) => {
-    const newStatus = user.status === "active" ? "inactive" : "active";
+  const handleStatusToggle = async (user, newStatus) => {
     try {
+      setSyncing(true);
       await updateDoc(doc(db, "users", user.id), {
         status: newStatus,
         updatedAt: new Date(),
       });
+
       alert(
         `User ${
           newStatus === "active" ? "activated" : "deactivated"
         } successfully!`
       );
-      fetchUsers();
     } catch (error) {
       console.error("Error updating user status:", error);
       alert("Error updating user status. Please try again.");
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -313,6 +325,22 @@ export default function UserManagement() {
     setPasswordChangeStep("idle");
   };
 
+  const handleRefresh = async () => {
+    try {
+      setLoading(true);
+      const snapshot = await getDocs(collection(db, "users"));
+      const usersData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setUsers(usersData);
+    } catch (error) {
+      console.error("Error refreshing users:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="page-container">
       <Sidebar />
@@ -321,8 +349,27 @@ export default function UserManagement() {
 
         <div className="users-content">
           <div className="page-header">
-            <h1>User Management</h1>
+            <div className="header-title">
+              <h1>User Management</h1>
+              <button
+                className="refresh-btn"
+                onClick={handleRefresh}
+                disabled={loading}
+                title="Refresh users"
+              >
+                <FontAwesomeIcon
+                  icon={faSync}
+                  className={loading ? "spinning" : ""}
+                />
+              </button>
+            </div>
             <p>Manage system users, roles, and permissions</p>
+            {syncing && (
+              <div className="sync-indicator">
+                <FontAwesomeIcon icon={faSync} className="spinning" />
+                <span>Syncing changes...</span>
+              </div>
+            )}
           </div>
 
           {/* Statistics Cards */}
@@ -369,9 +416,22 @@ export default function UserManagement() {
             </div>
 
             <div className="filter-controls">
+              <select
+                value={filterRole}
+                onChange={(e) => setFilterRole(e.target.value)}
+                className="role-filter"
+              >
+                <option value="all">All Roles</option>
+                {userRoles.map((role) => (
+                  <option key={role.value} value={role.value}>
+                    {role.label}
+                  </option>
+                ))}
+              </select>
               <button
                 className="add-user-btn"
                 onClick={() => setShowForm(true)}
+                disabled={syncing}
               >
                 <FontAwesomeIcon icon={faPlus} />
                 Add User
@@ -381,7 +441,10 @@ export default function UserManagement() {
 
           {/* Users List */}
           {loading ? (
-            <div className="loading">Loading users...</div>
+            <div className="loading">
+              <FontAwesomeIcon icon={faSync} className="spinning" />
+              Loading users...
+            </div>
           ) : filteredUsers.length === 0 ? (
             <div className="no-users">
               <FontAwesomeIcon icon={faUser} size="3x" />
@@ -389,6 +452,7 @@ export default function UserManagement() {
               <button
                 className="add-user-btn"
                 onClick={() => setShowForm(true)}
+                disabled={syncing}
               >
                 Add Your First User
               </button>
@@ -402,13 +466,55 @@ export default function UserManagement() {
                   <div key={user.id} className={`user-card ${user.status}`}>
                     <div className="user-header">
                       <div
-                        className="user-avatar"
-                        style={{ backgroundColor: roleInfo.color }}
+                        className={`user-avatar ${
+                          user.photoURL ? "has-photo" : ""
+                        }`}
+                        onClick={() => handleProfileClick(user.id)}
+                        style={{
+                          backgroundColor: user.photoURL
+                            ? "transparent"
+                            : roleInfo.color,
+                          cursor: "pointer",
+                        }}
+                        title="Click to view profile"
                       >
-                        <FontAwesomeIcon icon={roleInfo.icon} />
+                        {user.photoURL ? (
+                          <img
+                            src={user.photoURL}
+                            alt={`${user.name}'s profile`}
+                            className="profile-photo"
+                          />
+                        ) : (
+                          <FontAwesomeIcon icon={roleInfo.icon} />
+                        )}
+                        <div className="profile-overlay">
+                          <FontAwesomeIcon icon={faExternalLinkAlt} />
+                        </div>
+                        <div className={`status-indicator ${user.status}`}>
+                          <FontAwesomeIcon
+                            icon={
+                              user.status === "active"
+                                ? faCheckCircle
+                                : faTimesCircle
+                            }
+                          />
+                        </div>
                       </div>
                       <div className="user-info">
-                        <h3>{user.name}</h3>
+                        <h3
+                          className="user-name clickable"
+                          onClick={() => handleProfileClick(user.id)}
+                          title="Click to view profile"
+                        >
+                          {user.name}
+                          <span className={`status-badge ${user.status}`}>
+                            {user.status === "active" ? "Active" : "Inactive"}
+                          </span>
+                          <FontAwesomeIcon
+                            icon={faExternalLinkAlt}
+                            className="name-link-icon"
+                          />
+                        </h3>
                         <div className="user-meta">
                           <span
                             className="user-role"
@@ -462,19 +568,49 @@ export default function UserManagement() {
                       </div>
                     </div>
                     <div className="user-actions">
-                      <button
-                        className={`status-btn ${user.status}`}
-                        onClick={() => handleStatusToggle(user)}
-                        title={
-                          user.status === "active" ? "Deactivate" : "Activate"
-                        }
-                      >
-                        {user.status === "active" ? "Active" : "Inactive"}
-                      </button>
+                      {/* Sliding Toggle Switch - Same as Edit Form */}
+                      <div className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          id={`user-status-${user.id}`}
+                          checked={user.status === "active"}
+                          onChange={(e) => {
+                            const newStatus = e.target.checked
+                              ? "active"
+                              : "inactive";
+                            if (
+                              window.confirm(
+                                `Are you sure you want to ${
+                                  newStatus === "active"
+                                    ? "activate"
+                                    : "deactivate"
+                                } this user?`
+                              )
+                            ) {
+                              handleStatusToggle(user, newStatus);
+                            } else {
+                              // Reset the toggle if user cancels
+                              e.target.checked = !e.target.checked;
+                            }
+                          }}
+                          className="toggle-input"
+                          disabled={syncing}
+                        />
+                        <label
+                          htmlFor={`user-status-${user.id}`}
+                          className="toggle-label"
+                        >
+                          <span className="toggle-handle"></span>
+                          <span className="toggle-text active">Active</span>
+                          <span className="toggle-text inactive">Inactive</span>
+                        </label>
+                      </div>
+
                       <button
                         className="action-btn edit-btn"
                         onClick={() => handleEdit(user)}
                         title="Edit User"
+                        disabled={syncing}
                       >
                         <FontAwesomeIcon icon={faEdit} />
                       </button>
@@ -482,6 +618,7 @@ export default function UserManagement() {
                         className="action-btn delete-btn"
                         onClick={() => handleDelete(user.id)}
                         title="Delete User"
+                        disabled={syncing}
                       >
                         <FontAwesomeIcon icon={faTrash} />
                       </button>
@@ -493,7 +630,7 @@ export default function UserManagement() {
           )}
         </div>
 
-        {/* User Form Modal */}
+        {/* User Form Modal - Keep the existing form */}
         {showForm && (
           <div className="modal-overlay">
             <div className="modal-content">
@@ -523,6 +660,7 @@ export default function UserManagement() {
                     setCurrentPassword("");
                     setPasswordChangeStep("idle");
                   }}
+                  disabled={syncing}
                 >
                   ×
                 </button>
@@ -540,6 +678,7 @@ export default function UserManagement() {
                       }
                       placeholder="Enter full name"
                       required
+                      disabled={syncing}
                     />
                   </div>
 
@@ -553,6 +692,7 @@ export default function UserManagement() {
                       }
                       placeholder="Enter email address"
                       required
+                      disabled={syncing}
                     />
                   </div>
                 </div>
@@ -567,6 +707,7 @@ export default function UserManagement() {
                         setFormData({ ...formData, phone: e.target.value })
                       }
                       placeholder="Enter phone number"
+                      disabled={syncing}
                     />
                   </div>
 
@@ -578,6 +719,7 @@ export default function UserManagement() {
                         setFormData({ ...formData, role: e.target.value })
                       }
                       required
+                      disabled={syncing}
                     >
                       {userRoles.map((role) => (
                         <option key={role.value} value={role.value}>
@@ -596,6 +738,7 @@ export default function UserManagement() {
                       onChange={(e) =>
                         setFormData({ ...formData, department: e.target.value })
                       }
+                      disabled={syncing}
                     >
                       <option value="">Select Department</option>
                       {departments.map((dept) => (
@@ -615,6 +758,7 @@ export default function UserManagement() {
                         setFormData({ ...formData, position: e.target.value })
                       }
                       placeholder="Enter job position"
+                      disabled={syncing}
                     />
                   </div>
                 </div>
@@ -641,6 +785,7 @@ export default function UserManagement() {
                               }
                               placeholder="Enter your current password to change password"
                               required
+                              disabled={syncing}
                             />
                             <button
                               type="button"
@@ -648,6 +793,7 @@ export default function UserManagement() {
                               onClick={() =>
                                 setShowCurrentPassword(!showCurrentPassword)
                               }
+                              disabled={syncing}
                             >
                               <FontAwesomeIcon
                                 icon={showCurrentPassword ? faEyeSlash : faEye}
@@ -670,13 +816,17 @@ export default function UserManagement() {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="Leave blank to keep current password"
-                            disabled={passwordChangeStep === "verifying"}
+                            disabled={
+                              passwordChangeStep === "verifying" || syncing
+                            }
                           />
                           <button
                             type="button"
                             className="password-toggle"
                             onClick={() => setShowNewPassword(!showNewPassword)}
-                            disabled={passwordChangeStep === "verifying"}
+                            disabled={
+                              passwordChangeStep === "verifying" || syncing
+                            }
                           >
                             <FontAwesomeIcon
                               icon={showNewPassword ? faEyeSlash : faEye}
@@ -707,6 +857,7 @@ export default function UserManagement() {
                           type="button"
                           className="btn-cancel-password"
                           onClick={resetPasswordFields}
+                          disabled={syncing}
                         >
                           Cancel Password Change
                         </button>
@@ -723,11 +874,13 @@ export default function UserManagement() {
                           onChange={(e) => setPassword(e.target.value)}
                           placeholder="Enter password for new user"
                           required
+                          disabled={syncing}
                         />
                         <button
                           type="button"
                           className="password-toggle"
                           onClick={() => setShowPassword(!showPassword)}
+                          disabled={syncing}
                         >
                           <FontAwesomeIcon
                             icon={showPassword ? faEyeSlash : faEye}
@@ -753,6 +906,7 @@ export default function UserManagement() {
                         })
                       }
                       className="toggle-input"
+                      disabled={syncing}
                     />
                     <label htmlFor="user-status" className="toggle-label">
                       <span className="toggle-handle"></span>
@@ -789,19 +943,29 @@ export default function UserManagement() {
                       setCurrentPassword("");
                       setPasswordChangeStep("idle");
                     }}
+                    disabled={syncing}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     className="btn-submit"
-                    disabled={passwordChangeStep === "verifying"}
+                    disabled={passwordChangeStep === "verifying" || syncing}
                   >
-                    {passwordChangeStep === "verifying"
-                      ? "Verifying..."
-                      : editingUser
-                      ? "Update User"
-                      : "Create User"}
+                    {syncing ? (
+                      <>
+                        <FontAwesomeIcon icon={faSync} className="spinning" />
+                        {passwordChangeStep === "verifying"
+                          ? "Verifying..."
+                          : "Saving..."}
+                      </>
+                    ) : passwordChangeStep === "verifying" ? (
+                      "Verifying..."
+                    ) : editingUser ? (
+                      "Update User"
+                    ) : (
+                      "Create User"
+                    )}
                   </button>
                 </div>
               </form>
