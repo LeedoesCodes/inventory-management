@@ -233,17 +233,7 @@ const LowStockPage = () => {
                     <div className="stock-info">
                       <span className="stock-count">{product.stock}</span>
                       <div className="stock-input">
-                        <input
-                          type="number"
-                          min="0"
-                          defaultValue={product.stock}
-                          onBlur={(e) =>
-                            updateStock(product.id, e.target.value)
-                          }
-                        />
-                        <span className="threshold-reference">
-                          / {userSettings.lowStockThreshold}
-                        </span>
+                        <span className="threshold-reference"></span>
                       </div>
                     </div>
 
@@ -267,13 +257,9 @@ const LowStockPage = () => {
 
                     <div className="action-buttons">
                       <button
-                        onClick={() => handleQuickReorder(product)}
-                        className="action-btn reorder-btn"
-                      >
-                        Reorder
-                      </button>
-                      <button
-                        onClick={() => navigate(`/products`)}
+                        onClick={() =>
+                          navigate(`/products?highlight=${product.id}`)
+                        }
                         className="action-btn view-btn"
                       >
                         View

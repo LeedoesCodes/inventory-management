@@ -174,6 +174,8 @@ function App() {
               <Route path="/products" element={<ProductPage />} />
               <Route path="/orderspage" element={<OrdersPage />} />
               <Route path="/low-stock" element={<LowStockPage />} />
+
+              <Route path="/profile/:userId" element={<Profile />} />
               <Route
                 path="/transactionHistory"
                 element={<TransactionHistory />}

@@ -1,0 +1,385 @@
+// Use more specific class names to avoid conflicts
+.customer-profile-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+  padding: 1rem;
+}
+
+.customer-profile-modal {
+  background: var(--bg-modal);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 930px;
+  max-height: 100vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-modal);
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+  margin: 0 auto;
+
+  // Make header classes more specific
+  .customer-profile-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 2rem;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+
+    .customer-profile-header-content {
+      display: flex;
+      align-items: flex-start;
+      gap: 1.5rem;
+      flex: 1;
+
+      .customer-profile-avatar-large {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: var(--accent-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+        flex-shrink: 0;
+      }
+
+      .customer-profile-info-header {
+        flex: 1;
+
+        h2 {
+          margin: 0 0 0.5rem 0;
+          color: var(--text-primary);
+          font-size: 1.8rem;
+          font-weight: 700;
+        }
+
+        .customer-profile-meta {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+
+          .customer-profile-contact-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 1rem;
+
+            svg {
+              width: 16px;
+              color: var(--text-muted);
+            }
+          }
+        }
+      }
+    }
+
+    .customer-profile-close-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.3s ease;
+      padding: 0.5rem;
+      border-radius: 6px;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+
+      &:hover {
+        color: var(--text-primary);
+        background: var(--bg-tertiary);
+      }
+    }
+  }
+
+  .customer-profile-modal-content {
+    padding: 2rem;
+
+    // Make stats grid specific
+    .customer-profile-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+
+      .customer-profile-stat-card {
+        background: var(--bg-card);
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: all 0.3s ease;
+        border: 1px solid var(--border-color);
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: var(--shadow-hover);
+        }
+
+        .customer-profile-stat-icon {
+          width: 50px;
+          height: 50px;
+          border-radius: 10px;
+          background: var(--gradient-primary);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 1.2rem;
+          flex-shrink: 0;
+        }
+
+        .customer-profile-stat-info {
+          h3 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+          }
+
+          p {
+            margin: 0.25rem 0 0 0;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 500;
+          }
+        }
+      }
+    }
+
+    // Make orders section specific
+    .customer-profile-orders-section {
+      h3 {
+        margin: 0 0 1.5rem 0;
+        color: var(--text-primary);
+        font-size: 1.4rem;
+        font-weight: 600;
+      }
+
+      .customer-profile-no-orders {
+        text-align: center;
+        padding: 3rem;
+        color: var(--text-secondary);
+        background: var(--bg-card);
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+
+        p {
+          margin-top: 1rem;
+          font-size: 1.1rem;
+        }
+      }
+
+      .customer-profile-orders-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+
+        .customer-profile-order-card {
+          background: var(--bg-card);
+          border-radius: 12px;
+          padding: 1.5rem;
+          box-shadow: var(--shadow);
+          border: 1px solid var(--border-color);
+          cursor: pointer;
+          transition: all 0.3s ease;
+
+          &:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-2px);
+            border-color: var(--accent-primary);
+
+            .customer-profile-view-transaction {
+              color: var(--accent-primary);
+            }
+          }
+
+          .customer-profile-order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+
+            .customer-profile-order-info {
+              display: flex;
+              flex-direction: column;
+              gap: 0.5rem;
+
+              .customer-profile-order-id {
+                font-weight: 600;
+                color: var(--text-primary);
+                font-size: 1.1rem;
+              }
+
+              .customer-profile-order-date {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                color: var(--text-secondary);
+                font-size: 0.9rem;
+
+                svg {
+                  width: 14px;
+                  color: var(--text-muted);
+                }
+              }
+            }
+
+            .customer-profile-order-amount {
+              font-size: 1.3rem;
+              font-weight: 700;
+              color: var(--success);
+            }
+          }
+
+          .customer-profile-order-details {
+            margin-bottom: 1rem;
+
+            .customer-profile-order-items {
+              margin-bottom: 0.5rem;
+              color: var(--text-secondary);
+              font-size: 0.9rem;
+            }
+
+            .customer-profile-order-products {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 0.5rem;
+
+              .customer-profile-product-tag {
+                background: var(--bg-tertiary);
+                padding: 0.3rem 0.6rem;
+                border-radius: 6px;
+                font-size: 0.8rem;
+                color: var(--text-primary);
+                border: 1px solid var(--border-color);
+              }
+
+              .customer-profile-more-items {
+                background: var(--accent-primary);
+                color: white;
+                padding: 0.3rem 0.6rem;
+                border-radius: 6px;
+                font-size: 0.8rem;
+                font-weight: 600;
+              }
+            }
+          }
+
+          .customer-profile-order-footer {
+            display: flex;
+            justify-content: flex-end;
+            border-top: 1px solid var(--border-light);
+            padding-top: 1rem;
+
+            .customer-profile-view-transaction {
+              display: flex;
+              align-items: center;
+              gap: 0.5rem;
+              color: var(--text-muted);
+              font-size: 0.9rem;
+              font-weight: 500;
+              transition: color 0.3s ease;
+
+              svg {
+                font-size: 0.8rem;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .customer-profile-modal-overlay {
+    padding: 0.5rem;
+  }
+
+  .customer-profile-modal {
+    .customer-profile-modal-header {
+      padding: 1.5rem;
+      flex-direction: column;
+      gap: 1rem;
+
+      .customer-profile-header-content {
+        flex-direction: column;
+        text-align: center;
+        align-items: center;
+
+        .customer-profile-info-header {
+          text-align: center;
+        }
+      }
+
+      .customer-profile-close-btn {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+      }
+    }
+
+    .customer-profile-modal-content {
+      padding: 1.5rem;
+
+      .customer-profile-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+
+        .customer-profile-stat-card {
+          padding: 1rem;
+          flex-direction: column;
+          text-align: center;
+          gap: 0.75rem;
+
+          .customer-profile-stat-info {
+            h3 {
+              font-size: 1.3rem;
+            }
+          }
+        }
+      }
+
+      .customer-profile-orders-section {
+        .customer-profile-orders-list {
+          .customer-profile-order-card {
+            padding: 1rem;
+
+            .customer-profile-order-header {
+              flex-direction: column;
+              gap: 0.5rem;
+              align-items: flex-start;
+
+              .customer-profile-order-amount {
+                align-self: flex-end;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
