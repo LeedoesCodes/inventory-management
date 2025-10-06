@@ -24,94 +24,109 @@ const SalesTrendChart = ({ data }) => {
 
   return (
     <div className="chart-container">
-      <div style={{ display: "flex", height: `${chartHeight}px` }}>
-        {/* Y-axis with labels */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-            paddingRight: "10px",
-            minWidth: "40px",
-          }}
-        >
-          {yAxisValues.map((value, index) => (
-            <div
-              key={index}
-              style={{
-                fontSize: "10px",
-                color: "var(--text-secondary)",
-                textAlign: "right",
-                padding: "2px 0",
-              }}
-            >
-              {value}
-            </div>
-          ))}
-        </div>
-
-        {/* Chart area */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "end",
-            gap: "4px",
-            flex: 1,
-            padding: "20px 0",
-            position: "relative",
-          }}
-        >
-          {/* Y-axis line */}
+      <div className="chart-scroll-wrapper">
+        <div className="chart-inner">
           <div
             style={{
-              position: "absolute",
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: "1px",
-              backgroundColor: "var(--border-color)",
+              display: "flex",
+              height: `${chartHeight}px`,
+              minWidth: "500px",
             }}
-          />
-
-          {displayData.map((item, index) => {
-            const height =
-              maxOrders > 0
-                ? (item.orders / maxOrders) * (chartHeight - 40)
-                : 0;
-            return (
-              <div
-                key={index}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  flex: 1,
-                }}
-              >
+          >
+            {/* Y-axis with labels */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                paddingRight: "10px",
+                minWidth: "40px",
+                flexShrink: 0,
+              }}
+            >
+              {yAxisValues.map((value, index) => (
                 <div
+                  key={index}
                   style={{
-                    height: `${height}px`,
-                    backgroundColor: "var(--success-color)",
-                    width: "100%",
-                    maxWidth: "20px",
-                    borderRadius: "4px 4px 0 0",
-                  }}
-                  title={`${item.date}: ${item.orders} orders`}
-                />
-                <div
-                  style={{
-                    fontSize: "9px",
-                    marginTop: "8px",
+                    fontSize: "10px",
                     color: "var(--text-secondary)",
-                    writingMode: "vertical-rl",
-                    transform: "rotate(180deg)",
+                    textAlign: "right",
+                    padding: "2px 0",
                   }}
                 >
-                  {new Date(item.date).getDate()}
+                  {value}
                 </div>
-              </div>
-            );
-          })}
+              ))}
+            </div>
+
+            {/* Chart area */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "end",
+                gap: "4px",
+                flex: 1,
+                padding: "20px 0",
+                position: "relative",
+                minWidth: "400px",
+              }}
+            >
+              {/* Y-axis line */}
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: "1px",
+                  backgroundColor: "var(--border-color)",
+                }}
+              />
+
+              {displayData.map((item, index) => {
+                const height =
+                  maxOrders > 0
+                    ? (item.orders / maxOrders) * (chartHeight - 40)
+                    : 0;
+                return (
+                  <div
+                    key={index}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      flex: 1,
+                      minWidth: "25px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: `${height}px`,
+                        backgroundColor: "var(--success-color)",
+                        width: "100%",
+                        maxWidth: "20px",
+                        borderRadius: "4px 4px 0 0",
+                        minWidth: "15px",
+                      }}
+                      title={`${item.date}: ${item.orders} orders`}
+                    />
+                    <div
+                      style={{
+                        fontSize: "9px",
+                        marginTop: "8px",
+                        color: "var(--text-secondary)",
+                        writingMode: "vertical-rl",
+                        transform: "rotate(180deg)",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {new Date(item.date).getDate()}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -137,6 +152,8 @@ const SalesTrendChart = ({ data }) => {
       >
         Last 14 Days
       </div>
+
+      {/* Scroll hint for mobile */}
     </div>
   );
 };

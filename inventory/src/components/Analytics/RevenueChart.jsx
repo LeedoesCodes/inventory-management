@@ -23,100 +23,118 @@ const RevenueChart = ({ data }) => {
 
   return (
     <div className="chart-container">
-      <div style={{ display: "flex", height: `${chartHeight}px` }}>
-        {/* Y-axis with labels */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-            paddingRight: "10px",
-            minWidth: "60px",
-          }}
-        >
-          {yAxisValues.map((value, index) => (
-            <div
-              key={index}
-              style={{
-                fontSize: "10px",
-                color: "var(--text-secondary)",
-                textAlign: "right",
-                padding: "2px 0",
-              }}
-            >
-              ₱{value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}
-            </div>
-          ))}
-        </div>
-
-        {/* Chart area */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "end",
-            gap: "8px",
-            flex: 1,
-            padding: "20px 0",
-            borderBottom: "1px solid var(--border-color)",
-            position: "relative",
-          }}
-        >
-          {/* Y-axis line */}
+      <div className="chart-scroll-wrapper">
+        <div className="chart-inner">
           <div
             style={{
-              position: "absolute",
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: "1px",
-              backgroundColor: "var(--border-color)",
+              display: "flex",
+              height: `${chartHeight}px`,
+              minWidth: "600px",
             }}
-          />
-
-          {data.map((item, index) => {
-            const height =
-              maxRevenue > 0
-                ? (item.revenue / maxRevenue) * (chartHeight - 40)
-                : 0;
-            return (
-              <div
-                key={index}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  flex: 1,
-                }}
-              >
+          >
+            {/* Y-axis with labels */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                paddingRight: "10px",
+                minWidth: "60px",
+                flexShrink: 0,
+              }}
+            >
+              {yAxisValues.map((value, index) => (
                 <div
-                  style={{
-                    height: `${height}px`,
-                    backgroundColor: "var(--accent-color)",
-                    width: "100%",
-                    maxWidth: "30px",
-                    borderRadius: "4px 4px 0 0",
-                    transition: "all 0.3s ease",
-                  }}
-                  title={`${item.date}: ₱${item.revenue}`}
-                />
-                <div
+                  key={index}
                   style={{
                     fontSize: "10px",
-                    marginTop: "8px",
                     color: "var(--text-secondary)",
-                    writingMode: "vertical-rl",
-                    transform: "rotate(180deg)",
-                    textAlign: "center",
+                    textAlign: "right",
+                    padding: "2px 0",
                   }}
                 >
-                  {new Date(item.date).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                  })}
+                  ₱{value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}
                 </div>
-              </div>
-            );
-          })}
+              ))}
+            </div>
+
+            {/* Chart area */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "end",
+                gap: "5px",
+                flex: 1,
+                padding: "20px 0",
+                borderBottom: "1px solid var(--border-color)",
+                position: "relative",
+                minWidth: "500px",
+              }}
+            >
+              {/* Y-axis line */}
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: "1px",
+                  backgroundColor: "var(--border-color)",
+                }}
+              />
+
+              {data.map((item, index) => {
+                const height =
+                  maxRevenue > 0
+                    ? (item.revenue / maxRevenue) * (chartHeight - 40)
+                    : 0;
+                return (
+                  <div
+                    key={index}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      flex: data.length > 30 ? "0 0 auto" : 1,
+                      minWidth: data.length > 30 ? "20px" : "auto",
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: `${height}px`,
+                        backgroundColor: "var(--accent-color)",
+                        width: "100%",
+                        maxWidth: data.length > 30 ? "15px" : "30px",
+                        borderRadius: "4px 4px 0 0",
+                        transition: "all 0.3s ease",
+                        minWidth: data.length > 30 ? "15px" : "auto",
+                      }}
+                      title={`${item.date}: ₱${item.revenue}`}
+                    />
+                    <div
+                      style={{
+                        fontSize: data.length > 30 ? "8px" : "10px",
+                        marginTop: "8px",
+                        color: "var(--text-secondary)",
+                        writingMode:
+                          data.length > 30 ? "horizontal-tb" : "vertical-rl",
+                        transform: data.length > 30 ? "none" : "rotate(180deg)",
+                        textAlign: "center",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {data.length > 30
+                        ? new Date(item.date).getDate()
+                        : new Date(item.date).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -139,11 +157,14 @@ const RevenueChart = ({ data }) => {
           marginTop: "5px",
           fontSize: "10px",
           color: "var(--text-secondary)",
+          padding: "10px",
         }}
       >
         <span>Start: {data[0]?.date}</span>
         <span>End: {data[data.length - 1]?.date}</span>
       </div>
+
+      {/* Scroll hint for mobile */}
     </div>
   );
 };
