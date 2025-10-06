@@ -14,6 +14,132 @@
     width: 93.3%;
   }
 
+  // FontAwesome icon styles for Dashboard
+  .card-icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: #4f46e5;
+  }
+
+  .section-icon {
+    margin-right: 10px;
+    color: #4f46e5;
+  }
+
+  .info-icon {
+    margin-right: 5px;
+    color: #6b7280;
+    font-size: 0.9rem;
+  }
+
+  .refresh-icon {
+    margin-right: 5px;
+  }
+
+  .loading-spinner {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: #4f46e5;
+
+    &.small {
+      font-size: 1rem;
+      margin-right: 8px;
+      margin-bottom: 0;
+    }
+  }
+
+  .error-icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: #ef4444;
+  }
+
+  .lift-icon {
+    margin-right: 3px;
+    font-size: 0.8rem;
+  }
+
+  .stat-icon {
+    margin-right: 5px;
+    font-size: 0.8rem;
+    color: #6b7280;
+  }
+
+  .rule-arrow {
+    margin: 0 5px;
+    color: #6b7280;
+    font-size: 0.8rem;
+  }
+
+  .rank-icon {
+    margin-right: 5px;
+
+    &.rank-1 {
+      color: #ffd700;
+    } // Gold for 1st
+    &.rank-2 {
+      color: #c0c0c0;
+    } // Silver for 2nd
+    &.rank-3 {
+      color: #cd7f32;
+    } // Bronze for 3rd
+    &.rank-4,
+    &.rank-5 {
+      color: #6b7280;
+    } // Gray for others
+  }
+
+  .btn-icon {
+    margin-right: 8px;
+  }
+
+  // Ensure icons align properly in headers and sections
+  .section-header h2,
+  .dashboard-header h1 {
+    display: flex;
+    align-items: center;
+  }
+
+  // Style stat cards with icons
+  .card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  // Recommendation strength indicators with icons
+  .strength-indicator {
+    &.very-high {
+      color: #10b981;
+    }
+    &.high {
+      color: #059669;
+    }
+    &.medium {
+      color: #d97706;
+    }
+    &.low {
+      color: #dc2626;
+    }
+    &.very-low {
+      color: #7c2d12;
+    }
+  }
+
+  // Lift badge styles
+  .lift-badge {
+    &.high-lift {
+      color: #10b981;
+    }
+    &.medium-lift {
+      color: #d97706;
+    }
+    &.low-lift {
+      color: #dc2626;
+    }
+  }
+
   .dashboard-header {
     display: flex;
     justify-content: space-between;
@@ -41,6 +167,8 @@
         border-radius: 6px;
         font-size: 0.9rem;
         color: #4a5568;
+        display: flex;
+        align-items: center;
 
         strong {
           color: #2d3748;
@@ -70,6 +198,8 @@
         cursor: pointer;
         transition: all 0.3s ease;
         font-size: 0.9rem;
+        display: flex;
+        align-items: center;
 
         &:hover:not(:disabled) {
           background: #3182ce;
@@ -92,6 +222,8 @@
         cursor: pointer;
         transition: all 0.3s ease;
         font-size: 0.9rem;
+        display: flex;
+        align-items: center;
 
         &:hover:not(:disabled) {
           background: #059669;
@@ -228,6 +360,8 @@
         font-weight: 600;
         color: #2d3748;
         margin: 0 0 0.25rem 0;
+        display: flex;
+        align-items: center;
       }
 
       span {
@@ -262,6 +396,8 @@
         cursor: pointer;
         font-size: 0.9rem;
         transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
 
         &:hover {
           background: #5a6fd8;
@@ -285,15 +421,6 @@
       padding: 2rem;
       text-align: center;
       justify-content: center;
-
-      .loading-spinner.small {
-        width: 20px;
-        height: 20px;
-        border: 2px solid #e2e8f0;
-        border-left: 2px solid #4299e1;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
     }
 
     .recommendations-list {
@@ -364,6 +491,8 @@
           border-radius: 12px;
           font-size: 0.7rem;
           font-weight: 600;
+          display: flex;
+          align-items: center;
 
           &.high-lift {
             background-color: #10b981;
@@ -422,6 +551,8 @@
             background: #f7fafc;
             padding: 0.2rem 0.5rem;
             border-radius: 4px;
+            display: flex;
+            align-items: center;
           }
         }
 
@@ -569,6 +700,8 @@
           border-radius: 4px;
           border-left: 3px solid #3b82f6;
           line-height: 1.3;
+          display: flex;
+          align-items: center;
         }
 
         .more-rules {
@@ -613,6 +746,8 @@
           margin-right: 1rem;
           min-width: 40px;
           text-align: center;
+          display: flex;
+          align-items: center;
         }
 
         .item-name {
@@ -651,7 +786,9 @@
         transition: all 0.3s ease;
         text-align: center;
         text-decoration: none;
-        display: block;
+        display: flex;
+        align-items: center;
+        justify-content: center;
 
         &.primary {
           background: #4299e1;
@@ -689,16 +826,6 @@
   .loading-state {
     text-align: center;
     padding: 4rem 2rem;
-
-    .loading-spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid #e2e8f0;
-      border-left: 4px solid #4299e1;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 1rem;
-    }
 
     p {
       color: #718096;
@@ -1067,11 +1194,6 @@
     }
 
     .loading-state {
-      .loading-spinner {
-        border: 4px solid #4a5568;
-        border-left: 4px solid #63b3ed;
-      }
-
       p {
         color: #a0aec0;
       }

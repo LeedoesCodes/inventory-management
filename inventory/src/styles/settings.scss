@@ -40,6 +40,75 @@
     margin-left: 60px;
     width: calc(100% - 70px);
   }
+
+  // FontAwesome icon styles for Settings
+  .header-icon {
+    margin-right: 12px;
+    color: #4f46e5;
+  }
+
+  .section-icon {
+    margin-right: 8px;
+    color: #4f46e5;
+    font-size: 1.1rem;
+  }
+
+  .setting-label-icon {
+    margin-right: 8px;
+    color: #6b7280;
+    font-size: 0.9rem;
+  }
+
+  .alert-icon {
+    margin-right: 8px;
+  }
+
+  .btn-icon {
+    margin-right: 8px;
+  }
+
+  .loading-spinner {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: #4f46e5;
+  }
+
+  // Ensure icons align properly in headers and sections
+  .page-title,
+  .section-title {
+    display: flex;
+    align-items: center;
+  }
+
+  .setting-label {
+    display: flex;
+    align-items: center;
+  }
+
+  // Message alert with icons
+  .message-alert {
+    display: flex;
+    align-items: center;
+
+    &.success {
+      .alert-icon {
+        color: #155724;
+      }
+    }
+
+    &.error {
+      .alert-icon {
+        color: #721c24;
+      }
+    }
+  }
+
+  // Save button with icon
+  .btn-primary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 
 /* Header */
@@ -68,10 +137,12 @@
   justify-content: center;
   align-items: center;
   height: 250px;
+  flex-direction: column;
 
   p {
     font-size: 1rem;
     color: var(--text-secondary);
+    margin-top: 1rem;
   }
 }
 
@@ -128,10 +199,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-
-  .section-icon {
-    font-size: 1.3rem;
-  }
 }
 
 /* Grid */
@@ -295,13 +362,14 @@
     box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
 
     .theme-icon {
-      filter: brightness(0) invert(1);
+      color: white;
     }
   }
 
   .theme-icon {
     font-size: 1.1rem;
     transition: transform 0.3s ease;
+    color: var(--text-secondary);
   }
 
   .theme-label {
@@ -400,6 +468,37 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
+
+  // Dark theme for FontAwesome icons
+  .header-icon {
+    color: #818cf8;
+  }
+
+  .section-icon {
+    color: #818cf8;
+  }
+
+  .setting-label-icon {
+    color: #9ca3af;
+  }
+
+  .theme-icon {
+    color: #e5e7eb;
+  }
+
+  .message-alert {
+    &.success {
+      .alert-icon {
+        color: #68d391;
+      }
+    }
+
+    &.error {
+      .alert-icon {
+        color: #fc8181;
+      }
+    }
+  }
 }
 
 /* Responsive design */
@@ -449,6 +548,21 @@
 
     .theme-label {
       font-size: 0.8rem;
+    }
+  }
+
+  .settings-page {
+    .header-icon {
+      margin-right: 8px;
+    }
+
+    .section-icon {
+      margin-right: 6px;
+      font-size: 1rem;
+    }
+
+    .btn-icon {
+      margin-right: 6px;
     }
   }
 }

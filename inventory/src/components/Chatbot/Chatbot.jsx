@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
-import { collection, getDocs, orderBy } from "firebase/firestore";
+import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { db } from "../../Firebase/firebase";
 import { AuthContext } from "../../context/AuthContext";
@@ -15,6 +15,8 @@ import {
   faDatabase,
   faExchangeAlt,
   faLightbulb,
+  faShoppingCart,
+  faLink,
 } from "@fortawesome/free-solid-svg-icons";
 import "./Chatbot.scss";
 
@@ -41,6 +43,312 @@ const Chatbot = ({ isOpen, onClose }) => {
     }
   }, [messages]);
 
+  // Association Rules Functions
+  const generateAssociationRules = (orders, thresholds = {}) => {
+    if (!orders || orders.length === 0) {
+      console.log("No orders provided to generate rules");
+      return [];
+    }
+
+    // Use provided thresholds or defaults - EXACTLY like your hook
+    const minSupport = thresholds.minSupport || 0.05;
+    const minConfidence = thresholds.minConfidence || 0.3;
+    const minLift = thresholds.minLift || 1.0;
+
+    console.log(
+      `Generating rules with thresholds: Support=${minSupport}, Confidence=${minConfidence}, Lift=${minLift}`
+    );
+
+    const pairCounts = {};
+    const itemCounts = {};
+    const totalOrders = orders.length;
+
+    orders.forEach((order) => {
+      // Extract item names from orders - handle different possible field names
+      const items =
+        order.items
+          ?.map((item) => {
+            return (
+              item.name || item.productName || item.itemName || "Unknown Item"
+            );
+          })
+          .filter((item) => item !== "Unknown Item") || [];
+
+      // Count individual items
+      items.forEach((item) => {
+        itemCounts[item] = (itemCounts[item] || 0) + 1;
+      });
+
+      // Count pairs (items bought together) - EXACTLY like your hook
+      for (let i = 0; i < items.length; i++) {
+        for (let j = i + 1; j < items.length; j++) {
+          const pair = [items[i], items[j]].sort().join("|");
+          pairCounts[pair] = (pairCounts[pair] || 1) + 1; // Use 1 as base to avoid division by zero
+        }
+      }
+    });
+
+    const rules = [];
+
+    Object.entries(pairCounts).forEach(([pair, count]) => {
+      const [itemA, itemB] = pair.split("|");
+      const supportAB = count / totalOrders;
+      const supportA = (itemCounts[itemA] || 1) / totalOrders;
+      const supportB = (itemCounts[itemB] || 1) / totalOrders;
+
+      // Calculate lift: lift(A → B) = support(A ∪ B) / (support(A) × support(B))
+      const lift = supportAB / (supportA * supportB);
+
+      // Rule: A → B - EXACTLY like your hook
+      const confidenceAB = count / (itemCounts[itemA] || 1);
+      if (
+        confidenceAB >= minConfidence &&
+        supportAB >= minSupport &&
+        lift >= minLift
+      ) {
+        rules.push({
+          antecedent: [itemA],
+          consequent: [itemB],
+          confidence: confidenceAB,
+          support: supportAB,
+          lift: lift,
+          rule: `${itemA} → ${itemB}`,
+        });
+      }
+
+      // Rule: B → A - EXACTLY like your hook
+      const confidenceBA = count / (itemCounts[itemB] || 1);
+      if (
+        confidenceBA >= minConfidence &&
+        supportAB >= minSupport &&
+        lift >= minLift
+      ) {
+        rules.push({
+          antecedent: [itemB],
+          consequent: [itemA],
+          confidence: confidenceBA,
+          support: supportAB,
+          lift: lift,
+          rule: `${itemB} → ${itemA}`,
+        });
+      }
+    });
+
+    // CRITICAL FIX: Sort by confidence DESCENDING like your hook
+    return rules.sort((a, b) => b.confidence - a.confidence);
+  };
+
+  const fetchAssociationRules = async () => {
+    try {
+      // Get recent orders to generate rules
+      const ordersSnapshot = await getDocs(collection(db, "orders"));
+      const allOrders = ordersSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      if (allOrders.length === 0) {
+        return {
+          rules: [],
+          totalOrders: 0,
+          message: "No orders found to analyze",
+        };
+      }
+
+      // Get user settings for thresholds
+      const settingsSnapshot = await getDocs(collection(db, "userSettings"));
+      const userSettings = settingsSnapshot.docs[0]?.data() || {
+        minSupport: 0.05,
+        minConfidence: 0.3,
+        minLift: 1.0,
+      };
+
+      // Get recent orders (last 90 days)
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+      const recentOrders = allOrders.filter((order) => {
+        const orderDate =
+          order.timestamp?.toDate?.() || order.timestamp || order.date;
+        return orderDate ? new Date(orderDate) >= ninetyDaysAgo : true;
+      });
+
+      // Generate association rules
+      const rules = generateAssociationRules(recentOrders, userSettings);
+
+      return {
+        rules: rules,
+        totalOrders: recentOrders.length,
+        thresholds: userSettings,
+        generatedAt: new Date().toLocaleTimeString(),
+      };
+    } catch (error) {
+      console.error("Error fetching association rules:", error);
+      return {
+        rules: [],
+        totalOrders: 0,
+        error: "Failed to load recommendations",
+      };
+    }
+  };
+
+  // Helper function to determine rule strength - EXACTLY like your hook
+  const getRuleStrength = (confidence, lift) => {
+    // EXACTLY like your hook's getStrength function
+    if (confidence >= 0.7 && lift >= 2.0) return "very high";
+    if (confidence >= 0.7 && lift >= 1.5) return "high";
+    if (confidence >= 0.5 && lift >= 1.2) return "medium";
+    if (confidence >= 0.3 && lift >= 1.0) return "low";
+    return "very low";
+  };
+
+  // Get lift interpretation text
+  const getLiftInterpretation = (lift) => {
+    const liftValue = lift || 0;
+    if (liftValue > 3.0) return "Exceptional association 🚀";
+    if (liftValue > 2.0) return "Strong positive association ✅";
+    if (liftValue > 1.5) return "Positive association 👍";
+    if (liftValue > 1.2) return "Moderate association 📈";
+    if (liftValue > 1.0) return "Slight association ➕";
+    if (liftValue === 1.0) return "Independent items ➖";
+    return "Negative association ❌";
+  };
+
+  // Generate recommendation insights
+  const generateRecommendationInsights = (recommendations) => {
+    if (recommendations.length === 0)
+      return "• No strong patterns detected yet";
+
+    const insights = [
+      "• **Create product bundles** for frequently bought together items",
+      "• **Strategic product placement** near each other in store layout",
+      "• **Cross-promote** these items in marketing campaigns",
+      "• **Monitor inventory** for these high-association products",
+      "• **Create combo deals** to increase average order value",
+    ];
+
+    // Add specific insights based on strongest recommendation
+    const strongestRec = recommendations[0];
+    if (strongestRec.confidence > 0.7) {
+      insights.push(
+        `• **Priority Focus:** ${strongestRec.antecedent[0]} and ${strongestRec.consequent[0]} - your strongest product relationship`
+      );
+    }
+
+    // Add insights based on lift
+    const highLiftRecs = recommendations.filter((rec) => rec.lift > 2.0);
+    if (highLiftRecs.length > 0) {
+      insights.push(
+        `• **High-Impact Opportunities:** ${highLiftRecs.length} relationships with exceptional lift values`
+      );
+    }
+
+    return insights.join("\n");
+  };
+
+  // Get popular items like dashboard
+  const getPopularItems = async () => {
+    try {
+      const ordersSnapshot = await getDocs(collection(db, "orders"));
+      const orders = ordersSnapshot.docs.map((doc) => doc.data());
+
+      const itemCounts = {};
+      orders.forEach((order) => {
+        order.items?.forEach((item) => {
+          const itemName =
+            item.name || item.productName || item.itemName || "Unknown Item";
+          itemCounts[itemName] =
+            (itemCounts[itemName] || 0) + (item.quantity || 1);
+        });
+      });
+
+      const popularItems = Object.entries(itemCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([name, sold]) => ({ name, sold }));
+
+      return popularItems;
+    } catch (error) {
+      console.error("Error getting popular items:", error);
+      return [];
+    }
+  };
+
+  // Manual analysis for recommendations - MATCHES DASHBOARD EXACTLY
+  const analyzeRecommendationsManually = async (associationData, userInput) => {
+    const { rules, totalOrders, thresholds } = associationData;
+
+    if (rules.length === 0) {
+      return `**Product Association Analysis**\n\n*No association rules found based on ${totalOrders} recent orders.*\n\n**Current Thresholds:**\n• Support: ≥ ${(
+        thresholds.minSupport * 100
+      ).toFixed(1)}%\n• Confidence: ≥ ${(
+        thresholds.minConfidence * 100
+      ).toFixed(1)}%\n• Lift: ≥ ${thresholds.minLift.toFixed(
+        2
+      )}\n\n**Recommendations:**\n• Ensure you have sufficient order data with multiple items\n• The system needs more transaction history to identify patterns\n• Try lowering the thresholds in Settings if you have existing data`;
+    }
+
+    // Get popular items and generate recommendations like the dashboard
+    const popularItems = await getPopularItems();
+    const popularItemNames = popularItems.slice(0, 3).map((item) => item.name);
+
+    // Use the same filtering logic as getRecommendations() in your hook
+    const recommendations = rules
+      .filter((rule) => {
+        const antecedentMatch = rule.antecedent.every((item) =>
+          popularItemNames.includes(item)
+        );
+        const consequentNotInCurrent = !rule.consequent.every((item) =>
+          popularItemNames.includes(item)
+        );
+        return antecedentMatch && consequentNotInCurrent;
+      })
+      .slice(0, 5)
+      .map((rule) => ({
+        antecedent: rule.antecedent,
+        consequent: rule.consequent,
+        confidence: rule.confidence,
+        support: rule.support,
+        lift: rule.lift,
+        strength: getRuleStrength(rule.confidence, rule.lift),
+      }));
+
+    if (recommendations.length === 0) {
+      return `**Smart Recommendations**\n\n*No recommendations generated based on popular items.*\n\n**Popular Items:**\n${popularItems
+        .map(
+          (item, index) => `${index + 1}. **${item.name}** - ${item.sold} sold`
+        )
+        .join("\n")}\n\n**Total Association Rules:** ${
+        rules.length
+      } rules found\n**Recommendation Conditions:**\n• Antecedent must match popular items\n• Consequent must NOT be in popular items`;
+    }
+
+    const rulesList = recommendations
+      .map(
+        (rec, index) =>
+          `**${index + 1}. ${rec.antecedent[0]} → ${rec.consequent[0]}**\n` +
+          `   • **Confidence:** ${(rec.confidence * 100).toFixed(1)}%\n` +
+          `   • **Support:** ${(rec.support * 100).toFixed(
+            1
+          )}% of transactions\n` +
+          `   • **Lift:** ${rec.lift.toFixed(2)} (${getLiftInterpretation(
+            rec.lift
+          )})\n` +
+          `   • **Strength:** ${rec.strength} confidence`
+      )
+      .join("\n\n");
+
+    const popularItemsList = popularItems
+      .map(
+        (item, index) => `${index + 1}. **${item.name}** - ${item.sold} sold`
+      )
+      .join("\n");
+
+    return `**Smart Recommendations**\n\n*Based on popular items and ${totalOrders} transactions*\n\n**Popular Items Used:**\n${popularItemsList}\n\n**Generated Recommendations:**\n\n${rulesList}\n\n**Actionable Insights:**\n${generateRecommendationInsights(
+      recommendations
+    )}\n\n*Data updated: ${associationData.generatedAt}*`;
+  };
+
   // Gemini AI Integration
   const queryWithGemini = async (userInput, businessContext) => {
     try {
@@ -59,8 +367,9 @@ const Chatbot = ({ isOpen, onClose }) => {
     }
   };
 
-  // Manual analysis as fallback - ACTUALLY USES YOUR DATA
-  const analyzeDataManually = (userInput, businessContext) => {
+  // Manual analysis as fallback - USES REAL DATA
+  // Replace the analyzeDataManually function with this smarter version:
+  const analyzeDataManually = async (userInput, businessContext) => {
     // Extract numbers from business context
     const customerMatch = businessContext.match(/Total Customers: (\d+)/);
     const orderMatch = businessContext.match(/Total Orders: (\d+)/);
@@ -74,43 +383,171 @@ const Chatbot = ({ isOpen, onClose }) => {
     const totalProducts = productsMatch ? parseInt(productsMatch[1]) : 0;
     const lowStockItems = lowStockMatch ? parseInt(lowStockMatch[1]) : 0;
 
-    // Analyze based on the actual query
-    if (
-      userInput.toLowerCase().includes("association") ||
-      userInput.includes("55.6%")
-    ) {
-      return `**AI Analysis - Product Association Insights**\n\nBased on the association data you provided:\n\n**Strong Product Relationship Found:**\n• **55.6% Confidence** that customers who buy "4X Corn Snack BBQ" also purchase "4X Corn Snack Sweet Corn"\n• **Exceptional Lift of 9.00** indicates this is a very significant pattern\n• **6.2% Support** means this pattern occurs in 6.2% of all transactions\n\n**Actionable Recommendations:**\n1. **Bundle these products** together for promotions\n2. **Place them near each other** in your store layout\n3. **Cross-sell** when customers purchase either item\n4. **Monitor inventory levels** for both products closely\n\n**Business Impact:** This pattern across 81 transactions represents a clear opportunity to increase average order value through strategic product placement and bundling.`;
+    // Calculate key ratios for smarter insights
+    const avgOrderValue = totalRevenue / (totalOrders || 1);
+    const ordersPerCustomer = totalOrders / (totalCustomers || 1);
+    const revenuePerCustomer = totalRevenue / (totalCustomers || 1);
+
+    // Get additional data for deeper insights
+    const ordersSnapshot = await getDocs(collection(db, "orders"));
+    const orders = ordersSnapshot.docs.map((doc) => doc.data());
+
+    // Calculate customer activity patterns
+    const activeCustomers = [
+      ...new Set(orders.map((order) => order.customerName).filter(Boolean)),
+    ].length;
+    const repeatCustomers = orders.filter((order) => {
+      const customerOrders = orders.filter(
+        (o) => o.customerName === order.customerName
+      );
+      return customerOrders.length > 1;
+    }).length;
+
+    // Get popular products for specific recommendations
+    const itemCounts = {};
+    orders.forEach((order) => {
+      order.items?.forEach((item) => {
+        const itemName =
+          item.name || item.productName || item.itemName || "Unknown Item";
+        itemCounts[itemName] =
+          (itemCounts[itemName] || 0) + (item.quantity || 1);
+      });
+    });
+
+    const popularProducts = Object.entries(itemCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([name, sold]) => ({ name, sold }));
+
+    // Generate SPECIFIC insights based on YOUR data
+    let specificInsights = [];
+    let specificRecommendations = [];
+
+    // Customer insights
+    if (ordersPerCustomer > 5) {
+      specificInsights.push(
+        `• **Loyal Customer Base** - ${ordersPerCustomer.toFixed(
+          1
+        )} orders per customer indicates strong repeat business`
+      );
+      specificRecommendations.push(
+        `• **Loyalty Program** - Reward your ${totalCustomers} frequent customers with exclusive offers`
+      );
+    } else if (ordersPerCustomer > 2) {
+      specificInsights.push(
+        `• **Growing Engagement** - ${ordersPerCustomer.toFixed(
+          1
+        )} orders per customer shows developing relationships`
+      );
+      specificRecommendations.push(
+        `• **Upsell Strategy** - Encourage existing customers to increase order frequency`
+      );
+    } else {
+      specificInsights.push(
+        `• **Customer Acquisition Phase** - Focus on converting ${totalCustomers} registered customers to repeat buyers`
+      );
+      specificRecommendations.push(
+        `• **First-time Buyer Incentives** - Convert one-time purchasers to regular customers`
+      );
     }
 
-    if (
-      userInput.toLowerCase().includes("analyze") ||
-      userInput.includes("insight")
-    ) {
-      return `**AI Analysis - Business Performance**\n\nBased on your actual business data:\n\n**Current Performance:**\n• **${totalCustomers} registered customers** in your system\n• **${totalOrders} total orders** processed\n• **₱${totalRevenue.toFixed(
-        2
-      )} total revenue** generated\n• **${totalProducts} products** in inventory\n• **${lowStockItems} items** needing restock attention\n\n**Key Insights:**\n${
-        totalOrders > 0
-          ? `• **Healthy order volume** with approximately ${(
-              totalOrders / totalCustomers
-            ).toFixed(
-              1
-            )} orders per customer\n• **Revenue generation** shows active business operations\n• **Product variety** of ${totalProducts} items provides good customer choice\n`
-          : "• **Initial setup phase** - focus on customer acquisition and first orders"
-      }\n\n**Recommendations:**\n1. **Focus on converting** registered customers to active buyers\n2. **Optimize inventory** for your ${totalProducts} products\n3. **Analyze customer behavior** to identify top performers\n4. **Monitor ${
-        lowStockItems > 0
-          ? lowStockItems + " low-stock items"
-          : "inventory levels"
-      }** regularly`;
+    // Revenue insights
+    if (avgOrderValue > 5000) {
+      specificInsights.push(
+        `• **High-Value Transactions** - ₱${avgOrderValue.toFixed(
+          2
+        )} average order value indicates premium purchasing`
+      );
+      specificRecommendations.push(
+        `• **Premium Product Expansion** - Leverage high-value customer preferences`
+      );
+    } else if (avgOrderValue > 1000) {
+      specificInsights.push(
+        `• **Healthy Transaction Size** - ₱${avgOrderValue.toFixed(
+          2
+        )} average order value supports business sustainability`
+      );
+      specificRecommendations.push(
+        `• **Bundle Opportunities** - Create product combinations to increase average order value`
+      );
     }
 
-    // Default analytical response using actual data
-    return `**AI Analysis**\n\nBased on your specific business metrics:\n\n**Current Business Snapshot:**\n• **Customer Base:** ${totalCustomers} registered customers\n• **Sales Activity:** ${totalOrders} orders totaling ₱${totalRevenue.toFixed(
+    // Inventory insights
+    if (lowStockItems === 0) {
+      specificInsights.push(
+        `• **Excellent Inventory Management** - All ${totalProducts} products are well-stocked`
+      );
+      specificRecommendations.push(
+        `• **Inventory Optimization** - Maintain current stock levels while monitoring sales trends`
+      );
+    } else {
+      specificInsights.push(
+        `• **Proactive Restocking Needed** - ${lowStockItems} items require immediate attention`
+      );
+      specificRecommendations.push(
+        `• **Priority Reordering** - Focus on the ${lowStockItems} low-stock products first`
+      );
+    }
+
+    // Product performance insights
+    if (popularProducts.length > 0) {
+      specificInsights.push(
+        `• **Clear Product Leaders** - Top sellers: ${popularProducts
+          .map((p) => p.name)
+          .join(", ")}`
+      );
+      specificRecommendations.push(
+        `• **Featured Product Promotion** - Highlight your best-performing items in marketing`
+      );
+    }
+
+    // Business scale insights
+    if (totalOrders > 100) {
+      specificInsights.push(
+        `• **Established Business** - ${totalOrders} orders demonstrates market presence`
+      );
+      specificRecommendations.push(
+        `• **Scale Operations** - Consider expanding product lines or services`
+      );
+    } else if (totalOrders > 50) {
+      specificInsights.push(
+        `• **Growth Trajectory** - ${totalOrders} orders shows positive business momentum`
+      );
+      specificRecommendations.push(
+        `• **Customer Retention Focus** - Strengthen relationships with your ${activeCustomers} active customers`
+      );
+    }
+
+    // If no specific insights were generated, use fallback
+    if (specificInsights.length === 0) {
+      specificInsights = [
+        `• **Foundation Building** - ${totalOrders} orders across ${totalCustomers} customers provides a solid base`,
+        `• **Revenue Generation** - ₱${totalRevenue.toFixed(
+          2
+        )} indicates active business operations`,
+        `• **Product Diversity** - ${totalProducts} items offers good customer choice`,
+      ];
+
+      specificRecommendations = [
+        `• **Customer Engagement** - Convert ${totalCustomers} registered customers to active buyers`,
+        `• **Inventory Management** - Monitor ${
+          lowStockItems > 0
+            ? lowStockItems + " low-stock items"
+            : "stock levels"
+        }`,
+        `• **Sales Optimization** - Analyze patterns in your ${totalOrders} transactions`,
+      ];
+    }
+
+    return `**Business Intelligence Analysis**\n\n**Your Business Snapshot:**\n• **Customers:** ${totalCustomers} registered, ${activeCustomers} active\n• **Orders:** ${totalOrders} totaling ₱${totalRevenue.toFixed(
       2
-    )}\n• **Product Catalog:** ${totalProducts} items in inventory\n• **Inventory Health:** ${lowStockItems} products needing restock attention\n\n**Strategic Insights:**\n${
-      totalOrders > 50
-        ? "• **Established Business** with consistent transaction patterns\n• **Growth Phase** - focus on customer retention and upselling"
-        : "• **Growth Opportunity** - focus on customer acquisition and first purchases"
-    }\n\n**Recommended Actions:**\n1. **Customer Engagement:** Convert registered customers to active buyers\n2. **Inventory Optimization:** Monitor stock levels and popular items\n3. **Sales Analysis:** Identify trends in your ${totalOrders} transactions\n4. **Growth Strategy:** Build on your current business foundation`;
+    )}\n• **Products:** ${totalProducts} items, ${lowStockItems} low-stock\n• **Performance:** ₱${avgOrderValue.toFixed(
+      2
+    )} average order value\n\n**Specific Insights for Your Business:**\n${specificInsights.join(
+      "\n"
+    )}\n\n**Actionable Recommendations:**\n${specificRecommendations.join(
+      "\n"
+    )}\n\n*Analysis based on ${totalOrders} real transactions and ${totalProducts} products*`;
   };
 
   // Get comprehensive business context for Gemini
@@ -221,6 +658,15 @@ const Chatbot = ({ isOpen, onClose }) => {
       "advice",
       "strategy",
       "opportunity",
+      "association",
+      "product recommendation",
+      "what products",
+      "bundle",
+      "cross-sell",
+      "upsell",
+      "frequently bought",
+      "customers also buy",
+      "product relationships",
     ];
 
     const isTraditionalQuery = traditionalQueryPatterns.some((pattern) =>
@@ -234,16 +680,39 @@ const Chatbot = ({ isOpen, onClose }) => {
     // Use AI for analytical questions, traditional for data lookup
     if (isAIQuery || (!isTraditionalQuery && input.length > 15)) {
       const businessContext = await getBusinessContext();
-      const aiResponse = await queryWithGemini(userInput, businessContext);
 
+      // If it's specifically about recommendations, fetch real-time data first
+      if (
+        input.includes("association") ||
+        input.includes("recommend") ||
+        input.includes("bundle") ||
+        input.includes("cross-sell") ||
+        input.includes("frequently") ||
+        input.includes("product relationship") ||
+        input.includes("customers also")
+      ) {
+        const associationData = await fetchAssociationRules();
+        const enhancedContext = `${businessContext}\n\nASSOCIATION RULES DATA:\n${JSON.stringify(
+          associationData,
+          null,
+          2
+        )}`;
+        const aiResponse = await queryWithGemini(userInput, enhancedContext);
+
+        if (aiResponse) {
+          return aiResponse;
+        }
+        // If AI fails, fall back to manual analysis with real data
+        return await analyzeRecommendationsManually(associationData, userInput);
+      }
+
+      const aiResponse = await queryWithGemini(userInput, businessContext);
       if (aiResponse) {
         return aiResponse;
       }
-      // If AI fails, fall back to traditional
     }
 
-    // Use traditional queries for data lookup
-    return null; // Will be handled by existing processCommand
+    return null;
   };
 
   // Calculate top customers from orders (more reliable)
@@ -782,6 +1251,20 @@ const Chatbot = ({ isOpen, onClose }) => {
       response = `**Business Overview**\n\n${customerSummary}\n\n${orderSummary}\n\n${productSummary}`;
     }
 
+    // Product recommendations and associations
+    else if (
+      input.includes("association") ||
+      input.includes("recommend") ||
+      input.includes("bundle") ||
+      input.includes("cross-sell") ||
+      input.includes("frequently") ||
+      input.includes("product relationship") ||
+      input.includes("customers also")
+    ) {
+      const associationData = await fetchAssociationRules();
+      response = await analyzeRecommendationsManually(associationData, input);
+    }
+
     // AI capabilities showcase
     else if (
       input.includes("ai") ||
@@ -907,13 +1390,21 @@ const Chatbot = ({ isOpen, onClose }) => {
                   <div>
                     <FontAwesomeIcon icon={faLightbulb} /> Business Intelligence
                   </div>
+                  <div>
+                    <FontAwesomeIcon icon={faShoppingCart} /> Product
+                    Recommendations
+                  </div>
+                  <div>
+                    <FontAwesomeIcon icon={faLink} /> Association Rules
+                  </div>
                 </div>
 
                 <div>• "Analyze my business performance" (AI)</div>
                 <div>• "Top spending customers" (Data)</div>
-                <div>• "Sales trends and insights" (AI)</div>
+                <div>• "Product recommendations" (AI + Data)</div>
                 <div>• "Low stock products" (Data)</div>
-                <div>• "Recommend improvements" (AI)</div>
+                <div>• "Customer buying patterns" (AI)</div>
+                <div>• "Association rules analysis" (Real-time Data)</div>
               </div>
             </div>
           ) : (
@@ -946,7 +1437,7 @@ const Chatbot = ({ isOpen, onClose }) => {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about your business data or request AI analysis..."
+            placeholder="Ask about product recommendations, business data, or request AI analysis..."
             disabled={loading}
           />
           <button
