@@ -43,15 +43,15 @@ export default function ProductList({
                 id={isHighlighted ? "highlighted-product" : ""}
               >
                 <div className="product-details">
-                  <div className="product-name">{p.name}</div>
-                  <div className="product-price">₱{p.price}</div>
-                  <div className="product-stock">Stock: {p.stock}</div>
-                  <div className="product-category">Category: {p.category}</div>
                   {p.imageUrl && (
                     <div className="product-image">
                       <img src={p.imageUrl} alt={p.name} />
                     </div>
                   )}
+                  <div className="product-name">{p.name}</div>
+                  <div className="product-price">₱{p.price}</div>
+                  <div className="product-stock">Stock: {p.stock}</div>
+                  <div className="product-category">Category: {p.category}</div>
                 </div>
                 <div className="actions">
                   <button onClick={() => onEdit(p)}>Edit</button>
