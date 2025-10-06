@@ -1,18 +1,21 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
-import {
-  collection,
-  addDoc,
-  query,
-  onSnapshot,
-  where,
-  getDocs,
-  orderBy,
-} from "firebase/firestore";
+import { collection, getDocs, orderBy } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { db } from "../../Firebase/firebase";
 import { AuthContext } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import ReactMarkdown from "react-markdown";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faRobot,
+  faTimes,
+  faTrashAlt,
+  faPaperPlane,
+  faChartLine,
+  faDatabase,
+  faExchangeAlt,
+  faLightbulb,
+} from "@fortawesome/free-solid-svg-icons";
 import "./Chatbot.scss";
 
 const Chatbot = ({ isOpen, onClose }) => {
@@ -38,54 +41,9 @@ const Chatbot = ({ isOpen, onClose }) => {
     }
   }, [messages]);
 
-  // Debug function to check customer data
-  const debugCustomerData = async () => {
-    try {
-      const customersSnapshot = await getDocs(collection(db, "customers"));
-      const customers = customersSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      console.log("🔍 DEBUG - Customer Data Structure:");
-      customers.forEach((customer, index) => {
-        console.log(`Customer ${index + 1}:`, {
-          name: customer.name,
-          TotalSpent: customer.TotalSpent,
-          TotalOrders: customer.TotalOrders,
-          lastOrderDate: customer.lastOrderDate,
-          createdAT: customer.createdAT,
-          dataTypes: {
-            TotalSpent: typeof customer.TotalSpent,
-            TotalOrders: typeof customer.TotalOrders,
-            lastOrderDate: typeof customer.lastOrderDate,
-          },
-        });
-      });
-
-      // Also check if there are any orders for these customers
-      const ordersSnapshot = await getDocs(collection(db, "orders"));
-      const orders = ordersSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      console.log("📦 Orders data sample:", orders.slice(0, 3));
-    } catch (error) {
-      console.error("Debug error:", error);
-    }
-  };
-
-  // Gemini AI Integration - UPDATED VERSION
-  // Gemini AI Integration - WORKING VERSION
+  // Gemini AI Integration
   const queryWithGemini = async (userInput, businessContext) => {
     try {
-      console.log("🧠 Querying Gemini AI via Firebase Function...", {
-        userInput,
-        businessContext: businessContext.substring(0, 100) + "...", // Log first 100 chars
-      });
-
-      // Call your Firebase function
       const functions = getFunctions();
       const geminiAnalysis = httpsCallable(functions, "geminiBusinessAnalysis");
 
@@ -94,14 +52,8 @@ const Chatbot = ({ isOpen, onClose }) => {
         businessContext: businessContext,
       });
 
-      console.log("✅ Gemini response received:", result.data);
       return result.data.response;
     } catch (error) {
-      console.error("❌ Gemini AI error:", error);
-
-      // TEMPORARY: Let's see what's actually in your business data
-      console.log("📊 Actual business context being sent:", businessContext);
-
       // Provide a response that actually analyzes the specific data
       return analyzeDataManually(userInput, businessContext);
     }
@@ -109,8 +61,6 @@ const Chatbot = ({ isOpen, onClose }) => {
 
   // Manual analysis as fallback - ACTUALLY USES YOUR DATA
   const analyzeDataManually = (userInput, businessContext) => {
-    console.log("🔍 Manual analysis of:", userInput);
-
     // Extract numbers from business context
     const customerMatch = businessContext.match(/Total Customers: (\d+)/);
     const orderMatch = businessContext.match(/Total Orders: (\d+)/);
@@ -129,16 +79,16 @@ const Chatbot = ({ isOpen, onClose }) => {
       userInput.toLowerCase().includes("association") ||
       userInput.includes("55.6%")
     ) {
-      return `**🤖 AI Analysis - Product Association Insights**\n\nBased on the association data you provided:\n\n🎯 **Strong Product Relationship Found:**\n• **55.6% Confidence** that customers who buy "4X Corn Snack BBQ" also purchase "4X Corn Snack Sweet Corn"\n• **Exceptional Lift of 9.00** indicates this is a very significant pattern\n• **6.2% Support** means this pattern occurs in 6.2% of all transactions\n\n💡 **Actionable Recommendations:**\n1. **Bundle these products** together for promotions\n2. **Place them near each other** in your store layout\n3. **Cross-sell** when customers purchase either item\n4. **Monitor inventory levels** for both products closely\n\n📊 **Business Impact:** This pattern across 81 transactions represents a clear opportunity to increase average order value through strategic product placement and bundling.`;
+      return `**AI Analysis - Product Association Insights**\n\nBased on the association data you provided:\n\n**Strong Product Relationship Found:**\n• **55.6% Confidence** that customers who buy "4X Corn Snack BBQ" also purchase "4X Corn Snack Sweet Corn"\n• **Exceptional Lift of 9.00** indicates this is a very significant pattern\n• **6.2% Support** means this pattern occurs in 6.2% of all transactions\n\n**Actionable Recommendations:**\n1. **Bundle these products** together for promotions\n2. **Place them near each other** in your store layout\n3. **Cross-sell** when customers purchase either item\n4. **Monitor inventory levels** for both products closely\n\n**Business Impact:** This pattern across 81 transactions represents a clear opportunity to increase average order value through strategic product placement and bundling.`;
     }
 
     if (
       userInput.toLowerCase().includes("analyze") ||
       userInput.includes("insight")
     ) {
-      return `**🤖 AI Analysis - Business Performance**\n\nBased on your actual business data:\n\n📈 **Current Performance:**\n• **${totalCustomers} registered customers** in your system\n• **${totalOrders} total orders** processed\n• **₱${totalRevenue.toFixed(
+      return `**AI Analysis - Business Performance**\n\nBased on your actual business data:\n\n**Current Performance:**\n• **${totalCustomers} registered customers** in your system\n• **${totalOrders} total orders** processed\n• **₱${totalRevenue.toFixed(
         2
-      )} total revenue** generated\n• **${totalProducts} products** in inventory\n• **${lowStockItems} items** needing restock attention\n\n📊 **Key Insights:**\n${
+      )} total revenue** generated\n• **${totalProducts} products** in inventory\n• **${lowStockItems} items** needing restock attention\n\n**Key Insights:**\n${
         totalOrders > 0
           ? `• **Healthy order volume** with approximately ${(
               totalOrders / totalCustomers
@@ -146,7 +96,7 @@ const Chatbot = ({ isOpen, onClose }) => {
               1
             )} orders per customer\n• **Revenue generation** shows active business operations\n• **Product variety** of ${totalProducts} items provides good customer choice\n`
           : "• **Initial setup phase** - focus on customer acquisition and first orders"
-      }\n\n💡 **Recommendations:**\n1. **Focus on converting** registered customers to active buyers\n2. **Optimize inventory** for your ${totalProducts} products\n3. **Analyze customer behavior** to identify top performers\n4. **Monitor ${
+      }\n\n**Recommendations:**\n1. **Focus on converting** registered customers to active buyers\n2. **Optimize inventory** for your ${totalProducts} products\n3. **Analyze customer behavior** to identify top performers\n4. **Monitor ${
         lowStockItems > 0
           ? lowStockItems + " low-stock items"
           : "inventory levels"
@@ -154,7 +104,7 @@ const Chatbot = ({ isOpen, onClose }) => {
     }
 
     // Default analytical response using actual data
-    return `**🤖 AI Analysis**\n\nBased on your specific business metrics:\n\n**Current Business Snapshot:**\n• **Customer Base:** ${totalCustomers} registered customers\n• **Sales Activity:** ${totalOrders} orders totaling ₱${totalRevenue.toFixed(
+    return `**AI Analysis**\n\nBased on your specific business metrics:\n\n**Current Business Snapshot:**\n• **Customer Base:** ${totalCustomers} registered customers\n• **Sales Activity:** ${totalOrders} orders totaling ₱${totalRevenue.toFixed(
       2
     )}\n• **Product Catalog:** ${totalProducts} items in inventory\n• **Inventory Health:** ${lowStockItems} products needing restock attention\n\n**Strategic Insights:**\n${
       totalOrders > 50
@@ -225,7 +175,6 @@ const Chatbot = ({ isOpen, onClose }) => {
           .toFixed(2)}
       `;
     } catch (error) {
-      console.error("Error getting business context:", error);
       return "Business data unavailable.";
     }
   };
@@ -282,15 +231,8 @@ const Chatbot = ({ isOpen, onClose }) => {
       input.includes(pattern)
     );
 
-    console.log("🔄 Query Analysis:", {
-      input,
-      isTraditionalQuery,
-      isAIQuery,
-    });
-
     // Use AI for analytical questions, traditional for data lookup
     if (isAIQuery || (!isTraditionalQuery && input.length > 15)) {
-      console.log("🎯 Routing to Gemini AI");
       const businessContext = await getBusinessContext();
       const aiResponse = await queryWithGemini(userInput, businessContext);
 
@@ -301,14 +243,12 @@ const Chatbot = ({ isOpen, onClose }) => {
     }
 
     // Use traditional queries for data lookup
-    console.log("🎯 Routing to traditional query");
     return null; // Will be handled by existing processCommand
   };
 
   // Calculate top customers from orders (more reliable)
   const calculateTopCustomersFromOrders = async () => {
     try {
-      console.log("🔍 Calculating top customers from orders...");
       const ordersSnapshot = await getDocs(collection(db, "orders"));
       const orders = ordersSnapshot.docs.map((doc) => ({
         id: doc.id,
@@ -351,8 +291,6 @@ const Chatbot = ({ isOpen, onClose }) => {
         .sort((a, b) => b.totalSpent - a.totalSpent)
         .slice(0, 5);
 
-      console.log("📊 Calculated top customers from orders:", topCustomers);
-
       if (topCustomers.length === 0) {
         return "**Top Spending Customers**\n\nNo orders found in the system.";
       }
@@ -370,23 +308,18 @@ const Chatbot = ({ isOpen, onClose }) => {
 
       return `**Top Spending Customers**\n\n*Calculated from actual orders data*\n\n${customerList}`;
     } catch (error) {
-      console.error("Error calculating from orders:", error);
       return "Sorry, I couldn't calculate customer spending from orders.";
     }
   };
 
   // Query customers with markdown formatting
-  // Query customers with markdown formatting - FIXED VERSION
   const queryCustomers = async (intent) => {
     try {
-      console.log("🔍 Querying customers collection");
       const customersSnapshot = await getDocs(collection(db, "customers"));
       const customers = customersSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-
-      console.log("📊 Raw customers data:", customers);
 
       if (intent === "count") {
         // Calculate REAL totals from orders collection instead of customer documents
@@ -447,16 +380,13 @@ const Chatbot = ({ isOpen, onClose }) => {
         return await calculateTopCustomersFromOrders();
       }
     } catch (error) {
-      console.error("❌ Error querying customers:", error);
       return "Sorry, I couldn't retrieve customer data at the moment.";
     }
   };
 
   // Query orders with markdown formatting
-  // Query orders with markdown formatting - IMPROVED VERSION
   const queryOrders = async (intent) => {
     try {
-      console.log("🔍 Querying orders collection");
       const ordersSnapshot = await getDocs(
         query(collection(db, "orders"), orderBy("createdAt", "desc"))
       );
@@ -464,8 +394,6 @@ const Chatbot = ({ isOpen, onClose }) => {
         id: doc.id,
         ...doc.data(),
       }));
-
-      console.log("📦 Orders found:", orders.length);
 
       if (intent === "count") {
         const totalRevenue = orders.reduce(
@@ -540,7 +468,6 @@ const Chatbot = ({ isOpen, onClose }) => {
         );
       }
     } catch (error) {
-      console.error("❌ Error querying orders:", error);
       return "Sorry, I couldn't retrieve order data at the moment.";
     }
   };
@@ -548,14 +475,11 @@ const Chatbot = ({ isOpen, onClose }) => {
   // Query products with markdown formatting
   const queryProducts = async (intent) => {
     try {
-      console.log("🔍 Querying products collection");
       const productsSnapshot = await getDocs(collection(db, "products"));
       const products = productsSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-
-      console.log("📋 Products found:", products.length);
 
       if (intent === "count") {
         const categories = [
@@ -630,7 +554,6 @@ const Chatbot = ({ isOpen, onClose }) => {
         return `**Product Categories**\n\n${categorySummary}`;
       }
     } catch (error) {
-      console.error("❌ Error querying products:", error);
       return "Sorry, I couldn't retrieve product data at the moment.";
     }
   };
@@ -638,14 +561,11 @@ const Chatbot = ({ isOpen, onClose }) => {
   // Query users with markdown formatting
   const queryUsers = async (intent) => {
     try {
-      console.log("🔍 Querying users collection");
       const usersSnapshot = await getDocs(collection(db, "users"));
       const users = usersSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-
-      console.log("👥 Users found:", users.length);
 
       if (intent === "count") {
         const roles = users.reduce((acc, user) => {
@@ -681,12 +601,11 @@ const Chatbot = ({ isOpen, onClose }) => {
         return `**Team Members**\n\n${employeeList}`;
       }
     } catch (error) {
-      console.error("❌ Error querying users:", error);
       return "Sorry, I couldn't retrieve user data at the moment.";
     }
   };
 
-  // Handle traditional queries (your existing logic moved here)
+  // Handle traditional queries
   const handleTraditionalQueries = async (input) => {
     let response =
       "I'm not sure how to help with that. Try asking about customers, orders, products, or users.";
@@ -699,7 +618,7 @@ const Chatbot = ({ isOpen, onClose }) => {
       input.includes("greetings")
     ) {
       response =
-        "Hello! 👋 I'm your **Hybrid Business Assistant**. I combine **AI intelligence** with **real business data**!\n\n**🤖 AI Analysis** - Trends, insights, recommendations\n**📊 Data Queries** - Customers, orders, products, sales\n**🚀 Emerging Technology** - Hybrid AI + Data system\n\nWhat would you like to know?";
+        "Hello! I'm your **Hybrid Business Assistant**. I combine **AI intelligence** with **real business data**!\n\n**AI Analysis** - Trends, insights, recommendations\n**Data Queries** - Customers, orders, products, sales\n**Emerging Technology** - Hybrid AI + Data system\n\nWhat would you like to know?";
     }
 
     // Thanks and appreciation
@@ -711,7 +630,7 @@ const Chatbot = ({ isOpen, onClose }) => {
       input.includes("well done")
     ) {
       response =
-        "You're welcome! 😊 Happy to help. Is there anything else you'd like to know about your business?";
+        "You're welcome! Happy to help. Is there anything else you'd like to know about your business?";
     }
 
     // Goodbye
@@ -722,7 +641,7 @@ const Chatbot = ({ isOpen, onClose }) => {
       input.includes("farewell")
     ) {
       response =
-        "Goodbye! 👋 Feel free to ask if you need any more business insights!";
+        "Goodbye! Feel free to ask if you need any more business insights!";
     }
 
     // How are you
@@ -737,7 +656,7 @@ const Chatbot = ({ isOpen, onClose }) => {
 
     // Help - Updated to show hybrid capabilities
     else if (input.includes("help") || input.includes("what can you do")) {
-      response = `**🤖 Hybrid Business Assistant**\n\n**🚀 EMERGING TECHNOLOGY FEATURES:**\n• **Intelligent Query Routing** - AI decides the best approach\n• **Google Gemini Integration** - Cutting-edge AI\n• **Real-time Business Context** - AI understands your data\n• **Hybrid Intelligence** - Combines AI + structured data\n\n**🧠 AI ANALYSIS**\n• "Analyze sales trends"\n• "Business performance insights"\n• "Recommend improvements"\n• "Identify patterns"\n• "Compare performance"\n\n**📊 DATA QUERIES**\n• Customer counts & analytics\n• Order history & revenue\n• Product inventory & stock\n• Team members & users\n• Sales performance\n\n**💡 BUSINESS INTELLIGENCE**\n• Combined AI + data insights\n• Real-time analytics\n• Predictive suggestions`;
+      response = `**Hybrid Business Assistant**\n\n**EMERGING TECHNOLOGY FEATURES:**\n• **Intelligent Query Routing** - AI decides the best approach\n• **Google Gemini Integration** - Cutting-edge AI\n• **Real-time Business Context** - AI understands your data\n• **Hybrid Intelligence** - Combines AI + structured data\n\n**AI ANALYSIS**\n• "Analyze sales trends"\n• "Business performance insights"\n• "Recommend improvements"\n• "Identify patterns"\n• "Compare performance"\n\n**DATA QUERIES**\n• Customer counts & analytics\n• Order history & revenue\n• Product inventory & stock\n• Team members & users\n• Sales performance\n\n**BUSINESS INTELLIGENCE**\n• Combined AI + data insights\n• Real-time analytics\n• Predictive suggestions`;
     }
 
     // Customer queries
@@ -863,12 +782,6 @@ const Chatbot = ({ isOpen, onClose }) => {
       response = `**Business Overview**\n\n${customerSummary}\n\n${orderSummary}\n\n${productSummary}`;
     }
 
-    // Debug command (hidden from users)
-    else if (input.includes("debug") && input.includes("customer")) {
-      await debugCustomerData();
-      response = "Check the browser console for customer data details.";
-    }
-
     // AI capabilities showcase
     else if (
       input.includes("ai") ||
@@ -876,7 +789,7 @@ const Chatbot = ({ isOpen, onClose }) => {
       input.includes("intelligent")
     ) {
       response =
-        'I\'m a **hybrid AI assistant**! 🧠 I combine **Google Gemini AI** with your **real business data**. This is **emerging technology**!\n\nTry asking:\n\n• "Analyze my sales trends" 🤖\n• "What business insights can you provide?" 🧠\n• "Recommend ways to improve performance" 💡\n• "Identify patterns in customer behavior" 📈';
+        'I\'m a **hybrid AI assistant**! I combine **Google Gemini AI** with your **real business data**. This is **emerging technology**!\n\nTry asking:\n\n• "Analyze my sales trends"\n• "What business insights can you provide?"\n• "Recommend ways to improve performance"\n• "Identify patterns in customer behavior"';
     }
 
     return response;
@@ -885,7 +798,6 @@ const Chatbot = ({ isOpen, onClose }) => {
   // Enhanced Main command processor with AI integration
   const processCommand = async (userInput) => {
     const input = userInput.toLowerCase().trim();
-    console.log("🎯 Processing command:", userInput);
 
     // Add user message to local state immediately
     const userMessage = {
@@ -910,8 +822,6 @@ const Chatbot = ({ isOpen, onClose }) => {
         response = await handleTraditionalQueries(input);
       }
 
-      console.log("🤖 Bot response:", response);
-
       // Add bot response to local state
       const botMessage = {
         id: Date.now() + 1,
@@ -921,7 +831,6 @@ const Chatbot = ({ isOpen, onClose }) => {
       };
       setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
-      console.error("❌ Error processing command:", error);
       const errorMessage = {
         id: Date.now() + 1,
         role: "assistant",
@@ -939,23 +848,14 @@ const Chatbot = ({ isOpen, onClose }) => {
     e.preventDefault();
     if (!input.trim() || loading) return;
 
-    console.log("📤 Sending message:", input);
     await processCommand(input);
     setInput("");
   };
 
   const clearChat = async () => {
-    console.log("🗑️ Clearing chat");
     setMessages([]);
     setLoading(false);
   };
-
-  // Debug on open
-  useEffect(() => {
-    if (isOpen) {
-      debugCustomerData();
-    }
-  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -964,7 +864,7 @@ const Chatbot = ({ isOpen, onClose }) => {
       <div className="chatbot-container" onClick={(e) => e.stopPropagation()}>
         <div className="chatbot-header">
           <div className="chatbot-title">
-            <span className="chatbot-icon">🤖</span>
+            <FontAwesomeIcon icon={faRobot} className="chatbot-icon" />
             <h3>Hybrid Business Assistant</h3>
           </div>
           <div className="chatbot-actions">
@@ -972,11 +872,12 @@ const Chatbot = ({ isOpen, onClose }) => {
               onClick={clearChat}
               className="clear-btn"
               disabled={loading}
+              title="Clear chat"
             >
-              🗑️ Clear
+              <FontAwesomeIcon icon={faTrashAlt} />
             </button>
-            <button onClick={onClose} className="close-btn">
-              ×
+            <button onClick={onClose} className="close-btn" title="Close">
+              <FontAwesomeIcon icon={faTimes} />
             </button>
           </div>
         </div>
@@ -985,19 +886,29 @@ const Chatbot = ({ isOpen, onClose }) => {
           {messages.length === 0 && !loading ? (
             <div className="welcome-message">
               <div className="welcome-header">
-                <h3>🤖 Hybrid Business Assistant</h3>
+                <h3>
+                  <FontAwesomeIcon icon={faRobot} /> Hybrid Business Assistant
+                </h3>
                 <p>
-                  <strong>🚀 Emerging Technology Demo</strong>
+                  <strong>Emerging Technology Demo</strong>
                 </p>
                 <div className="welcome-features">
-                  <div>🧠 AI Analysis & Insights</div>
-                  <div>📊 Data Queries & Analytics</div>
-                  <div>🔄 Intelligent Routing</div>
-                  <div>💡 Business Intelligence</div>
+                  <div>
+                    <FontAwesomeIcon icon={faChartLine} /> AI Analysis &
+                    Insights
+                  </div>
+                  <div>
+                    <FontAwesomeIcon icon={faDatabase} /> Data Queries &
+                    Analytics
+                  </div>
+                  <div>
+                    <FontAwesomeIcon icon={faExchangeAlt} /> Intelligent Routing
+                  </div>
+                  <div>
+                    <FontAwesomeIcon icon={faLightbulb} /> Business Intelligence
+                  </div>
                 </div>
-                <p>
-                  <em>Try these emerging tech features:</em>
-                </p>
+
                 <div>• "Analyze my business performance" (AI)</div>
                 <div>• "Top spending customers" (Data)</div>
                 <div>• "Sales trends and insights" (AI)</div>
@@ -1042,8 +953,9 @@ const Chatbot = ({ isOpen, onClose }) => {
             type="submit"
             disabled={!input.trim() || loading}
             className="send-btn"
+            title="Send message"
           >
-            📤 Send
+            <FontAwesomeIcon icon={faPaperPlane} />
           </button>
         </form>
       </div>

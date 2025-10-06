@@ -342,21 +342,6 @@ export default function Analytics() {
         </div>
 
         {/* Debug info - remove after testing */}
-        <div
-          style={{
-            background: "var(--bg-secondary)",
-            padding: "1rem",
-            borderRadius: "8px",
-            marginBottom: "1rem",
-            fontSize: "14px",
-            color: "var(--text-secondary)",
-          }}
-        >
-          <strong>Debug Info:</strong> Showing{" "}
-          {analyticsData.revenueData.length} days of data | Total Orders:{" "}
-          {summaryMetrics.totalOrders} | Total Revenue: ₱
-          {summaryMetrics.totalRevenue.toLocaleString()}
-        </div>
 
         {/* Summary Metrics */}
         <div className="analytics-card full-width">

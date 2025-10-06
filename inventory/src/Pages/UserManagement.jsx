@@ -460,24 +460,6 @@ export default function UserManagement() {
                           </div>
                         )}
                       </div>
-
-                      <div className="permissions-section">
-                        <h4>Permissions</h4>
-                        <div className="permissions-grid">
-                          {Object.entries(user.permissions || {}).map(
-                            ([key, value]) => (
-                              <div
-                                key={key}
-                                className={`permission-item ${
-                                  value ? "granted" : "denied"
-                                }`}
-                              >
-                                {getPermissionLabel(key)}
-                              </div>
-                            )
-                          )}
-                        </div>
-                      </div>
                     </div>
                     <div className="user-actions">
                       <button
@@ -777,32 +759,6 @@ export default function UserManagement() {
                       <span className="toggle-text active">Active</span>
                       <span className="toggle-text inactive">Inactive</span>
                     </label>
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label>Permissions</label>
-                  <div className="permissions-grid-form">
-                    {Object.entries(formData.permissions).map(
-                      ([key, value]) => (
-                        <label key={key} className="permission-option">
-                          <input
-                            type="checkbox"
-                            checked={value}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                permissions: {
-                                  ...formData.permissions,
-                                  [key]: e.target.checked,
-                                },
-                              })
-                            }
-                          />
-                          <span>{getPermissionLabel(key)}</span>
-                        </label>
-                      )
-                    )}
                   </div>
                 </div>
 

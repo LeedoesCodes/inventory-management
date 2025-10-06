@@ -339,13 +339,7 @@ export default function TransactionHistory() {
                       >
                         <FontAwesomeIcon icon={faEye} />
                       </button>
-                      <button
-                        className="action-btn restore-btn"
-                        onClick={() => handleRestoreStock(order)}
-                        title="Restore Stock"
-                      >
-                        <FontAwesomeIcon icon={faUndo} />
-                      </button>
+
                       <button
                         className="action-btn delete-btn"
                         onClick={() => handleDeleteOrder(order.id)}
