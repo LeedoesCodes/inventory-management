@@ -13,6 +13,10 @@ const SettingsPage = () => {
   const { theme, toggleTheme } = useTheme();
   const [settings, setSettings] = useState({
     lowStockThreshold: 5,
+    // NEW: Association Rule Thresholds
+    minSupport: 0.05, // 5%
+    minConfidence: 0.3, // 30%
+    minLift: 1.0, // Minimum lift value
   });
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -26,9 +30,12 @@ const SettingsPage = () => {
         const settingsDoc = await getDoc(doc(db, "userSettings", user.uid));
         if (settingsDoc.exists()) {
           const userSettings = settingsDoc.data();
-          // Only load lowStockThreshold, ignore other settings
           setSettings({
             lowStockThreshold: userSettings.lowStockThreshold || 5,
+            // NEW: Load association rule thresholds with defaults
+            minSupport: userSettings.minSupport || 0.05,
+            minConfidence: userSettings.minConfidence || 0.3,
+            minLift: userSettings.minLift || 1.0,
           });
         }
       } catch (error) {
@@ -153,6 +160,89 @@ const SettingsPage = () => {
               </div>
               <span className="setting-description">
                 Receive alerts when product quantity falls below this number
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* NEW: Association Rules Settings */}
+        <div className="settings-section">
+          <h2 className="section-title">
+            <span className="section-icon">📊</span>
+            Association Rules & Recommendations
+          </h2>
+          <div className="settings-grid">
+            <div className="setting-item">
+              <label className="setting-label">Minimum Support Threshold</label>
+              <div className="input-group">
+                <input
+                  type="range"
+                  value={settings.minSupport}
+                  onChange={(e) =>
+                    handleChange("minSupport", parseFloat(e.target.value))
+                  }
+                  className="setting-slider"
+                  min="0.01"
+                  max="0.3"
+                  step="0.01"
+                />
+                <span className="input-suffix">
+                  {(settings.minSupport * 100).toFixed(1)}%
+                </span>
+              </div>
+              <span className="setting-description">
+                Minimum frequency of itemset occurrence in transactions (1% -
+                30%)
+              </span>
+            </div>
+
+            <div className="setting-item">
+              <label className="setting-label">
+                Minimum Confidence Threshold
+              </label>
+              <div className="input-group">
+                <input
+                  type="range"
+                  value={settings.minConfidence}
+                  onChange={(e) =>
+                    handleChange("minConfidence", parseFloat(e.target.value))
+                  }
+                  className="setting-slider"
+                  min="0.1"
+                  max="0.8"
+                  step="0.05"
+                />
+                <span className="input-suffix">
+                  {(settings.minConfidence * 100).toFixed(1)}%
+                </span>
+              </div>
+              <span className="setting-description">
+                Minimum probability that consequent items are bought when
+                antecedent items are purchased (10% - 80%)
+              </span>
+            </div>
+
+            <div className="setting-item">
+              <label className="setting-label">Minimum Lift Threshold</label>
+              <div className="input-group">
+                <input
+                  type="range"
+                  value={settings.minLift}
+                  onChange={(e) =>
+                    handleChange("minLift", parseFloat(e.target.value))
+                  }
+                  className="setting-slider"
+                  min="0.5"
+                  max="3.0"
+                  step="0.1"
+                />
+                <span className="input-suffix">
+                  {settings.minLift.toFixed(2)}
+                </span>
+              </div>
+              <span className="setting-description">
+                Minimum lift value indicating association strength (0.5 - 3.0).
+                Values above 1.0 indicate positive association.
               </span>
             </div>
           </div>
