@@ -47,6 +47,20 @@
         }
       }
 
+      // NEW: Specific styling for rules thresholds
+      .rules-thresholds {
+        background: #e6fffa;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        color: #234e52;
+        border-left: 3px solid #38b2ac;
+
+        strong {
+          color: #234e52;
+        }
+      }
+
       .refresh-btn {
         background: #4299e1;
         color: white;
@@ -220,6 +234,23 @@
         font-size: 0.9rem;
         color: #718096;
         display: block;
+      }
+
+      // NEW: Threshold info styling for section headers
+      .threshold-info {
+        background: #f0fff4;
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        color: #22543d;
+        border-left: 3px solid #48bb78;
+        margin-top: 0.5rem;
+        width: 100%;
+
+        small {
+          color: #22543d;
+          font-weight: 500;
+        }
       }
 
       .view-all-rules-btn {
@@ -717,6 +748,17 @@
           }
         }
 
+        // NEW: Dark theme for rules thresholds
+        .rules-thresholds {
+          background: #1e453e;
+          color: #81e6d9;
+          border-left: 3px solid #38b2ac;
+
+          strong {
+            color: #81e6d9;
+          }
+        }
+
         .refresh-btn {
           background: #3182ce;
 
@@ -792,6 +834,17 @@
 
         span {
           color: #a0aec0;
+        }
+
+        // NEW: Dark theme for threshold info in sections
+        .threshold-info {
+          background: #1e453e;
+          color: #81e6d9;
+          border-left: 3px solid #38b2ac;
+
+          small {
+            color: #81e6d9;
+          }
         }
 
         .view-all-rules-btn {
@@ -1117,6 +1170,11 @@
         flex-direction: column;
         align-items: flex-start;
         gap: 0.5rem;
+
+        .rules-thresholds {
+          width: 100%;
+          text-align: center;
+        }
 
         .upload-csv-btn {
           width: 100%;

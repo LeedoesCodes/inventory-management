@@ -65,16 +65,15 @@ function Lobby() {
       <div className="hourglass-emoji">⏳</div>
       <h1> Waiting for Approval</h1>
       <p>
-        Your account is pending approval from an administrator. Please check
+        Your account is waiting for approval from an administrator. Please check
         back later.
       </p>
       {user && (
         <p>
-          Logged in as <strong>{user.email}</strong> (Role: {role})
+          Logged in as <strong>{user.email},</strong>
         </p>
       )}
       <div className="lobby-actions">
-        <button onClick={checkApproval}>Check Approval Status</button>
         <button onClick={handleLogout}>Logout</button>
       </div>
     </div>

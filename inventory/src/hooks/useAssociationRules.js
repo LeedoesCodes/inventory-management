@@ -1,15 +1,22 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../Firebase/firebase";
 
 // Enhanced client-side association rules algorithm with lift calculation
-const generateAssociationRules = (orders) => {
+const generateAssociationRules = (orders, thresholds = {}) => {
   if (!orders || orders.length === 0) {
     console.log("No orders provided to generate rules");
     return [];
   }
 
-  console.log("Generating rules from orders:", orders.length); // DEBUG
+  // Use provided thresholds or defaults
+  const minSupport = thresholds.minSupport || 0.05;
+  const minConfidence = thresholds.minConfidence || 0.3;
+  const minLift = thresholds.minLift || 1.0;
+
+  console.log(
+    `Generating rules with thresholds: Support=${minSupport}, Confidence=${minConfidence}, Lift=${minLift}`
+  );
 
   const pairCounts = {};
   const itemCounts = {};
@@ -40,9 +47,6 @@ const generateAssociationRules = (orders) => {
     }
   });
 
-  console.log("Item counts:", itemCounts); // DEBUG
-  console.log("Pair counts:", pairCounts); // DEBUG
-
   const rules = [];
 
   Object.entries(pairCounts).forEach(([pair, count]) => {
@@ -56,46 +60,57 @@ const generateAssociationRules = (orders) => {
 
     // Rule: A → B
     const confidenceAB = count / (itemCounts[itemA] || 1);
-    if (confidenceAB > 0.3 && supportAB > 0.05) {
+    if (
+      confidenceAB >= minConfidence &&
+      supportAB >= minSupport &&
+      lift >= minLift
+    ) {
       rules.push({
         antecedent: [itemA],
         consequent: [itemB],
         confidence: confidenceAB,
         support: supportAB,
-        lift: lift, // ADDED LIFT METRIC
+        lift: lift,
         rule: `${itemA} → ${itemB}`,
       });
     }
 
     // Rule: B → A
     const confidenceBA = count / (itemCounts[itemB] || 1);
-    if (confidenceBA > 0.3 && supportAB > 0.05) {
+    if (
+      confidenceBA >= minConfidence &&
+      supportAB >= minSupport &&
+      lift >= minLift
+    ) {
       rules.push({
         antecedent: [itemB],
         consequent: [itemA],
         confidence: confidenceBA,
         support: supportAB,
-        lift: lift, // ADDED LIFT METRIC
+        lift: lift,
         rule: `${itemB} → ${itemA}`,
       });
     }
   });
 
-  console.log("Final generated rules with lift:", rules); // DEBUG
   return rules.sort((a, b) => b.confidence - a.confidence);
 };
 
-export const useAssociationRules = () => {
+export const useAssociationRules = (thresholds = {}) => {
   const [rules, setRules] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const previousThresholds = useRef(null);
 
-  const loadRules = useCallback(async () => {
+  const loadRules = useCallback(async (currentThresholds = thresholds) => {
     try {
       setLoading(true);
       setError(null);
 
-      console.log("Loading association rules from ORDERS collection...");
+      console.log(
+        "Loading association rules with thresholds:",
+        currentThresholds
+      );
 
       const ordersSnapshot = await getDocs(collection(db, "orders"));
       const allOrders = ordersSnapshot.docs.map((doc) => ({
@@ -123,7 +138,10 @@ export const useAssociationRules = () => {
 
       console.log("Recent orders (last 90 days):", recentOrders.length);
 
-      const generatedRules = generateAssociationRules(recentOrders);
+      const generatedRules = generateAssociationRules(
+        recentOrders,
+        currentThresholds
+      );
       console.log("Final rules generated:", generatedRules.length);
       setRules(generatedRules);
     } catch (err) {
@@ -132,7 +150,7 @@ export const useAssociationRules = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, []); // Remove thresholds dependency here
 
   const getRecommendations = useCallback(
     (currentItems) => {
@@ -160,7 +178,7 @@ export const useAssociationRules = () => {
           consequent: rule.consequent,
           confidence: rule.confidence,
           support: rule.support,
-          lift: rule.lift, // INCLUDING LIFT IN RECOMMENDATIONS
+          lift: rule.lift,
           strength: getStrength(rule.confidence, rule.lift),
           products: rule.consequent.map((itemName) => ({
             id: itemName,
@@ -184,9 +202,18 @@ export const useAssociationRules = () => {
     return "very low";
   };
 
+  // Only reload rules when thresholds actually change significantly
   useEffect(() => {
-    loadRules();
-  }, [loadRules]);
+    const currentThresholds = JSON.stringify(thresholds);
+    const previousThresholdsStr = JSON.stringify(previousThresholds.current);
+
+    // Only reload if thresholds have meaningfully changed
+    if (currentThresholds !== previousThresholdsStr) {
+      console.log("Thresholds changed, reloading rules...");
+      loadRules(thresholds);
+      previousThresholds.current = thresholds;
+    }
+  }, [thresholds, loadRules]);
 
   return {
     rules,

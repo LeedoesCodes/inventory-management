@@ -80,7 +80,8 @@ export default function Register() {
 
       navigate("/login", {
         state: {
-          successMessage: "Account created! Please wait for admin approval.",
+          successMessage:
+            "Account created! Please login and wait for admin approval.",
         },
       });
     } catch (err) {

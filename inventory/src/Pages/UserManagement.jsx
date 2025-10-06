@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-
 import {
   collection,
   getDocs,
@@ -32,6 +31,7 @@ import {
   faEyeSlash,
   faFilter,
   faSort,
+  faLock,
 } from "@fortawesome/free-solid-svg-icons";
 import "../styles/userManagement.scss";
 
@@ -44,6 +44,10 @@ export default function UserManagement() {
   const [filterRole, setFilterRole] = useState("all");
   const [loading, setLoading] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [passwordChangeStep, setPasswordChangeStep] = useState("idle"); // idle, verifying, changing
 
   // Form state
   const [formData, setFormData] = useState({
@@ -109,6 +113,46 @@ export default function UserManagement() {
     return userRoles.find((r) => r.value === role) || userRoles[2]; // Default to employee
   };
 
+  // Verify current password before allowing password change
+  const verifyCurrentPassword = async () => {
+    if (!currentPassword) {
+      alert("Please enter your current password");
+      return false;
+    }
+
+    try {
+      setPasswordChangeStep("verifying");
+
+      // In a real app, you would verify against the actual user's password
+      // This is a simulation - you'd typically use Firebase Auth for this
+      const userDoc = await getDocs(
+        query(collection(db, "users"), where("id", "==", editingUser.id))
+      );
+
+      if (!userDoc.empty) {
+        const userData = userDoc.docs[0].data();
+        // Note: In production, you should use Firebase Auth to verify passwords
+        // This is just a basic check - you'll need to implement proper authentication
+        if (userData.password === currentPassword) {
+          setPasswordChangeStep("changing");
+          return true;
+        } else {
+          alert("Current password is incorrect");
+          setCurrentPassword("");
+          setPasswordChangeStep("idle");
+          return false;
+        }
+      }
+    } catch (error) {
+      console.error("Error verifying password:", error);
+      alert("Error verifying password. Please try again.");
+      setPasswordChangeStep("idle");
+      return false;
+    }
+
+    return false;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -120,6 +164,14 @@ export default function UserManagement() {
     if (!editingUser && !password) {
       alert("Password is required for new users");
       return;
+    }
+
+    // If editing user and password is provided, verify current password first
+    if (editingUser && password) {
+      if (passwordChangeStep !== "changing") {
+        const verified = await verifyCurrentPassword();
+        if (!verified) return;
+      }
     }
 
     try {
@@ -167,6 +219,8 @@ export default function UserManagement() {
         },
       });
       setPassword("");
+      setCurrentPassword("");
+      setPasswordChangeStep("idle");
       fetchUsers();
     } catch (error) {
       console.error("Error saving user:", error);
@@ -193,6 +247,8 @@ export default function UserManagement() {
       },
     });
     setPassword(""); // Don't show existing password
+    setCurrentPassword(""); // Reset current password field
+    setPasswordChangeStep("idle"); // Reset password change flow
     setShowForm(true);
   };
 
@@ -249,6 +305,12 @@ export default function UserManagement() {
       settings: "System Settings",
     };
     return labels[key] || key;
+  };
+
+  const resetPasswordFields = () => {
+    setPassword("");
+    setCurrentPassword("");
+    setPasswordChangeStep("idle");
   };
 
   return (
@@ -476,6 +538,8 @@ export default function UserManagement() {
                       },
                     });
                     setPassword("");
+                    setCurrentPassword("");
+                    setPasswordChangeStep("idle");
                   }}
                 >
                   ×
@@ -573,56 +637,145 @@ export default function UserManagement() {
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label>Password {!editingUser && "*"}</label>
-                  <div className="password-input">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder={
-                        editingUser
-                          ? "Leave blank to keep current password"
-                          : "Enter password"
-                      }
-                      required={!editingUser}
-                    />
-                    <button
-                      type="button"
-                      className="password-toggle"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      <FontAwesomeIcon
-                        icon={showPassword ? faEyeSlash : faEye}
-                      />
-                    </button>
-                  </div>
+                {/* Password Section */}
+                <div className="password-section">
+                  <h4>
+                    <FontAwesomeIcon icon={faLock} />
+                    Password {!editingUser && "*"}
+                  </h4>
+
+                  {editingUser ? (
+                    <>
+                      {/* Current Password Verification */}
+                      {passwordChangeStep === "idle" && password && (
+                        <div className="form-group">
+                          <label>Current Password *</label>
+                          <div className="password-input">
+                            <input
+                              type={showCurrentPassword ? "text" : "password"}
+                              value={currentPassword}
+                              onChange={(e) =>
+                                setCurrentPassword(e.target.value)
+                              }
+                              placeholder="Enter your current password to change password"
+                              required
+                            />
+                            <button
+                              type="button"
+                              className="password-toggle"
+                              onClick={() =>
+                                setShowCurrentPassword(!showCurrentPassword)
+                              }
+                            >
+                              <FontAwesomeIcon
+                                icon={showCurrentPassword ? faEyeSlash : faEye}
+                              />
+                            </button>
+                          </div>
+                          <small className="password-hint">
+                            You must verify your current password to set a new
+                            one
+                          </small>
+                        </div>
+                      )}
+
+                      {/* New Password Field */}
+                      <div className="form-group">
+                        <label>New Password</label>
+                        <div className="password-input">
+                          <input
+                            type={showNewPassword ? "text" : "password"}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Leave blank to keep current password"
+                            disabled={passwordChangeStep === "verifying"}
+                          />
+                          <button
+                            type="button"
+                            className="password-toggle"
+                            onClick={() => setShowNewPassword(!showNewPassword)}
+                            disabled={passwordChangeStep === "verifying"}
+                          >
+                            <FontAwesomeIcon
+                              icon={showNewPassword ? faEyeSlash : faEye}
+                            />
+                          </button>
+                        </div>
+                        {password && passwordChangeStep === "idle" && (
+                          <small className="password-warning">
+                            ⚠️ You'll need to verify your current password above
+                          </small>
+                        )}
+                        {passwordChangeStep === "verifying" && (
+                          <small className="password-verifying">
+                            🔄 Verifying current password...
+                          </small>
+                        )}
+                        {passwordChangeStep === "changing" && (
+                          <small className="password-success">
+                            ✅ Current password verified. You can now save
+                            changes.
+                          </small>
+                        )}
+                      </div>
+
+                      {/* Cancel Password Change Button */}
+                      {passwordChangeStep !== "idle" && (
+                        <button
+                          type="button"
+                          className="btn-cancel-password"
+                          onClick={resetPasswordFields}
+                        >
+                          Cancel Password Change
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    /* New User Password Field */
+                    <div className="form-group">
+                      <label>Password *</label>
+                      <div className="password-input">
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="Enter password for new user"
+                          required
+                        />
+                        <button
+                          type="button"
+                          className="password-toggle"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          <FontAwesomeIcon
+                            icon={showPassword ? faEyeSlash : faEye}
+                          />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
+                {/* Status Toggle Switch */}
                 <div className="form-group">
                   <label>Status</label>
-                  <div className="status-options">
-                    <label className="radio-option">
-                      <input
-                        type="radio"
-                        value="active"
-                        checked={formData.status === "active"}
-                        onChange={(e) =>
-                          setFormData({ ...formData, status: e.target.value })
-                        }
-                      />
-                      <span className="radio-label">Active</span>
-                    </label>
-                    <label className="radio-option">
-                      <input
-                        type="radio"
-                        value="inactive"
-                        checked={formData.status === "inactive"}
-                        onChange={(e) =>
-                          setFormData({ ...formData, status: e.target.value })
-                        }
-                      />
-                      <span className="radio-label">Inactive</span>
+                  <div className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      id="user-status"
+                      checked={formData.status === "active"}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          status: e.target.checked ? "active" : "inactive",
+                        })
+                      }
+                      className="toggle-input"
+                    />
+                    <label htmlFor="user-status" className="toggle-label">
+                      <span className="toggle-handle"></span>
+                      <span className="toggle-text active">Active</span>
+                      <span className="toggle-text inactive">Inactive</span>
                     </label>
                   </div>
                 </div>
@@ -677,12 +830,22 @@ export default function UserManagement() {
                         },
                       });
                       setPassword("");
+                      setCurrentPassword("");
+                      setPasswordChangeStep("idle");
                     }}
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="btn-submit">
-                    {editingUser ? "Update User" : "Create User"}
+                  <button
+                    type="submit"
+                    className="btn-submit"
+                    disabled={passwordChangeStep === "verifying"}
+                  >
+                    {passwordChangeStep === "verifying"
+                      ? "Verifying..."
+                      : editingUser
+                      ? "Update User"
+                      : "Create User"}
                   </button>
                 </div>
               </form>
