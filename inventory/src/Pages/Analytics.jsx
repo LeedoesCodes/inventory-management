@@ -6,6 +6,21 @@ import { useSidebar } from "../context/SidebarContext";
 import Header from "../components/UI/Headers";
 import "../styles/analytics.scss";
 
+// FontAwesome imports
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faChartBar,
+  faChartLine,
+  faChartPie,
+  faTrophy,
+  faDollarSign,
+  faShoppingCart,
+  faReceipt,
+  faCrown,
+  faSpinner,
+  faExclamationTriangle,
+} from "@fortawesome/free-solid-svg-icons";
+
 import RevenueChart from "../components/Analytics/RevenueChart";
 import SalesTrendChart from "../components/Analytics/SalesTrendChart";
 import ProductPerformance from "../components/Analytics/ProductPerformance";
@@ -288,7 +303,11 @@ export default function Analytics() {
         <Header />
         <div className="analytics-content">
           <div className="loading-state">
-            <div className="loading-spinner"></div>
+            <FontAwesomeIcon
+              icon={faSpinner}
+              className="loading-spinner"
+              spin
+            />
             <p>Loading analytics data...</p>
           </div>
         </div>
@@ -302,6 +321,10 @@ export default function Analytics() {
         <Header />
         <div className="analytics-content">
           <div className="error-state">
+            <FontAwesomeIcon
+              icon={faExclamationTriangle}
+              className="error-icon"
+            />
             <p>{analyticsData.error}</p>
             <button onClick={fetchAnalyticsData} className="retry-btn">
               Try Again
@@ -319,7 +342,10 @@ export default function Analytics() {
       <div className="analytics-content">
         <div className="analytics-header">
           <div className="header-content">
-            <h1>📊 Business Analytics</h1>
+            <h1>
+              <FontAwesomeIcon icon={faChartBar} className="header-icon" />
+              Business Analytics
+            </h1>
             <p>Sales and revenue insights from your transactions</p>
 
             {/* <DummyDataButton /> */}
@@ -346,27 +372,42 @@ export default function Analytics() {
         {/* Summary Metrics */}
         <div className="analytics-card full-width">
           <div className="card-header">
-            <h3>📈 Key Performance Indicators</h3>
+            <h3>
+              <FontAwesomeIcon icon={faChartLine} className="card-icon" />
+              Key Performance Indicators
+            </h3>
             <span className="time-range">{timeRange}</span>
           </div>
           <div className="stats-grid">
             <div className="stat-card">
+              <div className="stat-icon">
+                <FontAwesomeIcon icon={faDollarSign} />
+              </div>
               <div className="stat-value">
                 ₱{summaryMetrics.totalRevenue.toLocaleString()}
               </div>
               <div className="stat-label">Total Revenue</div>
             </div>
             <div className="stat-card">
+              <div className="stat-icon">
+                <FontAwesomeIcon icon={faShoppingCart} />
+              </div>
               <div className="stat-value">{summaryMetrics.totalOrders}</div>
               <div className="stat-label">Total Orders</div>
             </div>
             <div className="stat-card">
+              <div className="stat-icon">
+                <FontAwesomeIcon icon={faReceipt} />
+              </div>
               <div className="stat-value">
                 ₱{summaryMetrics.avgOrderValue.toFixed(2)}
               </div>
               <div className="stat-label">Avg Order Value</div>
             </div>
             <div className="stat-card">
+              <div className="stat-icon">
+                <FontAwesomeIcon icon={faCrown} />
+              </div>
               <div className="stat-value" style={{ fontSize: "1.1rem" }}>
                 {summaryMetrics.bestSellingProduct}
               </div>
@@ -379,7 +420,10 @@ export default function Analytics() {
           {/* Revenue Chart */}
           <div className="analytics-card full-width">
             <div className="card-header">
-              <h3>💰 Revenue Over Time</h3>
+              <h3>
+                <FontAwesomeIcon icon={faDollarSign} className="card-icon" />
+                Revenue Over Time
+              </h3>
             </div>
             <RevenueChart data={analyticsData.revenueData} />
           </div>
@@ -387,7 +431,10 @@ export default function Analytics() {
           {/* Sales Trends */}
           <div className="analytics-card">
             <div className="card-header">
-              <h3>📊 Daily Orders</h3>
+              <h3>
+                <FontAwesomeIcon icon={faChartPie} className="card-icon" />
+                Daily Orders
+              </h3>
             </div>
             <SalesTrendChart data={analyticsData.salesTrends} />
           </div>
@@ -395,7 +442,10 @@ export default function Analytics() {
           {/* Product Performance */}
           <div className="analytics-card">
             <div className="card-header">
-              <h3>🏆 Top Products</h3>
+              <h3>
+                <FontAwesomeIcon icon={faTrophy} className="card-icon" />
+                Top Products
+              </h3>
             </div>
             <ProductPerformance data={analyticsData.topProducts} />
           </div>

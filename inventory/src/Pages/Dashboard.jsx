@@ -11,6 +11,31 @@ import Chatbot from "../components/Chatbot/Chatbot";
 import ChatbotToggle from "../components/Chatbot/ChatbotToggle";
 import CSVUploader from "../components/CSVUploader";
 
+// FontAwesome imports
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faBox,
+  faShoppingCart,
+  faDollarSign,
+  faExclamationTriangle,
+  faLightbulb,
+  faChartLine,
+  faRocket,
+  faThumbsUp,
+  faChartBar,
+  faPlus,
+  faWarehouse,
+  faReceipt,
+  faRobot,
+  faFileCsv,
+  faCrown,
+  faSpinner,
+  faRefresh,
+  faDatabase,
+  faArrowRight,
+  faCube,
+} from "@fortawesome/free-solid-svg-icons";
+
 export default function Dashboard() {
   const { isCollapsed } = useSidebar();
   const { user } = useContext(AuthContext);
@@ -180,13 +205,13 @@ export default function Dashboard() {
   const getLiftInterpretation = (lift) => {
     const liftValue = lift || 0;
 
-    if (liftValue > 3.0) return "Exceptional association 🚀";
-    if (liftValue > 2.0) return "Strong positive association ✅";
-    if (liftValue > 1.5) return "Positive association 👍";
-    if (liftValue > 1.2) return "Moderate association 📈";
-    if (liftValue > 1.0) return "Slight association ➕";
-    if (liftValue === 1.0) return "Independent items ➖";
-    return "Negative association ❌";
+    if (liftValue > 3.0) return "Exceptional association";
+    if (liftValue > 2.0) return "Strong positive association";
+    if (liftValue > 1.5) return "Positive association";
+    if (liftValue > 1.2) return "Moderate association";
+    if (liftValue > 1.0) return "Slight association";
+    if (liftValue === 1.0) return "Independent items";
+    return "Negative association";
   };
 
   const handleApplyRecommendation = (recommendation) => {
@@ -264,6 +289,10 @@ export default function Dashboard() {
       <div className={`dashboard-page ${isCollapsed ? "collapsed" : ""}`}>
         <Header />
         <div className="error-state">
+          <FontAwesomeIcon
+            icon={faExclamationTriangle}
+            className="error-icon"
+          />
           <p>{error}</p>
           <button onClick={fetchDashboardData} className="retry-btn">
             Try Again
@@ -285,10 +314,12 @@ export default function Dashboard() {
         <h1>Dashboard Overview</h1>
         <div className="header-info">
           <span className="threshold-info">
+            <FontAwesomeIcon icon={faCube} className="info-icon" />
             Low Stock Threshold:{" "}
             <strong>{userSettings.lowStockThreshold}</strong> items
           </span>
           <span className="ml-info">
+            <FontAwesomeIcon icon={faChartLine} className="info-icon" />
             Association Rules: <strong>{associationRules.length}</strong> active
           </span>
           {/* FIXED: Add safe access to threshold values */}
@@ -298,6 +329,7 @@ export default function Dashboard() {
             className="refresh-btn"
             disabled={dashboardData.loading || mlLoading}
           >
+            <FontAwesomeIcon icon={faRefresh} className="refresh-icon" />
             {dashboardData.loading || mlLoading
               ? "Refreshing..."
               : "Refresh Data"}
@@ -307,7 +339,7 @@ export default function Dashboard() {
 
       {dashboardData.loading ? (
         <div className="loading-state">
-          <div className="loading-spinner"></div>
+          <FontAwesomeIcon icon={faSpinner} className="loading-spinner" spin />
           <p>Loading dashboard data...</p>
         </div>
       ) : (
@@ -318,7 +350,9 @@ export default function Dashboard() {
               onClick={handleViewInventory}
               style={{ cursor: "pointer" }}
             >
-              <div className="card-icon">📦</div>
+              <div className="card-icon">
+                <FontAwesomeIcon icon={faBox} />
+              </div>
               <h2>{dashboardData.totalProducts.toLocaleString()}</h2>
               <p>Total Products</p>
             </div>
@@ -328,13 +362,17 @@ export default function Dashboard() {
               onClick={handleManageOrders}
               style={{ cursor: "pointer" }}
             >
-              <div className="card-icon">🛒</div>
+              <div className="card-icon">
+                <FontAwesomeIcon icon={faShoppingCart} />
+              </div>
               <h2>{dashboardData.totalOrders.toLocaleString()}</h2>
               <p>Total Orders</p>
             </div>
 
             <div className="card revenue-card">
-              <div className="card-icon">💰</div>
+              <div className="card-icon">
+                <FontAwesomeIcon icon={faDollarSign} />
+              </div>
               <h2>₱{dashboardData.totalRevenue.toLocaleString()}</h2>
               <p>Total Revenue</p>
             </div>
@@ -344,7 +382,9 @@ export default function Dashboard() {
               onClick={handleViewLowStock}
               style={{ cursor: "pointer" }}
             >
-              <div className="card-icon">⚠️</div>
+              <div className="card-icon">
+                <FontAwesomeIcon icon={faExclamationTriangle} />
+              </div>
               <h2>{dashboardData.lowStock}</h2>
               <p>Low Stock Items</p>
               <span className="stock-warning">
@@ -356,7 +396,13 @@ export default function Dashboard() {
           <div className="dashboard-content">
             <div className="ml-recommendations main-section">
               <div className="section-header">
-                <h2>💡 Smart Recommendations</h2>
+                <h2>
+                  <FontAwesomeIcon
+                    icon={faLightbulb}
+                    className="section-icon"
+                  />
+                  Smart Recommendations
+                </h2>
                 {/* FIXED: Add safe threshold display */}
                 <div className="threshold-info">
                   <small>
@@ -370,7 +416,11 @@ export default function Dashboard() {
 
               {mlLoading ? (
                 <div className="ml-loading">
-                  <div className="loading-spinner small"></div>
+                  <FontAwesomeIcon
+                    icon={faSpinner}
+                    className="loading-spinner small"
+                    spin
+                  />
                   <span>Analyzing transaction patterns...</span>
                 </div>
               ) : recommendations.length > 0 ? (
@@ -394,6 +444,10 @@ export default function Dashboard() {
                               : "low-lift"
                           }`}
                         >
+                          <FontAwesomeIcon
+                            icon={faChartBar}
+                            className="lift-icon"
+                          />
                           Lift: {(rec.lift || 0).toFixed(2)}
                         </span>
                       </div>
@@ -418,13 +472,25 @@ export default function Dashboard() {
 
                         <div className="recommendation-stats">
                           <span>
+                            <FontAwesomeIcon
+                              icon={faDatabase}
+                              className="stat-icon"
+                            />
                             Support: {((rec.support || 0) * 100).toFixed(1)}%
                           </span>
                           <span>
+                            <FontAwesomeIcon
+                              icon={faChartLine}
+                              className="stat-icon"
+                            />
                             Lift: {(rec.lift || 0).toFixed(2)} -{" "}
                             {getLiftInterpretation(rec.lift)}
                           </span>
                           <span>
+                            <FontAwesomeIcon
+                              icon={faShoppingCart}
+                              className="stat-icon"
+                            />
                             Based on {dashboardData.totalOrders} transactions
                           </span>
                         </div>
@@ -479,7 +545,13 @@ export default function Dashboard() {
             {uploadedResults.length > 0 && (
               <div className="uploaded-results main-section">
                 <div className="section-header">
-                  <h2>📁 Recently Uploaded CSV Analyses</h2>
+                  <h2>
+                    <FontAwesomeIcon
+                      icon={faFileCsv}
+                      className="section-icon"
+                    />
+                    Recently Uploaded CSV Analyses
+                  </h2>
                 </div>
                 <div className="results-list">
                   {uploadedResults.map((result, index) => (
@@ -496,6 +568,10 @@ export default function Dashboard() {
                           .slice(0, 3)
                           .map((rule, ruleIndex) => (
                             <div key={ruleIndex} className="rule-preview">
+                              <FontAwesomeIcon
+                                icon={faArrowRight}
+                                className="rule-arrow"
+                              />
                               <strong>{rule.antecedent.join(" + ")}</strong> →{" "}
                               {rule.consequent.join(" + ")}(
                               {(rule.confidence * 100).toFixed(1)}% confidence)
@@ -523,7 +599,13 @@ export default function Dashboard() {
                 {dashboardData.popularItems.length > 0 ? (
                   dashboardData.popularItems.map((item, index) => (
                     <div key={index} className="item-row">
-                      <span className="rank">#{index + 1}</span>
+                      <span className="rank">
+                        <FontAwesomeIcon
+                          icon={faCrown}
+                          className={`rank-icon rank-${index + 1}`}
+                        />
+                        #{index + 1}
+                      </span>
                       <span className="item-name">{item.name}</span>
                       <span className="sold-count">{item.sold} sold</span>
                     </div>
@@ -544,18 +626,21 @@ export default function Dashboard() {
                   className="action-btn primary"
                   onClick={handleAddProduct}
                 >
+                  <FontAwesomeIcon icon={faPlus} className="btn-icon" />
                   Add New Product
                 </button>
                 <button
                   className="action-btn secondary"
                   onClick={handleViewInventory}
                 >
+                  <FontAwesomeIcon icon={faWarehouse} className="btn-icon" />
                   View Inventory
                 </button>
                 <button
                   className="action-btn secondary"
                   onClick={handleManageOrders}
                 >
+                  <FontAwesomeIcon icon={faReceipt} className="btn-icon" />
                   Manage Orders
                 </button>
                 <button
@@ -563,7 +648,8 @@ export default function Dashboard() {
                   onClick={toggleChat}
                   title="Get AI assistance"
                 >
-                  🤖 AI Assistant
+                  <FontAwesomeIcon icon={faRobot} className="btn-icon" />
+                  AI Assistant
                 </button>
               </div>
             </div>

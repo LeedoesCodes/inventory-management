@@ -7,6 +7,25 @@ import { useTheme } from "../context/ThemeContext";
 import "../styles/settings.scss";
 import Header from "../components/UI/Headers";
 
+// FontAwesome imports
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faPalette,
+  faBox,
+  faChartBar,
+  faSun,
+  faMoon,
+  faSave,
+  faSpinner,
+  faExclamationTriangle,
+  faCheckCircle,
+  faCog,
+  faSlidersH,
+  faChartLine,
+  faArrowTrendUp,
+  faGear,
+} from "@fortawesome/free-solid-svg-icons";
+
 const SettingsPage = () => {
   const { user } = useContext(AuthContext);
   const { isCollapsed } = useSidebar();
@@ -71,6 +90,7 @@ const SettingsPage = () => {
         className={`settings-page ${isCollapsed ? "sidebar-collapsed" : ""}`}
       >
         <div className="loading-container">
+          <FontAwesomeIcon icon={faSpinner} className="loading-spinner" spin />
           <p>Loading settings...</p>
         </div>
       </div>
@@ -81,6 +101,10 @@ const SettingsPage = () => {
     <div className={`settings-page ${isCollapsed ? "sidebar-collapsed" : ""}`}>
       <Header />
       <div className="page-header">
+        <h1 className="page-title">
+          <FontAwesomeIcon icon={faGear} className="header-icon" />
+          Settings
+        </h1>
         <p className="page-subtitle">
           Manage your application preferences and appearance
         </p>
@@ -93,6 +117,12 @@ const SettingsPage = () => {
             message.includes("Error") ? "error" : "success"
           }`}
         >
+          <FontAwesomeIcon
+            icon={
+              message.includes("Error") ? faExclamationTriangle : faCheckCircle
+            }
+            className="alert-icon"
+          />
           {message}
         </div>
       )}
@@ -102,7 +132,7 @@ const SettingsPage = () => {
         {/* Theme Section */}
         <div className="settings-section">
           <h2 className="section-title">
-            <span className="section-icon">🎨</span>
+            <FontAwesomeIcon icon={faPalette} className="section-icon" />
             Appearance
           </h2>
           <div className="settings-grid">
@@ -115,7 +145,7 @@ const SettingsPage = () => {
                   }`}
                   onClick={() => theme !== "light" && toggleTheme()}
                 >
-                  <span className="theme-icon">🌞</span>
+                  <FontAwesomeIcon icon={faSun} className="theme-icon" />
                   <span className="theme-label">Light</span>
                 </button>
 
@@ -125,7 +155,7 @@ const SettingsPage = () => {
                   }`}
                   onClick={() => theme !== "dark" && toggleTheme()}
                 >
-                  <span className="theme-icon">🌙</span>
+                  <FontAwesomeIcon icon={faMoon} className="theme-icon" />
                   <span className="theme-label">Dark</span>
                 </button>
               </div>
@@ -139,7 +169,7 @@ const SettingsPage = () => {
         {/* Inventory Settings */}
         <div className="settings-section">
           <h2 className="section-title">
-            <span className="section-icon">📦</span>
+            <FontAwesomeIcon icon={faBox} className="section-icon" />
             Inventory Management
           </h2>
           <div className="settings-grid">
@@ -168,12 +198,18 @@ const SettingsPage = () => {
         {/* NEW: Association Rules Settings */}
         <div className="settings-section">
           <h2 className="section-title">
-            <span className="section-icon">📊</span>
+            <FontAwesomeIcon icon={faChartBar} className="section-icon" />
             Association Rules & Recommendations
           </h2>
           <div className="settings-grid">
             <div className="setting-item">
-              <label className="setting-label">Minimum Support Threshold</label>
+              <label className="setting-label">
+                <FontAwesomeIcon
+                  icon={faChartLine}
+                  className="setting-label-icon"
+                />
+                Minimum Support Threshold
+              </label>
               <div className="input-group">
                 <input
                   type="range"
@@ -198,6 +234,10 @@ const SettingsPage = () => {
 
             <div className="setting-item">
               <label className="setting-label">
+                <FontAwesomeIcon
+                  icon={faSlidersH}
+                  className="setting-label-icon"
+                />
                 Minimum Confidence Threshold
               </label>
               <div className="input-group">
@@ -223,7 +263,13 @@ const SettingsPage = () => {
             </div>
 
             <div className="setting-item">
-              <label className="setting-label">Minimum Lift Threshold</label>
+              <label className="setting-label">
+                <FontAwesomeIcon
+                  icon={faArrowTrendUp}
+                  className="setting-label-icon"
+                />
+                Minimum Lift Threshold
+              </label>
               <div className="input-group">
                 <input
                   type="range"
@@ -251,7 +297,8 @@ const SettingsPage = () => {
         {/* Save Button */}
         <div className="settings-actions">
           <button onClick={handleSave} className="btn-primary">
-            💾 Save Settings
+            <FontAwesomeIcon icon={faSave} className="btn-icon" />
+            Save Settings
           </button>
         </div>
       </div>

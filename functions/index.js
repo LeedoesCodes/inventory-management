@@ -152,16 +152,28 @@ async function getCustomerAnalytics(analyticsType) {
     const customers = customersSnapshot.docs.map((doc) => doc.data());
 
     if (analyticsType === "all" || analyticsType === "count") {
+      // Get orders to calculate real metrics
+      const ordersSnapshot = await db.collection("orders").get();
+      const orders = ordersSnapshot.docs.map((doc) => doc.data());
+
+      // Calculate unique customers from orders
+      const uniqueCustomersFromOrders = [
+        ...new Set(orders.map((order) => order.customerName).filter(Boolean)),
+      ];
+
+      const totalRevenue = orders.reduce(
+        (sum, order) => sum + (order.totalAmount || 0),
+        0
+      );
+
       results.count = {
-        totalCustomers: customers.length,
-        totalSpent: customers.reduce((sum, c) => sum + (c.TotalSpent || 0), 0),
-        totalOrders: customers.reduce(
-          (sum, c) => sum + (c.TotalOrders || 0),
-          0
-        ),
+        totalRegisteredCustomers: customers.length,
+        activeCustomers: uniqueCustomersFromOrders.length,
+        totalOrders: orders.length,
+        totalRevenue: totalRevenue,
         averageOrdersPerCustomer:
-          customers.reduce((sum, c) => sum + (c.TotalOrders || 0), 0) /
-          (customers.length || 1),
+          orders.length / (uniqueCustomersFromOrders.length || 1),
+        averageOrderValue: totalRevenue / (orders.length || 1),
       };
     }
 
@@ -185,11 +197,23 @@ async function getCustomerAnalytics(analyticsType) {
         customerStats[customerName].totalSpent += order.totalAmount || 0;
         customerStats[customerName].orderCount += 1;
 
-        const orderDate = order.createdAt?.toDate?.() || new Date();
-        const currentLast =
-          customerStats[customerName].lastOrder?.toDate?.() || new Date(0);
-        if (orderDate > currentLast) {
-          customerStats[customerName].lastOrder = order.createdAt;
+        // Handle timestamp comparison properly
+        const orderTimestamp = order.createdAt;
+        const currentLast = customerStats[customerName].lastOrder;
+
+        if (orderTimestamp && currentLast) {
+          const orderTime = orderTimestamp._seconds
+            ? orderTimestamp._seconds * 1000
+            : new Date(orderTimestamp).getTime();
+          const currentTime = currentLast._seconds
+            ? currentLast._seconds * 1000
+            : new Date(currentLast).getTime();
+
+          if (orderTime > currentTime) {
+            customerStats[customerName].lastOrder = orderTimestamp;
+          }
+        } else if (orderTimestamp && !currentLast) {
+          customerStats[customerName].lastOrder = orderTimestamp;
         }
       });
 
@@ -206,10 +230,15 @@ async function getCustomerAnalytics(analyticsType) {
 
     if (analyticsType === "all" || analyticsType === "recent") {
       results.recentCustomers = customers
-        .sort(
-          (a, b) =>
-            (b.createdAT?.toMillis?.() || 0) - (a.createdAT?.toMillis?.() || 0)
-        )
+        .sort((a, b) => {
+          const timeA = a.createdAT?._seconds
+            ? a.createdAT._seconds * 1000
+            : new Date(a.createdAT).getTime();
+          const timeB = b.createdAT?._seconds
+            ? b.createdAT._seconds * 1000
+            : new Date(b.createdAT).getTime();
+          return timeB - timeA;
+        })
         .slice(0, 5)
         .map((c) => ({
           name: c.name,
@@ -236,8 +265,13 @@ async function getOrderAnalytics(analyticsType) {
         (sum, order) => sum + (order.totalAmount || 0),
         0
       );
+      const uniqueCustomers = [
+        ...new Set(orders.map((order) => order.customerName).filter(Boolean)),
+      ];
+
       results.count = {
         totalOrders: orders.length,
+        uniqueCustomers: uniqueCustomers.length,
         totalRevenue: totalRevenue,
         averageOrderValue: totalRevenue / (orders.length || 1),
         totalItemsSold: orders.reduce(
@@ -249,10 +283,15 @@ async function getOrderAnalytics(analyticsType) {
 
     if (analyticsType === "all" || analyticsType === "recent") {
       results.recentOrders = orders
-        .sort(
-          (a, b) =>
-            (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)
-        )
+        .sort((a, b) => {
+          const timeA = a.createdAt?._seconds
+            ? a.createdAt._seconds * 1000
+            : new Date(a.createdAt).getTime();
+          const timeB = b.createdAt?._seconds
+            ? b.createdAt._seconds * 1000
+            : new Date(b.createdAt).getTime();
+          return timeB - timeA;
+        })
         .slice(0, 5)
         .map((o) => ({
           customerName: o.customerName,
@@ -265,17 +304,30 @@ async function getOrderAnalytics(analyticsType) {
     if (analyticsType === "all" || analyticsType === "today") {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+
       const todayOrders = orders.filter((o) => {
-        const orderDate = o.createdAt?.toDate?.();
+        if (!o.createdAt) return false;
+
+        const orderDate = o.createdAt._seconds
+          ? new Date(o.createdAt._seconds * 1000)
+          : new Date(o.createdAt);
         return orderDate >= today;
       });
+
       const todayRevenue = todayOrders.reduce(
         (sum, order) => sum + (order.totalAmount || 0),
         0
       );
 
+      const todayCustomers = [
+        ...new Set(
+          todayOrders.map((order) => order.customerName).filter(Boolean)
+        ),
+      ];
+
       results.today = {
         ordersToday: todayOrders.length,
+        customersToday: todayCustomers.length,
         todayRevenue: todayRevenue,
         itemsSoldToday: todayOrders.reduce(
           (sum, order) => sum + (order.totalItems || 0),
@@ -313,7 +365,7 @@ async function getProductAnalytics(analyticsType) {
         inventoryValue: totalValue,
         averageStock:
           products.reduce((sum, p) => sum + (p.stock || 0), 0) /
-          products.length,
+          (products.length || 1),
       };
     }
 
@@ -333,6 +385,9 @@ async function getProductAnalytics(analyticsType) {
             price: p.price,
             category: p.category,
           })),
+        totalLowStock: products.filter(
+          (p) => (p.stock || 0) <= lowStockThreshold
+        ).length,
       };
     }
 
@@ -380,9 +435,18 @@ exports.callGemini = functions.https.onCall(async (data, context) => {
     );
   }
 
+  // Check if Gemini API key is configured
+  const geminiConfig = functions.config().gemini;
+  if (!geminiConfig || !geminiConfig.key) {
+    throw new functions.https.HttpsError(
+      "failed-precondition",
+      "Gemini API key not configured. Please set it using: firebase functions:config:set gemini.key=YOUR_API_KEY"
+    );
+  }
+
   // Initialize AI inside the function where config is available
   const ai = new GoogleGenAI({
-    apiKey: functions.config().gemini.key,
+    apiKey: geminiConfig.key,
   });
 
   const { history, sessionId, userId } = data;
@@ -564,7 +628,7 @@ Focus on what the data actually shows and provide concrete recommendations.
           usedGemini: true,
         };
       } else {
-        // Fallback if no API key configured (shouldn't happen since we're setting it)
+        // Fallback if no API key configured
         console.log("❌ No Gemini API key configured");
         return {
           success: true,
@@ -580,6 +644,7 @@ Focus on what the data actually shows and provide concrete recommendations.
         success: true,
         response: `**🤖 AI Business Analysis**\n\nI've analyzed your query: "${userInput}"\n\nYour business data contains valuable insights about customer behavior, sales patterns, and inventory management. The system is processing your specific metrics to provide actionable recommendations.\n\n*Analysis completed successfully*\n\n*Powered by Hybrid AI Intelligence*`,
         usedGemini: false,
+        error: error.message,
       };
     }
   }
