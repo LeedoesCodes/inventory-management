@@ -20,6 +20,8 @@ import {
   faLock,
   faUnlock,
   faSave,
+  faExpand,
+  faCompress,
 } from "@fortawesome/free-solid-svg-icons";
 
 const ProductComparisonChart = ({ products, timeRange }) => {
@@ -28,6 +30,12 @@ const ProductComparisonChart = ({ products, timeRange }) => {
   const [isSelectionOpen, setIsSelectionOpen] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const [savedCombinations, setSavedCombinations] = useState([]);
+  const [isChartMinimized, setIsChartMinimized] = useState(false);
+
+  // Auto-minimize chart when no products are selected
+  useEffect(() => {
+    setIsChartMinimized(selectedProducts.length === 0);
+  }, [selectedProducts.length]);
 
   // Load saved selections from localStorage on component mount
   useEffect(() => {
@@ -136,6 +144,11 @@ const ProductComparisonChart = ({ products, timeRange }) => {
     setIsSelectionOpen(true);
   };
 
+  // Toggle chart minimization
+  const toggleChartMinimized = () => {
+    setIsChartMinimized(!isChartMinimized);
+  };
+
   // Generate comparison data
   const comparisonData = useMemo(() => {
     if (selectedProducts.length === 0) return [];
@@ -212,6 +225,20 @@ const ProductComparisonChart = ({ products, timeRange }) => {
         </div>
 
         <div className="header-controls">
+          {/* Chart Minimize/Expand Control */}
+          {selectedProducts.length > 0 && (
+            <button
+              onClick={toggleChartMinimized}
+              className="control-btn minimize-btn"
+              title={isChartMinimized ? "Expand chart" : "Minimize chart"}
+            >
+              <FontAwesomeIcon
+                icon={isChartMinimized ? faExpand : faCompress}
+              />
+              {isChartMinimized ? "Expand" : "Minimize"}
+            </button>
+          )}
+
           {/* Save/Lock Controls */}
           {selectedProducts.length > 0 && (
             <>
@@ -398,7 +425,11 @@ const ProductComparisonChart = ({ products, timeRange }) => {
       )}
 
       {/* Comparison Chart */}
-      <div className="comparison-chart-container">
+      <div
+        className={`comparison-chart-container ${
+          isChartMinimized ? "minimized" : ""
+        }`}
+      >
         {selectedProducts.length === 0 ? (
           <div className="empty-state">
             <FontAwesomeIcon icon={faChartLine} size="3x" />
@@ -415,38 +446,53 @@ const ProductComparisonChart = ({ products, timeRange }) => {
                 {isLocked && " • Locked"}
               </span>
             </div>
-            <ResponsiveContainer width="100%" height={400}>
+            <ResponsiveContainer
+              width="100%"
+              height={isChartMinimized ? 200 : 400}
+            >
               <LineChart
                 data={comparisonData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                margin={{
+                  top: 20,
+                  right: 30,
+                  left: 20,
+                  bottom: isChartMinimized ? 40 : 60,
+                }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   dataKey="date"
-                  tick={{ fontSize: 12 }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
+                  tick={{ fontSize: isChartMinimized ? 10 : 12 }}
+                  angle={isChartMinimized ? -90 : -45}
+                  textAnchor={isChartMinimized ? "end" : "end"}
+                  height={isChartMinimized ? 60 : 80}
+                  interval={isChartMinimized ? "preserveStartEnd" : 0}
                 />
                 <YAxis
-                  tick={{ fontSize: 12 }}
-                  label={{
-                    value:
-                      metricType === "sales"
-                        ? "Daily Sales"
-                        : "Daily Revenue (₱)",
-                    angle: -90,
-                    position: "insideLeft",
-                    style: { textAnchor: "middle" },
-                    offset: -10,
-                  }}
+                  tick={{ fontSize: isChartMinimized ? 10 : 12 }}
+                  label={
+                    !isChartMinimized
+                      ? {
+                          value:
+                            metricType === "sales"
+                              ? "Daily Sales"
+                              : "Daily Revenue (₱)",
+                          angle: -90,
+                          position: "insideLeft",
+                          style: { textAnchor: "middle" },
+                          offset: -10,
+                        }
+                      : null
+                  }
                 />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend
-                  verticalAlign="top"
-                  height={36}
-                  wrapperStyle={{ paddingBottom: "20px" }}
-                />
+                {!isChartMinimized && (
+                  <Legend
+                    verticalAlign="top"
+                    height={36}
+                    wrapperStyle={{ paddingBottom: "20px" }}
+                  />
+                )}
                 {selectedProducts.map((productId, index) => {
                   const product = products.find((p) => p.id === productId);
                   return (
@@ -455,9 +501,9 @@ const ProductComparisonChart = ({ products, timeRange }) => {
                       type="monotone"
                       dataKey={product?.name}
                       stroke={chartColors[index]}
-                      strokeWidth={2}
-                      dot={{ r: 3 }}
-                      activeDot={{ r: 6 }}
+                      strokeWidth={isChartMinimized ? 1.5 : 2}
+                      dot={isChartMinimized ? false : { r: 3 }}
+                      activeDot={isChartMinimized ? false : { r: 6 }}
                     />
                   );
                 })}

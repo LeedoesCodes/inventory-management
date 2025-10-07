@@ -867,3 +867,47 @@
     }
   }
 }
+// Enhanced Product Comparison Styles with Minimization
+.comparison-chart-container {
+  padding: 20px;
+  min-height: 400px;
+  transition: all 0.3s ease;
+
+  &.minimized {
+    min-height: 200px;
+    padding: 15px;
+
+    .chart-header {
+      margin-bottom: 10px;
+
+      h4 {
+        font-size: 1.1rem;
+      }
+
+      .metric-info {
+        font-size: 0.8rem;
+      }
+    }
+  }
+}
+
+// Minimize button styles
+.minimize-btn {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+
+  &:hover {
+    background: var(--accent-color);
+    color: white;
+  }
+}
+
+// Responsive adjustments for minimized state
+@media (max-width: 768px) {
+  .comparison-chart-container {
+    &.minimized {
+      min-height: 150px;
+      padding: 10px;
+    }
+  }
+}
