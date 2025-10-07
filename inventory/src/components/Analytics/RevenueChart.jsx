@@ -1,170 +1,100 @@
 import React from "react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faDollarSign } from "@fortawesome/free-solid-svg-icons";
 
 const RevenueChart = ({ data }) => {
   if (!data || data.length === 0) {
     return (
       <div className="chart-container">
         <div className="empty-state">
-          <div className="empty-icon">📊</div>
+          <FontAwesomeIcon icon={faDollarSign} size="2x" />
           <p>No revenue data available</p>
         </div>
       </div>
     );
   }
 
-  const maxRevenue = Math.max(...data.map((item) => item.revenue));
-  const chartHeight = 200;
+  // Custom tooltip
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="custom-tooltip">
+          <p className="tooltip-label">{`Date: ${label}`}</p>
+          <p className="tooltip-value" style={{ color: "#8884d8" }}>
+            Revenue: ₱{payload[0].value.toLocaleString()}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
 
-  // Calculate Y-axis values (reversed order for proper display)
-  const yAxisSteps = 5;
-  const yAxisValues = Array.from({ length: yAxisSteps }, (_, i) => {
-    return Math.round((maxRevenue / (yAxisSteps - 1)) * i);
-  }).reverse(); // Reverse to put 0 at bottom
+  // Format date for X-axis
+  const formatXAxis = (tickItem) => {
+    const date = new Date(tickItem);
+    if (data.length > 30) {
+      return `${date.getMonth() + 1}/${date.getDate()}`;
+    }
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
 
   return (
     <div className="chart-container">
-      <div className="chart-scroll-wrapper">
-        <div className="chart-inner">
-          <div
-            style={{
-              display: "flex",
-              height: `${chartHeight}px`,
-              minWidth: "600px",
-            }}
-          >
-            {/* Y-axis with labels */}
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-                paddingRight: "10px",
-                minWidth: "60px",
-                flexShrink: 0,
-              }}
-            >
-              {yAxisValues.map((value, index) => (
-                <div
-                  key={index}
-                  style={{
-                    fontSize: "10px",
-                    color: "var(--text-secondary)",
-                    textAlign: "right",
-                    padding: "2px 0",
-                  }}
-                >
-                  ₱{value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}
-                </div>
-              ))}
-            </div>
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart
+          data={data}
+          margin={{
+            top: 20,
+            right: 30,
+            left: 20,
+            bottom: data.length > 30 ? 80 : 60,
+          }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+          <XAxis
+            dataKey="date"
+            tickFormatter={formatXAxis}
+            angle={data.length > 30 ? -45 : 0}
+            textAnchor={data.length > 30 ? "end" : "middle"}
+            height={data.length > 30 ? 80 : 60}
+            tick={{ fontSize: 12 }}
+            interval="preserveStartEnd"
+          />
+          <YAxis
+            tickFormatter={(value) =>
+              `₱${value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}`
+            }
+            tick={{ fontSize: 12 }}
+            width={60}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Legend />
+          <Line
+            type="monotone"
+            dataKey="revenue"
+            stroke="#8884d8"
+            strokeWidth={2}
+            dot={{ r: data.length > 30 ? 2 : 4 }}
+            activeDot={{ r: data.length > 30 ? 4 : 6 }}
+            name="Revenue"
+          />
+        </LineChart>
+      </ResponsiveContainer>
 
-            {/* Chart area */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "end",
-                gap: "5px",
-                flex: 1,
-                padding: "20px 0",
-                borderBottom: "1px solid var(--border-color)",
-                position: "relative",
-                minWidth: "500px",
-              }}
-            >
-              {/* Y-axis line */}
-              <div
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: "1px",
-                  backgroundColor: "var(--border-color)",
-                }}
-              />
-
-              {data.map((item, index) => {
-                const height =
-                  maxRevenue > 0
-                    ? (item.revenue / maxRevenue) * (chartHeight - 40)
-                    : 0;
-                return (
-                  <div
-                    key={index}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      flex: data.length > 30 ? "0 0 auto" : 1,
-                      minWidth: data.length > 30 ? "20px" : "auto",
-                    }}
-                  >
-                    <div
-                      style={{
-                        height: `${height}px`,
-                        backgroundColor: "var(--accent-color)",
-                        width: "100%",
-                        maxWidth: data.length > 30 ? "15px" : "30px",
-                        borderRadius: "4px 4px 0 0",
-                        transition: "all 0.3s ease",
-                        minWidth: data.length > 30 ? "15px" : "auto",
-                      }}
-                      title={`${item.date}: ₱${item.revenue}`}
-                    />
-                    <div
-                      style={{
-                        fontSize: data.length > 30 ? "8px" : "10px",
-                        marginTop: "8px",
-                        color: "var(--text-secondary)",
-                        writingMode:
-                          data.length > 30 ? "horizontal-tb" : "vertical-rl",
-                        transform: data.length > 30 ? "none" : "rotate(180deg)",
-                        textAlign: "center",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {data.length > 30
-                        ? new Date(item.date).getDate()
-                        : new Date(item.date).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                          })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* X-axis label */}
-      <div
-        style={{
-          textAlign: "center",
-          marginTop: "10px",
-          fontSize: "12px",
-          color: "var(--text-secondary)",
-        }}
-      >
-        Date
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginTop: "5px",
-          fontSize: "10px",
-          color: "var(--text-secondary)",
-          padding: "10px",
-        }}
-      >
+      <div className="chart-summary">
         <span>Start: {data[0]?.date}</span>
         <span>End: {data[data.length - 1]?.date}</span>
       </div>
-
-      {/* Scroll hint for mobile */}
     </div>
   );
 };

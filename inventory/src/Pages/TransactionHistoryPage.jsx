@@ -220,43 +220,108 @@ export default function TransactionHistory() {
     printWindow.print();
   };
 
-  const filteredOrders = orders
-    .filter((order) => {
+  // Apply filtering and sorting
+  const applyFiltersAndSorting = (ordersArray) => {
+    console.log("🟡 TRANSACTION FILTERING: Applying filters and sorting");
+    console.log("🟡 SORT BY:", sortBy, "ORDER:", sortOrder);
+
+    let filtered = ordersArray.filter((order) => {
       const matchesSearch = order.customerName
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase());
       const matchesStatus =
         filterStatus === "all" || order.status === filterStatus;
       return matchesSearch && matchesStatus;
-    })
-    .sort((a, b) => {
-      let aValue, bValue;
-
-      switch (sortBy) {
-        case "amount":
-          aValue = a.totalAmount;
-          bValue = b.totalAmount;
-          break;
-        case "items":
-          aValue = a.totalItems;
-          bValue = b.totalItems;
-          break;
-        case "customer":
-          aValue = a.customerName?.toLowerCase();
-          bValue = b.customerName?.toLowerCase();
-          break;
-        case "date":
-        default:
-          aValue = a.createdAt;
-          bValue = b.createdAt;
-      }
-
-      if (sortOrder === "asc") {
-        return aValue > bValue ? 1 : -1;
-      } else {
-        return aValue < bValue ? 1 : -1;
-      }
     });
+
+    console.log("🟡 FILTERING: After filtering -", filtered.length, "orders");
+
+    // Apply sorting - FIXED: Ensure proper sorting
+    filtered = [...filtered].sort((a, b) => {
+      let aValue = a[sortBy];
+      let bValue = b[sortBy];
+
+      // Handle undefined values
+      if (aValue === undefined || aValue === null) aValue = "";
+      if (bValue === undefined || bValue === null) bValue = "";
+
+      // Convert to numbers for numeric fields
+      if (sortBy === "totalAmount" || sortBy === "totalItems") {
+        aValue = Number(aValue) || 0;
+        bValue = Number(bValue) || 0;
+
+        console.log(
+          `🔢 Comparing ${aValue} vs ${bValue} - Order: ${sortOrder}`
+        );
+
+        if (sortOrder === "asc") {
+          return aValue - bValue; // Lower values first (1, 2, 3...)
+        } else {
+          return bValue - aValue; // Higher values first (100, 99, 98...)
+        }
+      }
+      // Handle date field
+      else if (sortBy === "date") {
+        aValue = a.createdAt;
+        bValue = b.createdAt;
+
+        console.log(
+          `📅 Comparing "${aValue}" vs "${bValue}" - Order: ${sortOrder}`
+        );
+
+        if (sortOrder === "asc") {
+          return aValue - bValue; // Older dates first
+        } else {
+          return bValue - aValue; // Newer dates first
+        }
+      }
+      // Handle string fields (customer name)
+      else if (sortBy === "customer") {
+        aValue = String(a.customerName || "Walk-in Customer").toLowerCase();
+        bValue = String(b.customerName || "Walk-in Customer").toLowerCase();
+
+        console.log(
+          `🔤 Comparing "${aValue}" vs "${bValue}" - Order: ${sortOrder}`
+        );
+
+        if (sortOrder === "asc") {
+          return aValue.localeCompare(bValue); // A-Z
+        } else {
+          return bValue.localeCompare(aValue); // Z-A
+        }
+      }
+
+      return 0;
+    });
+
+    console.log("🟡 FILTERING: Final filtered orders count:", filtered.length);
+
+    // Log first few items to verify sorting
+    console.log(
+      "📊 SORTED RESULTS (first 5):",
+      filtered.slice(0, 5).map((order) => ({
+        id: order.id,
+        [sortBy]: sortBy === "date" ? order.createdAt : order[sortBy],
+      }))
+    );
+
+    return filtered;
+  };
+
+  // Handle sort changes
+  const handleSortChange = (field) => {
+    console.log("📊 SORT: Changing to", field);
+    setSortBy(field);
+  };
+
+  // Handle sort order changes
+  const handleSortOrderChange = (order) => {
+    console.log("📊 SORT: Changing order to", order);
+    setSortOrder(order);
+  };
+
+  // Apply filters and sorting whenever relevant states change
+  const filteredOrders = applyFiltersAndSorting(orders);
 
   const totalRevenue = orders.reduce(
     (sum, order) => sum + order.totalAmount,
@@ -323,21 +388,22 @@ export default function TransactionHistory() {
                 <FontAwesomeIcon icon={faSort} />
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
+                  onChange={(e) => handleSortChange(e.target.value)}
+                  className="control-select"
                 >
                   <option value="date">Date</option>
-                  <option value="amount">Amount</option>
-                  <option value="items">Items</option>
+                  <option value="totalAmount">Amount</option>
+                  <option value="totalItems">Items</option>
                   <option value="customer">Customer</option>
                 </select>
-                <button
-                  className="sort-order-btn"
-                  onClick={() =>
-                    setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                  }
+                <select
+                  value={sortOrder}
+                  onChange={(e) => handleSortOrderChange(e.target.value)}
+                  className="control-select"
                 >
-                  {sortOrder === "asc" ? "↑" : "↓"}
-                </button>
+                  <option value="desc">Descending</option>
+                  <option value="asc">Ascending</option>
+                </select>
               </div>
             </div>
           </div>
