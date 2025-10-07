@@ -1,8 +1,47 @@
+// analytics.scss - Cleaned and Unified Version
+
+// CSS Variables for Theming
+:root {
+  // Light Mode Defaults
+  --bg-primary: #f9f9f9;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f8f9fa;
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --border-color: #dee2e6;
+  --card-bg: #ffffff;
+  --input-bg: #ffffff;
+
+  // Colors
+  --accent-color: #007bff;
+  --accent-hover: #0056b3;
+  --success-color: #28a745;
+  --danger-color: #dc3545;
+}
+
+[data-theme="dark"] {
+  // Dark Mode Overrides
+  --bg-primary: #1a202c;
+  --bg-secondary: #2d3748;
+  --bg-tertiary: #4a5568;
+  --text-primary: #ffffff;
+  --text-secondary: #a0aec0;
+  --border-color: #4a5568;
+  --card-bg: #262e3b;
+  --input-bg: #2d3748;
+
+  // Colors (adjusted for contrast)
+  --accent-color: #63b3ed;
+  --accent-hover: #4299e1;
+  --success-color: #48bb78;
+  --danger-color: #f56565;
+}
+
 .analytics-page {
   flex: 1;
   margin-left: 230px;
   transition: margin-left 0.3s ease;
-  overflow-x: hidden; // Prevent horizontal scrolling on main page
+  overflow-x: hidden;
 
   &.collapsed {
     margin-left: 60px;
@@ -15,7 +54,7 @@
   min-height: 100vh;
   margin-top: 70px;
   color: var(--text-primary);
-  overflow-x: hidden; // Prevent horizontal scrolling on main content
+  overflow-x: hidden;
 
   .loading-state {
     text-align: center;
@@ -83,7 +122,6 @@
       border: 1px solid var(--border-color);
       border-radius: 6px;
       font-size: 1rem;
-      transition: all 0.3s;
       background: var(--bg-secondary);
       color: var(--text-primary);
       cursor: pointer;
@@ -91,12 +129,6 @@
       &:focus {
         outline: none;
         border-color: var(--accent-color);
-        box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
-      }
-
-      option {
-        background: var(--bg-secondary);
-        color: var(--text-primary);
       }
     }
   }
@@ -108,7 +140,6 @@
   gap: 2rem;
   margin-bottom: 2rem;
   width: 100%;
-  overflow: visible;
 
   @media (max-width: 1200px) {
     grid-template-columns: 1fr;
@@ -119,7 +150,7 @@
   background: var(--bg-secondary);
   padding: 2rem;
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   border: 1px solid var(--border-color);
   transition: all 0.3s ease;
   width: 100%;
@@ -127,7 +158,7 @@
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
   }
 
   &.full-width {
@@ -162,12 +193,11 @@
     }
   }
 
-  // Chart container styles - UPDATED FOR HORIZONTAL SCROLLING
+  // Chart container styles for Recharts
   .chart-container {
     position: relative;
     height: 300px;
     width: 100%;
-    overflow: visible; // Allow horizontal scrolling
 
     &.small {
       height: 250px;
@@ -175,41 +205,6 @@
 
     &.large {
       height: 400px;
-    }
-
-    // Scrollable chart wrapper for mobile
-    .chart-scroll-wrapper {
-      width: 100%;
-      height: 100%;
-      overflow-x: auto;
-      overflow-y: hidden;
-      -webkit-overflow-scrolling: touch; // Smooth scrolling on iOS
-      scrollbar-width: thin; // Firefox
-      scrollbar-color: var(--accent-color) var(--border-color);
-
-      &::-webkit-scrollbar {
-        height: 8px;
-      }
-
-      &::-webkit-scrollbar-track {
-        background: var(--border-color);
-        border-radius: 4px;
-      }
-
-      &::-webkit-scrollbar-thumb {
-        background: var(--accent-color);
-        border-radius: 4px;
-      }
-
-      &::-webkit-scrollbar-thumb:hover {
-        background: var(--accent-hover);
-      }
-
-      .chart-inner {
-        min-width: min(100%, 600px); // Minimum width for charts
-        height: 100%;
-        position: relative;
-      }
     }
   }
 
@@ -233,7 +228,7 @@
 
       &:hover {
         transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       }
 
       .stat-value {
@@ -242,7 +237,6 @@
         color: var(--accent-color);
         margin-bottom: 0.5rem;
         line-height: 1;
-        word-break: break-word;
       }
 
       .stat-label {
@@ -250,27 +244,12 @@
         color: var(--text-secondary);
         font-weight: 500;
       }
-
-      .stat-change {
-        font-size: 0.8rem;
-        margin-top: 0.5rem;
-        font-weight: 600;
-
-        &.positive {
-          color: var(--success-color);
-        }
-
-        &.negative {
-          color: var(--danger-color);
-        }
-      }
     }
   }
 
   // Product performance list
   .product-list {
     width: 100%;
-    overflow: hidden;
 
     .product-item {
       display: flex;
@@ -297,7 +276,6 @@
           color: var(--accent-color);
           min-width: 30px;
           text-align: center;
-          flex-shrink: 0;
         }
 
         .product-name {
@@ -314,7 +292,6 @@
         display: flex;
         gap: 1.5rem;
         align-items: center;
-        flex-shrink: 0;
 
         .stat {
           text-align: right;
@@ -322,205 +299,12 @@
           .value {
             font-weight: 600;
             color: var(--text-primary);
-            white-space: nowrap;
           }
 
           .label {
             font-size: 0.8rem;
             color: var(--text-secondary);
-            white-space: nowrap;
           }
-        }
-      }
-    }
-  }
-
-  // Rules insights section
-  .rules-insights {
-    width: 100%;
-    overflow: hidden;
-
-    p {
-      margin: 0 0 1.5rem 0;
-      color: var(--text-secondary);
-      line-height: 1.5;
-    }
-
-    .rules-list {
-      .rule-item {
-        background: var(--bg-primary);
-        padding: 1rem;
-        border-radius: 8px;
-        margin-bottom: 1rem;
-        border: 1px solid var(--border-color);
-        transition: all 0.3s ease;
-        width: 100%;
-        box-sizing: border-box;
-
-        &:hover {
-          border-color: var(--accent-color);
-          transform: translateX(4px);
-        }
-
-        .rule-pattern {
-          font-weight: 600;
-          color: var(--text-primary);
-          margin-bottom: 0.5rem;
-          word-break: break-word;
-        }
-
-        .rule-stats {
-          display: flex;
-          gap: 1rem;
-          font-size: 0.9rem;
-          flex-wrap: wrap;
-
-          .stat {
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-            color: var(--text-secondary);
-
-            &.confidence {
-              color: var(--success-color);
-              font-weight: 600;
-            }
-
-            &.lift {
-              color: var(--accent-color);
-              font-weight: 600;
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // KPI metrics display
-  .kpi-metrics {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    width: 100%;
-
-    .kpi-item {
-      background: var(--bg-primary);
-      padding: 1.5rem;
-      border-radius: 8px;
-      border: 1px solid var(--border-color);
-      text-align: center;
-      width: 100%;
-      box-sizing: border-box;
-
-      .kpi-value {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: var(--text-primary);
-        margin-bottom: 0.5rem;
-        word-break: break-word;
-      }
-
-      .kpi-label {
-        font-size: 0.9rem;
-        color: var(--text-secondary);
-        font-weight: 500;
-      }
-
-      .kpi-trend {
-        font-size: 0.8rem;
-        margin-top: 0.5rem;
-        font-weight: 600;
-
-        &.up {
-          color: var(--success-color);
-        }
-
-        &.down {
-          color: var(--danger-color);
-        }
-      }
-    }
-  }
-}
-
-// Filter and control section
-.analytics-controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background: var(--bg-secondary);
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-  width: 100%;
-  box-sizing: border-box;
-
-  .control-group {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-
-    label {
-      font-weight: 600;
-      color: var(--text-primary);
-      white-space: nowrap;
-    }
-
-    select,
-    input {
-      padding: 0.75rem 1rem;
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
-      font-size: 1rem;
-      transition: all 0.3s;
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      max-width: 100%;
-      box-sizing: border-box;
-
-      &:focus {
-        outline: none;
-        border-color: var(--accent-color);
-        box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
-      }
-    }
-
-    input[type="date"] {
-      min-width: 150px;
-    }
-  }
-
-  .export-controls {
-    display: flex;
-    gap: 1rem;
-
-    .export-btn {
-      padding: 0.75rem 1.5rem;
-      background: var(--accent-color);
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      white-space: nowrap;
-
-      &:hover {
-        background: var(--accent-hover);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      }
-
-      &.secondary {
-        background: var(--bg-tertiary);
-        color: var(--text-primary);
-
-        &:hover {
-          background: var(--border-color);
         }
       }
     }
@@ -541,146 +325,319 @@
     opacity: 0.5;
   }
 
-  h3 {
-    margin: 0 0 1rem 0;
-    color: var(--text-secondary);
-  }
-
   p {
     margin: 0;
     line-height: 1.5;
   }
 }
 
-// Responsive design - UPDATED FOR HORIZONTAL SCROLLING
+// Product Comparison Chart Styles
+.product-comparison-chart {
+  background: var(--card-bg);
+  border-radius: 8px;
+  padding: 0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.product-selection-panel {
+  padding: 20px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  border-radius: 8px 8px 0 0;
+}
+
+.selection-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+
+  .selection-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .selected-count {
+    background: var(--accent-color);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+  }
+
+  .clear-all-btn {
+    background: var(--danger-color);
+    color: white;
+    border: none;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+
+    &:hover {
+      opacity: 0.9;
+    }
+  }
+}
+
+.metric-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+
+  label {
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .metric-select {
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    cursor: pointer;
+
+    &:focus {
+      outline: none;
+      border-color: var(--accent-color);
+    }
+  }
+}
+
+.product-selection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 5px;
+  margin-bottom: 15px;
+}
+
+.product-selection-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: var(--card-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover:not(.disabled) {
+    border-color: var(--accent-color);
+    transform: translateY(-1px);
+  }
+
+  &.selected {
+    border-color: var(--accent-color);
+    background: rgba(0, 123, 255, 0.1);
+  }
+
+  &.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.product-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-color);
+  border-radius: 4px;
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+
+  .selected & {
+    border-color: var(--accent-color);
+    background: var(--accent-color);
+  }
+}
+
+.checkbox-indicator {
+  width: 10px;
+  height: 10px;
+  background: white;
+  border-radius: 2px;
+}
+
+.product-info {
+  flex: 1;
+
+  .product-name {
+    display: block;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+    font-size: 0.9rem;
+  }
+
+  .product-stats {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+}
+
+.selected-products-tags {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border-color);
+}
+
+.tags-header {
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.product-tag {
+  display: inline-flex;
+  align-items: center;
+  background: var(--card-bg);
+  padding: 6px 12px;
+  border-radius: 20px;
+  border-left: 4px solid var(--accent-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-size: 0.9rem;
+
+  .product-tag-name {
+    font-weight: 500;
+    margin-right: 8px;
+    color: var(--text-primary);
+  }
+
+  .remove-tag-btn {
+    background: none;
+    border: none;
+    color: var(--danger-color);
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+
+    &:hover {
+      background: var(--danger-color);
+      color: white;
+    }
+  }
+}
+
+.comparison-chart-container {
+  padding: 20px;
+  min-height: 400px;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+
+  h4 {
+    margin: 0;
+    color: var(--text-primary);
+  }
+
+  .metric-info {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+}
+
+.custom-tooltip {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+  .tooltip-header {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 4px;
+  }
+
+  .tooltip-item {
+    margin: 4px 0;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+  }
+}
+
+// Responsive design
 @media (max-width: 768px) {
-  .main-content {
-    top: 0;
+  .analytics-page {
+    margin-left: 0 !important;
 
-    .analytics-page {
-      margin-left: 0 !important ;
-      overflow-x: hidden;
-      left: 0;
-
-      &.collapsed {
-        margin-left: 0 !important;
-      }
+    &.collapsed {
+      margin-left: 0 !important;
     }
+  }
 
-    .analytics-content {
-      margin-top: 0px;
-      padding: 1rem;
-      overflow-x: hidden;
-    }
+  .analytics-content {
+    margin-top: 0;
+    padding: 1rem;
+  }
 
-    .analytics-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 1rem;
+  .analytics-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+
+    .time-range-selector {
       width: 100%;
-
-      .time-range-selector {
-        width: 100%;
-        justify-content: space-between;
-
-        select {
-          width: 100%;
-          max-width: 200px;
-        }
-      }
+      justify-content: space-between;
     }
   }
 
   .analytics-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
-    width: 100%;
   }
 
   .analytics-card {
     padding: 1.5rem;
-    width: 100%;
-    margin: 0;
-
-    &.full-width {
-      grid-column: 1;
-    }
-
-    .card-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.5rem;
-      width: 100%;
-    }
-
-    .chart-container {
-      height: 250px;
-      width: 100%;
-
-      // Enable horizontal scrolling for charts on mobile
-      .chart-scroll-wrapper {
-        .chart-inner {
-          min-width: 500px; // Force horizontal scroll on mobile
-        }
-      }
-
-      &.large {
-        height: 300px;
-
-        .chart-scroll-wrapper .chart-inner {
-          min-width: 550px;
-        }
-      }
-    }
 
     .stats-grid {
       grid-template-columns: 1fr 1fr;
-      gap: 0.75rem;
-      width: 100%;
-
-      .stat-card {
-        padding: 1rem;
-
-        .stat-value {
-          font-size: 1.5rem;
-        }
-      }
-    }
-
-    .product-list .product-item {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.5rem;
-
-      .product-stats {
-        width: 100%;
-        justify-content: space-between;
-        gap: 1rem;
-      }
     }
   }
 
-  .analytics-controls {
+  .product-selection-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .selection-header {
     flex-direction: column;
-    gap: 1rem;
     align-items: flex-start;
-    width: 100%;
-
-    .control-group {
-      width: 100%;
-      justify-content: space-between;
-      flex-wrap: wrap;
-    }
-
-    .export-controls {
-      width: 100%;
-      justify-content: space-between;
-      flex-wrap: wrap;
-    }
+    gap: 10px;
   }
 }
 
-// Extra small devices
 @media (max-width: 480px) {
   .analytics-content {
     padding: 0.75rem;
@@ -692,97 +649,221 @@
     .stats-grid {
       grid-template-columns: 1fr;
     }
-
-    .chart-container {
-      height: 200px;
-
-      .chart-scroll-wrapper .chart-inner {
-        min-width: 450px; // Adjust for very small screens
-      }
-
-      &.large {
-        height: 250px;
-
-        .chart-scroll-wrapper .chart-inner {
-          min-width: 500px;
-        }
-      }
-    }
-  }
-
-  .analytics-header .header-content {
-    h1 {
-      font-size: 1.5rem;
-    }
-
-    p {
-      font-size: 1rem;
-    }
   }
 }
+// Enhanced Product Comparison Styles
+.comparison-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  border-radius: 8px 8px 0 0;
 
-// Scroll indicator for better UX
-.chart-scroll-indicator {
-  text-align: center;
-  padding: 0.5rem;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  background: var(--bg-tertiary);
-  border-radius: 0 0 8px 8px;
-  margin-top: -8px;
-
-  .scroll-hint {
+  .header-left {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
+    gap: 12px;
 
-    &::before {
-      content: "↔";
-      font-size: 1rem;
+    h3 {
+      margin: 0;
+      font-size: 1.3rem;
+      color: var(--text-primary);
+    }
+
+    .product-count {
+      background: var(--accent-color);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+  }
+
+  .header-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .control-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+
+      &:hover:not(:disabled) {
+        background: var(--accent-color);
+        color: white;
+        border-color: var(--accent-color);
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      &.save-btn {
+        background: var(--success-color);
+        color: white;
+        border-color: var(--success-color);
+
+        &:hover {
+          background: #218838;
+        }
+      }
+
+      &.unlock-btn {
+        background: var(--warning-color);
+        color: white;
+        border-color: var(--warning-color);
+      }
+    }
+
+    .lock-indicator {
+      padding: 8px;
+      border-radius: 6px;
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      font-size: 0.9rem;
     }
   }
 }
 
-// CSS Variables for Theming
-:root {
-  // Light Mode Defaults
-  --bg-primary: #f9f9f9;
-  --bg-secondary: #ffffff;
-  --bg-tertiary: #f8f9fa;
-  --text-primary: #333333;
-  --text-secondary: #666666;
-  --border-color: #dee2e6;
+// Saved Combinations
+.saved-combinations {
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-primary);
 
-  // Colors
-  --accent-color: #007bff;
-  --accent-hover: #0056b3;
-  --accent-rgb: 0, 123, 255;
-  --success-color: #28a745;
-  --success-hover: #218838;
-  --warning-color: #e67e22;
-  --warning-hover: #d35400;
-  --danger-color: #dc3545;
-  --danger-hover: #c82333;
+  .saved-header {
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+  }
+
+  .saved-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .saved-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.85rem;
+
+    &:hover {
+      border-color: var(--accent-color);
+      transform: translateY(-1px);
+    }
+
+    &.active {
+      background: var(--accent-color);
+      color: white;
+      border-color: var(--accent-color);
+
+      .saved-name,
+      .saved-products {
+        color: white;
+      }
+    }
+
+    .saved-name {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .saved-products {
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+    }
+
+    .delete-saved-btn {
+      background: none;
+      border: none;
+      color: var(--danger-color);
+      cursor: pointer;
+      padding: 2px;
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+
+      &:hover {
+        background: var(--danger-color);
+        color: white;
+      }
+    }
+  }
 }
 
-[data-theme="dark"] {
-  // Dark Mode Overrides
-  --bg-primary: #1a202c;
-  --bg-secondary: #2d3748;
-  --bg-tertiary: #4a5568;
-  --text-primary: #ffffff;
-  --text-secondary: #a0aec0;
-  --border-color: #4a5568;
+// Enhanced selection panel with collapse animation
+.product-selection-panel {
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  animation: slideDown 0.3s ease;
 
-  // Colors (adjusted for contrast)
-  --accent-color: #63b3ed;
-  --accent-hover: #4299e1;
-  --accent-rgb: 99, 179, 237;
-  --success-color: #48bb78;
-  --success-hover: #38a169;
-  --warning-color: #ed8936;
-  --warning-hover: #dd7726;
-  --danger-color: #f56565;
-  --danger-hover: #e55353;
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+// Locked state styles
+.product-selection-item.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+
+  &:hover {
+    transform: none !important;
+    border-color: var(--border-color) !important;
+  }
+}
+
+// Responsive enhancements
+@media (max-width: 768px) {
+  .comparison-header {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+
+    .header-controls {
+      width: 100%;
+      justify-content: space-between;
+    }
+  }
+
+  .saved-list {
+    flex-direction: column;
+
+    .saved-item {
+      justify-content: space-between;
+    }
+  }
 }

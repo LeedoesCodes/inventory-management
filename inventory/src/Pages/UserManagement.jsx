@@ -287,11 +287,7 @@ export default function UserManagement() {
         updatedAt: new Date(),
       });
 
-      alert(
-        `User ${
-          newStatus === "active" ? "activated" : "deactivated"
-        } successfully!`
-      );
+      // Removed the alert confirmation for status toggle
     } catch (error) {
       console.error("Error updating user status:", error);
       alert("Error updating user status. Please try again.");
@@ -541,7 +537,7 @@ export default function UserManagement() {
                       </div>
                     </div>
                     <div className="user-actions">
-                      {/* Sliding Toggle Switch - Same as Edit Form */}
+                      {/* Sliding Toggle Switch - Now without confirmation */}
                       <div className="toggle-switch">
                         <input
                           type="checkbox"
@@ -551,20 +547,7 @@ export default function UserManagement() {
                             const newStatus = e.target.checked
                               ? "active"
                               : "inactive";
-                            if (
-                              window.confirm(
-                                `Are you sure you want to ${
-                                  newStatus === "active"
-                                    ? "activate"
-                                    : "deactivate"
-                                } this user?`
-                              )
-                            ) {
-                              handleStatusToggle(user, newStatus);
-                            } else {
-                              // Reset the toggle if user cancels
-                              e.target.checked = !e.target.checked;
-                            }
+                            handleStatusToggle(user, newStatus);
                           }}
                           className="toggle-input"
                           disabled={syncing}

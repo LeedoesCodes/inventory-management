@@ -19,21 +19,25 @@ import {
   faCrown,
   faSpinner,
   faExclamationTriangle,
+  faFilter,
+  faChartArea, // Use this instead of faCompare
 } from "@fortawesome/free-solid-svg-icons";
 
 import RevenueChart from "../components/Analytics/RevenueChart";
 import SalesTrendChart from "../components/Analytics/SalesTrendChart";
 import ProductPerformance from "../components/Analytics/ProductPerformance";
+import ProductComparisonChart from "../components/Analytics/ProductComparisonChart"; // New component
 import DummyDataButton from "../components/Analytics/DummyDataButton";
 
 export default function Analytics() {
   const { isCollapsed } = useSidebar();
   const { user } = useContext(AuthContext);
-  const [timeRange, setTimeRange] = useState("all"); // Default to "all" to see all data
+  const [timeRange, setTimeRange] = useState("all");
   const [analyticsData, setAnalyticsData] = useState({
     revenueData: [],
     salesTrends: [],
     topProducts: [],
+    allProducts: [], // Added for product comparison
     loading: true,
     error: null,
   });
@@ -51,7 +55,6 @@ export default function Analytics() {
 
       const transactions = transactionsSnapshot.docs.map((doc) => {
         const data = doc.data();
-        // Convert Firestore Timestamp to Date object
         const createdAt = data.createdAt?.toDate
           ? data.createdAt.toDate()
           : new Date(data.createdAt);
@@ -62,18 +65,6 @@ export default function Analytics() {
           createdAt: createdAt,
         };
       });
-
-      console.log("📦 Raw transactions:", transactions.length);
-      transactions.forEach((t) =>
-        console.log(
-          "Order date:",
-          t.createdAt,
-          "Amount:",
-          t.totalAmount || t.total,
-          "Items:",
-          t.items?.length
-        )
-      );
 
       // Fetch products for product performance
       const productsSnapshot = await getDocs(collection(db, "products"));
@@ -86,17 +77,13 @@ export default function Analytics() {
       const revenueData = processRevenueData(transactions, timeRange);
       const salesTrends = processSalesTrends(transactions, timeRange);
       const topProducts = processTopProducts(transactions, products, timeRange);
-
-      console.log("📊 Processed data:", {
-        revenueData,
-        salesTrends,
-        topProducts,
-      });
+      const allProducts = processAllProducts(transactions, products, timeRange); // New function
 
       setAnalyticsData({
         revenueData,
         salesTrends,
         topProducts,
+        allProducts, // Add to state
         loading: false,
         error: null,
       });
@@ -110,7 +97,65 @@ export default function Analytics() {
     }
   };
 
-  // Filter transactions by time range
+  // New function: Process all products for comparison
+  const processAllProducts = (transactions, products, range) => {
+    const filteredTransactions = filterTransactionsByTimeRange(
+      transactions,
+      range
+    );
+
+    const productPerformance = {};
+
+    // Calculate performance for each product
+    filteredTransactions.forEach((transaction) => {
+      transaction.items?.forEach((item) => {
+        const productId = item.productId || item.id;
+        const productName = item.name || item.productName;
+        const quantity = item.quantity || 1;
+        const price = item.price || 0;
+        const date = transaction.createdAt.toLocaleDateString("en-CA");
+
+        if (!productPerformance[productId]) {
+          productPerformance[productId] = {
+            id: productId,
+            name: productName,
+            dailySales: {},
+            totalSales: 0,
+            totalRevenue: 0,
+          };
+        }
+
+        // Track daily sales
+        if (!productPerformance[productId].dailySales[date]) {
+          productPerformance[productId].dailySales[date] = {
+            sales: 0,
+            revenue: 0,
+          };
+        }
+
+        productPerformance[productId].dailySales[date].sales += quantity;
+        productPerformance[productId].dailySales[date].revenue +=
+          price * quantity;
+        productPerformance[productId].totalSales += quantity;
+        productPerformance[productId].totalRevenue += price * quantity;
+      });
+    });
+
+    // Convert to array format
+    return Object.values(productPerformance).map((product) => ({
+      ...product,
+      // Format data for comparison chart
+      comparisonData: Object.entries(product.dailySales)
+        .map(([date, data]) => ({
+          date,
+          sales: data.sales,
+          revenue: data.revenue,
+        }))
+        .sort((a, b) => new Date(a.date) - new Date(b.date)),
+    }));
+  };
+
+  // Rest of your existing functions (filterTransactionsByTimeRange, processRevenueData, etc.)
   const filterTransactionsByTimeRange = (transactions, range) => {
     const now = new Date();
     let startDate;
@@ -130,7 +175,7 @@ export default function Analytics() {
         break;
       case "all":
       default:
-        startDate = new Date(0); // Beginning of time
+        startDate = new Date(0);
         break;
     }
 
@@ -139,24 +184,15 @@ export default function Analytics() {
     );
   };
 
-  // Process revenue data for charts
   const processRevenueData = (transactions, range) => {
     const filteredTransactions = filterTransactionsByTimeRange(
       transactions,
       range
     );
 
-    console.log(
-      `💰 Processing ${filteredTransactions.length} transactions for revenue data`
-    );
-
-    // Group by date and calculate daily revenue
     const dailyRevenue = {};
-
     filteredTransactions.forEach((transaction) => {
-      const date = transaction.createdAt.toLocaleDateString("en-CA"); // YYYY-MM-DD format
-
-      // Use totalAmount (Transaction History) or total (Analytics) or fallback to 0
+      const date = transaction.createdAt.toLocaleDateString("en-CA");
       const revenue = transaction.totalAmount || transaction.total || 0;
 
       if (!dailyRevenue[date]) {
@@ -165,62 +201,41 @@ export default function Analytics() {
       dailyRevenue[date] += revenue;
     });
 
-    // Convert to array format for charts and sort by date
-    const result = Object.entries(dailyRevenue)
+    return Object.entries(dailyRevenue)
       .map(([date, revenue]) => ({
         date,
-        revenue: Math.round(revenue * 100) / 100, // Round to 2 decimal places
+        revenue: Math.round(revenue * 100) / 100,
       }))
       .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-    console.log("📈 Revenue data result:", result);
-    return result;
   };
 
-  // Process sales trends
   const processSalesTrends = (transactions, range) => {
     const filteredTransactions = filterTransactionsByTimeRange(
       transactions,
       range
     );
 
-    console.log(
-      `📊 Processing ${filteredTransactions.length} transactions for sales trends`
-    );
-
-    // Calculate daily order counts
     const dailyOrders = {};
-
     filteredTransactions.forEach((transaction) => {
-      const date = transaction.createdAt.toLocaleDateString("en-CA"); // YYYY-MM-DD format
+      const date = transaction.createdAt.toLocaleDateString("en-CA");
       dailyOrders[date] = (dailyOrders[date] || 0) + 1;
     });
 
-    const result = Object.entries(dailyOrders)
+    return Object.entries(dailyOrders)
       .map(([date, orders]) => ({
         date,
         orders,
       }))
       .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-    console.log("📊 Sales trends result:", result);
-    return result;
   };
 
-  // Process top products
   const processTopProducts = (transactions, products, range) => {
     const filteredTransactions = filterTransactionsByTimeRange(
       transactions,
       range
     );
 
-    console.log(
-      `🏆 Processing ${filteredTransactions.length} transactions for top products`
-    );
-
     const productSales = {};
-
-    // Count sales for each product
     filteredTransactions.forEach((transaction) => {
       transaction.items?.forEach((item) => {
         const productName = item.name || item.productName;
@@ -240,16 +255,11 @@ export default function Analytics() {
       });
     });
 
-    // Convert to array and sort by sales
-    const result = Object.values(productSales)
+    return Object.values(productSales)
       .sort((a, b) => b.sales - a.sales)
-      .slice(0, 10); // Top 10 products
-
-    console.log("🏆 Top products result:", result);
-    return result;
+      .slice(0, 10);
   };
 
-  // Calculate summary metrics
   const calculateSummaryMetrics = () => {
     const { revenueData, salesTrends, topProducts } = analyticsData;
 
@@ -258,13 +268,6 @@ export default function Analytics() {
     const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
     const bestSellingProduct = topProducts[0]?.name || "No data";
 
-    console.log("📋 Summary metrics:", {
-      totalRevenue,
-      totalOrders,
-      avgOrderValue,
-      bestSellingProduct,
-    });
-
     return {
       totalRevenue,
       totalOrders,
@@ -272,24 +275,6 @@ export default function Analytics() {
       bestSellingProduct,
     };
   };
-
-  // Debug: Check data structure
-  useEffect(() => {
-    const checkDataStructure = async () => {
-      const snapshot = await getDocs(collection(db, "orders"));
-      const sampleOrder = snapshot.docs[0]?.data();
-      console.log("📋 Sample Order Structure:", sampleOrder);
-      console.log("💰 Available revenue fields:", {
-        totalAmount: sampleOrder?.totalAmount,
-        total: sampleOrder?.total,
-        calculated: sampleOrder?.totalAmount || sampleOrder?.total || 0,
-      });
-    };
-
-    if (!analyticsData.loading && analyticsData.revenueData.length > 0) {
-      checkDataStructure();
-    }
-  }, [analyticsData.loading]);
 
   useEffect(() => {
     fetchAnalyticsData();
@@ -347,8 +332,6 @@ export default function Analytics() {
               Business Analytics
             </h1>
             <p>Sales and revenue insights from your transactions</p>
-
-            {/* <DummyDataButton /> */}
           </div>
 
           <div className="time-range-selector">
@@ -366,8 +349,6 @@ export default function Analytics() {
             </select>
           </div>
         </div>
-
-        {/* Debug info - remove after testing */}
 
         {/* Summary Metrics */}
         <div className="analytics-card full-width">
@@ -428,6 +409,17 @@ export default function Analytics() {
             <RevenueChart data={analyticsData.revenueData} />
           </div>
 
+          {/* NEW: Product Comparison Chart */}
+          {/* NEW: Product Comparison Chart */}
+          <div className="analytics-card full-width">
+            <div className="card-header">
+              <span className="chart-subtitle"></span>
+            </div>
+            <ProductComparisonChart
+              products={analyticsData.allProducts}
+              timeRange={timeRange}
+            />
+          </div>
           {/* Sales Trends */}
           <div className="analytics-card">
             <div className="card-header">
