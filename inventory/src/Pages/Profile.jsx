@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { doc, getDoc, updateDoc, onSnapshot } from "firebase/firestore"; // Add onSnapshot
+import { doc, getDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../Firebase/firebase";
 import avatar from "../assets/images/avatar-default.png";
@@ -18,7 +18,6 @@ import {
   faCamera,
   faSave,
   faTimes,
-  faCalendarAlt,
   faEnvelope,
   faPhone,
   faMapMarkerAlt,
@@ -27,10 +26,11 @@ import {
   faTimesCircle,
   faSync,
 } from "@fortawesome/free-solid-svg-icons";
+import { faGoogle } from "@fortawesome/free-brands-svg-icons";
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { userId } = useParams(); // Get userId from URL params
+  const { userId } = useParams();
   const { user, logout, role, updateProfile } = useContext(AuthContext);
   const { isCollapsed } = useSidebar();
   const [showConfirm, setShowConfirm] = useState(null);
@@ -50,6 +50,21 @@ export default function Profile() {
   // Determine if we're viewing current user or another user
   const isCurrentUser = !userId || userId === user?.uid;
   const targetUserId = userId || user?.uid;
+
+  // Check if user is a Google user
+  const isGoogleUser = user?.providerData?.some(
+    (provider) => provider.providerId === "google.com"
+  );
+
+  // Get the profile picture URL - prioritize Google photoURL if available
+  const getProfilePicture = () => {
+    // For current user who is Google user, use Google's photoURL from auth
+    if (isCurrentUser && isGoogleUser && user?.photoURL) {
+      return user.photoURL;
+    }
+    // For other cases, use Firestore photoURL or default avatar
+    return userData?.photoURL || avatar;
+  };
 
   // Real-time listener for user data
   useEffect(() => {
@@ -90,14 +105,31 @@ export default function Profile() {
   }, [targetUserId]);
 
   const handleImageUpload = async (event) => {
-    // Only allow image upload for current user
+    // Only allow image upload for current user who is NOT Google user
     if (!isCurrentUser) {
       alert("You can only update your own profile picture");
       return;
     }
 
+    // Prevent Google users from changing profile picture
+    if (isGoogleUser) {
+      return; // Simply return without showing alert - no camera icon will be shown
+    }
+
     const file = event.target.files[0];
     if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      alert("Please select a valid image file.");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Please select an image smaller than 5MB.");
+      return;
+    }
 
     try {
       setSaving(true);
@@ -114,7 +146,6 @@ export default function Profile() {
       // Update in Auth context
       await updateProfile({ photoURL: downloadURL });
 
-      // No need to setUserData manually - real-time listener will update it
       alert("Profile picture updated successfully!");
     } catch (error) {
       console.error("Error uploading image:", error);
@@ -158,7 +189,7 @@ export default function Profile() {
   };
 
   const handleBackClick = () => {
-    navigate(-1); // Go back to previous page
+    navigate(-1);
   };
 
   const handleLogoutClick = () => setShowConfirm("logout");
@@ -245,6 +276,7 @@ export default function Profile() {
   }
 
   const statusInfo = getStatusInfo(userData.status || "active");
+  const profilePicture = getProfilePicture();
 
   return (
     <div className="page-container">
@@ -295,12 +327,16 @@ export default function Profile() {
               <div className="avatar-section">
                 <div className="avatar-wrapper">
                   <img
-                    src={userData?.photoURL || avatar}
+                    src={profilePicture}
                     alt="User Avatar"
                     className="profile-avatar"
                   />
-                  {isCurrentUser && (
-                    <label className="avatar-upload">
+                  {/* Only show camera icon for non-Google users */}
+                  {isCurrentUser && !isGoogleUser && (
+                    <label
+                      className="avatar-upload"
+                      title="Change profile picture"
+                    >
                       <FontAwesomeIcon icon={faCamera} />
                       <input
                         type="file"
@@ -315,6 +351,14 @@ export default function Profile() {
                   </div>
                 </div>
                 {saving && <div className="saving-overlay">Uploading...</div>}
+
+                {/* Google User Badge */}
+                {isCurrentUser && isGoogleUser && (
+                  <div className="google-badge">
+                    <FontAwesomeIcon icon={faGoogle} />
+                    <span>Google Account</span>
+                  </div>
+                )}
               </div>
 
               {isEditing && isCurrentUser ? (
@@ -465,6 +509,22 @@ export default function Profile() {
                   <div className="info-item">
                     <span>Permissions:</span>
                     <span>{getRoleDisplayName(role)}</span>
+                  </div>
+                  <div className="info-item">
+                    <span>Sign-in Method:</span>
+                    <span>
+                      {isGoogleUser ? (
+                        <>
+                          <FontAwesomeIcon
+                            icon={faGoogle}
+                            style={{ marginRight: "5px" }}
+                          />
+                          Google
+                        </>
+                      ) : (
+                        "Email/Password"
+                      )}
+                    </span>
                   </div>
                   <div className="info-item">
                     <span>Member Since:</span>

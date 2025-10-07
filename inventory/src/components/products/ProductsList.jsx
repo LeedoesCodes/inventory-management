@@ -10,17 +10,33 @@ export default function ProductList({
 
   // Scroll to highlighted product when it changes and is in the filtered list
   useEffect(() => {
-    if (highlightedProductId && highlightedRef.current) {
-      // Small delay to ensure DOM is updated
-      setTimeout(() => {
-        highlightedRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-          inline: "center",
-        });
-      }, 100);
+    console.log(
+      "🎯 PRODUCT LIST: highlightedProductId =",
+      highlightedProductId
+    );
+    console.log("🎯 PRODUCT LIST: products count =", products.length);
+
+    if (highlightedProductId) {
+      console.log("🎯 SCROLLING TO HIGHLIGHTED PRODUCT");
+
+      const highlightedProduct = products.find(
+        (p) => p.id === highlightedProductId
+      );
+      console.log("🎯 HIGHLIGHTED PRODUCT FOUND:", highlightedProduct);
+
+      if (highlightedProduct && highlightedRef.current) {
+        console.log("🎯 SCROLLING TO ELEMENT");
+        // Small delay to ensure DOM is updated
+        setTimeout(() => {
+          highlightedRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+            inline: "center",
+          });
+        }, 200);
+      }
     }
-  }, [highlightedProductId, products]); // Added products to dependency array
+  }, [highlightedProductId, products]);
 
   // Find the highlighted product
   const highlightedProduct = products.find(
@@ -30,11 +46,16 @@ export default function ProductList({
   return (
     <div className="product-list">
       {products.length === 0 ? (
-        <div className="no-products"></div>
+        <div className="no-products">
+          <p>No products found</p>
+        </div>
       ) : (
         <ul>
           {products.map((p) => {
             const isHighlighted = p.id === highlightedProductId;
+            if (isHighlighted) {
+              console.log("🎯 RENDERING HIGHLIGHTED PRODUCT:", p.name);
+            }
             return (
               <li
                 key={p.id}
@@ -65,7 +86,11 @@ export default function ProductList({
 
       {/* Show message if highlighted product is not in filtered list */}
       {highlightedProductId && !highlightedProduct && (
-        <div className="highlighted-product-missing"></div>
+        <div className="highlighted-product-missing">
+          <p>
+            The product you're looking for is not visible with current filters.
+          </p>
+        </div>
       )}
     </div>
   );

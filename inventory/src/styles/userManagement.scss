@@ -245,27 +245,47 @@
     gap: 1rem;
     align-items: center;
 
-    .filter-group {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+    .role-filter {
       background: var(--bg-card);
-      padding: 0.5rem;
-      border-radius: 8px;
-      border: 1px solid var(--border-color);
+      border: 2px solid var(--border-color);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      color: var(--text-primary);
+      cursor: pointer;
       transition: all 0.3s ease;
+      min-width: 150px;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      background-size: 1rem;
+      padding-right: 2.5rem;
 
-      select {
-        border: none;
-        background: none;
-        font-size: 0.9rem;
-        cursor: pointer;
+      &:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 3px rgba(0, 159, 235, 0.1);
+      }
+
+      &:hover {
+        border-color: var(--accent-primary);
+        transform: translateY(-1px);
+      }
+
+      option {
+        background: var(--bg-card);
         color: var(--text-primary);
-        transition: color 0.3s ease;
-        max-width: 150px;
+        padding: 0.5rem;
 
-        &:focus {
-          outline: none;
+        &:checked {
+          background: var(--accent-primary);
+          color: white;
+        }
+
+        &:hover {
+          background: var(--accent-primary);
+          color: white;
         }
       }
     }
@@ -285,14 +305,19 @@
       transition: all 0.3s ease;
       white-space: nowrap;
 
-      &:hover {
+      &:hover:not(:disabled) {
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(0, 159, 235, 0.3);
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
       }
     }
   }
 }
-
 .loading,
 .no-users {
   text-align: center;
@@ -961,6 +986,21 @@
 
 // Dark theme adjustments for toggle switch
 [data-theme="dark"] {
+  [data-theme="dark"] {
+    .role-filter {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+
+      option {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+
+        &:checked {
+          background: var(--accent-primary);
+          color: white;
+        }
+      }
+    }
+  }
   .toggle-switch {
     .toggle-label {
       .toggle-handle {
@@ -1326,6 +1366,126 @@
     .action-btn {
       flex: 1;
       text-align: center;
+    }
+  }
+}
+// Confirmation Popup Styles
+.confirmation-popup {
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 450px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+  animation: modalSlideIn 0.3s ease-out;
+  overflow: hidden;
+
+  .confirmation-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: #fff3cd;
+    border-bottom: 1px solid #ffeaa7;
+
+    .warning-icon {
+      color: #f39c12;
+      font-size: 1.5rem;
+    }
+
+    h3 {
+      margin: 0;
+      color: #856404;
+      font-size: 1.3rem;
+    }
+  }
+
+  .confirmation-body {
+    padding: 1.5rem;
+
+    p {
+      margin: 0;
+      color: #2d3748;
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+  }
+
+  .confirmation-actions {
+    display: flex;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+
+    button {
+      flex: 1;
+      padding: 1rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+
+      &.btn-cancel {
+        background: #e2e8f0;
+        color: #4a5568;
+
+        &:hover:not(:disabled) {
+          background: #cbd5e0;
+          transform: translateY(-1px);
+        }
+      }
+
+      &.btn-confirm {
+        background: #e53e3e;
+        color: white;
+
+        &:hover:not(:disabled) {
+          background: #c53030;
+          transform: translateY(-1px);
+        }
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none !important;
+      }
+    }
+  }
+}
+
+// Dark theme for confirmation popup
+[data-theme="dark"] {
+  .confirmation-popup {
+    background: #2d3748;
+
+    .confirmation-header {
+      background: #453411;
+      border-bottom-color: #684f1d;
+
+      h3 {
+        color: #f6e05e;
+      }
+    }
+
+    .confirmation-body p {
+      color: #e2e8f0;
+    }
+
+    .confirmation-actions {
+      background: #4a5568;
+      border-top-color: #4a5568;
+
+      .btn-cancel {
+        background: #4a5568;
+        color: #cbd5e0;
+
+        &:hover:not(:disabled) {
+          background: #718096;
+        }
+      }
     }
   }
 }
