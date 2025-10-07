@@ -45,27 +45,9 @@ export default function ProductsPage() {
     if (highlightId) {
       console.log("🟢 HIGHLIGHT TRIGGERED: Product ID received:", highlightId);
 
-      // Store the highlight ID in a variable that won't change
-      const currentHighlightId = highlightId;
-
-      setHighlightedProductId(currentHighlightId);
+      setHighlightedProductId(highlightId);
       setSearchTerm("");
       setSelectedCategory("");
-
-      // Use a ref to track the current highlight ID for the filtering function
-      const applyFiltersWithHighlight = (productsArray) => {
-        console.log("🟢 FILTERING WITH HIGHLIGHT:", currentHighlightId);
-        return applyFiltersAndSorting(productsArray, currentHighlightId);
-      };
-
-      // Wait for products to load, then apply filtering with the highlight
-      if (products.length > 0) {
-        console.log("🟢 PRODUCTS ALREADY LOADED, FILTERING NOW");
-        applyFiltersWithHighlight(products);
-      } else {
-        console.log("🟢 WAITING FOR PRODUCTS TO LOAD...");
-        // We'll handle this in the products useEffect
-      }
 
       // Clear the URL parameter after 5 seconds
       const timer = setTimeout(() => {
@@ -83,7 +65,7 @@ export default function ProductsPage() {
   useEffect(() => {
     if (products.length > 0 && highlightedProductId) {
       console.log("🟢 PRODUCTS LOADED, APPLYING HIGHLIGHT FILTER");
-      applyFiltersAndSorting(products, highlightedProductId);
+      applyFiltersAndSorting(products);
     }
   }, [products, highlightedProductId]);
 
@@ -108,14 +90,13 @@ export default function ProductsPage() {
     fetchProducts();
   }, []);
 
-  // Apply filtering and sorting - UPDATED to accept highlightId parameter
-  const applyFiltersAndSorting = (productsArray, forceHighlightId = null) => {
-    const currentHighlightId = forceHighlightId || highlightedProductId;
-
+  // Apply filtering and sorting
+  const applyFiltersAndSorting = (productsArray) => {
     console.log("🟡 FILTERING: Applying filters and sorting");
-    console.log("🟡 HIGHLIGHTED PRODUCT ID:", currentHighlightId);
+    console.log("🟡 HIGHLIGHTED PRODUCT ID:", highlightedProductId);
     console.log("🟡 SEARCH TERM:", searchTerm);
     console.log("🟡 SELECTED CATEGORY:", selectedCategory);
+    console.log("🟡 SORT BY:", sortBy, "ORDER:", sortOrder);
 
     let filtered = productsArray.filter((p) => {
       const matchesSearch =
@@ -124,60 +105,21 @@ export default function ProductsPage() {
         !selectedCategory ||
         p.category?.toLowerCase() === selectedCategory.toLowerCase();
 
-      // FIX: If this is the highlighted product, show it regardless of stock
-      const isHighlightedProduct = p.id === currentHighlightId;
+      // If this is the highlighted product, show it regardless of stock
+      const isHighlightedProduct = p.id === highlightedProductId;
 
       // Only show products with stock > 0, OR if it's the highlighted product
       const matchesStock = p.stock > 0 || isHighlightedProduct;
 
       const shouldInclude = matchesSearch && matchesCategory && matchesStock;
 
-      if (p.id === currentHighlightId) {
-        console.log("🎯 HIGHLIGHTED PRODUCT CHECK:", {
-          id: p.id,
-          name: p.name,
-          stock: p.stock,
-          matchesSearch,
-          matchesCategory,
-          matchesStock,
-          shouldInclude,
-        });
-      }
-
       return shouldInclude;
     });
 
     console.log("🟡 FILTERING: After filtering -", filtered.length, "products");
 
-    // Check if highlighted product is in the filtered list
-    if (currentHighlightId) {
-      const found = filtered.find((p) => p.id === currentHighlightId);
-      console.log(
-        "🎯 HIGHLIGHTED PRODUCT IN FILTERED LIST:",
-        found ? "YES" : "NO"
-      );
-      if (found) {
-        console.log(
-          "🎯 HIGHLIGHTED PRODUCT DETAILS:",
-          found.name,
-          "Stock:",
-          found.stock
-        );
-      } else {
-        console.log("❌ HIGHLIGHTED PRODUCT NOT FOUND IN FILTERED LIST");
-        // If not found, force include it
-        const originalProduct = productsArray.find(
-          (p) => p.id === currentHighlightId
-        );
-        if (originalProduct) {
-          console.log("🟢 FORCE INCLUDING HIGHLIGHTED PRODUCT");
-          filtered.push(originalProduct);
-        }
-      }
-    }
-
-    // Apply sorting
-    filtered = filtered.sort((a, b) => {
+    // Apply sorting - FIXED: Ensure proper sorting
+    filtered = [...filtered].sort((a, b) => {
       let aValue = a[sortBy];
       let bValue = b[sortBy];
 
@@ -190,10 +132,14 @@ export default function ProductsPage() {
         aValue = Number(aValue) || 0;
         bValue = Number(bValue) || 0;
 
+        console.log(
+          `🔢 Comparing ${aValue} vs ${bValue} - Order: ${sortOrder}`
+        );
+
         if (sortOrder === "asc") {
-          return aValue - bValue;
+          return aValue - bValue; // Lower values first (1, 2, 3...)
         } else {
-          return bValue - aValue;
+          return bValue - aValue; // Higher values first (100, 99, 98...)
         }
       }
       // Handle string fields
@@ -201,10 +147,14 @@ export default function ProductsPage() {
         aValue = String(aValue).toLowerCase();
         bValue = String(bValue).toLowerCase();
 
+        console.log(
+          `🔤 Comparing "${aValue}" vs "${bValue}" - Order: ${sortOrder}`
+        );
+
         if (sortOrder === "asc") {
-          return aValue.localeCompare(bValue);
+          return aValue.localeCompare(bValue); // A-Z
         } else {
-          return bValue.localeCompare(aValue);
+          return bValue.localeCompare(aValue); // Z-A
         }
       }
     });
@@ -213,6 +163,13 @@ export default function ProductsPage() {
       "🟡 FILTERING: Final filtered products count:",
       filtered.length
     );
+
+    // Log first few items to verify sorting
+    console.log(
+      "📊 SORTED RESULTS (first 5):",
+      filtered.slice(0, 5).map((p) => ({ name: p.name, [sortBy]: p[sortBy] }))
+    );
+
     setFilteredProducts(filtered);
   };
 
@@ -221,22 +178,29 @@ export default function ProductsPage() {
     console.log("🔍 SEARCH: Term:", term, "Category:", category);
     setSearchTerm(term);
     setSelectedCategory(category);
-    applyFiltersAndSorting(products);
+    // Don't call applyFiltersAndSorting here - let useEffect handle it
   };
 
   // Handle sort changes
   const handleSortChange = (field) => {
     console.log("📊 SORT: Changing to", field);
     setSortBy(field);
-    applyFiltersAndSorting(products);
+    // Don't call applyFiltersAndSorting here - let useEffect handle it
   };
 
   // Handle sort order changes
   const handleSortOrderChange = (order) => {
     console.log("📊 SORT: Changing order to", order);
     setSortOrder(order);
-    applyFiltersAndSorting(products);
+    // Don't call applyFiltersAndSorting here - let useEffect handle it
   };
+
+  // Apply filters and sorting whenever relevant states change
+  useEffect(() => {
+    if (products.length > 0) {
+      applyFiltersAndSorting(products);
+    }
+  }, [searchTerm, selectedCategory, sortBy, sortOrder, products]);
 
   const handleAddProduct = () => {
     setSelectedProduct(null);

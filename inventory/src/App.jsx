@@ -17,7 +17,7 @@ import { ThemeProvider } from "./context/ThemeContext.jsx";
 import "./fixProducts";
 
 import Register from "./components/login-signup/register.jsx";
-import Login from "./components/login-signup/login.jsx";
+import Login from "./components/login-signup/Login.jsx";
 import Dashboard from "./Pages/Dashboard.jsx";
 import Lobby from "./Pages/Lobby.jsx";
 import Profile from "./Pages/Profile.jsx";
