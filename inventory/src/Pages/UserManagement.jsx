@@ -325,22 +325,6 @@ export default function UserManagement() {
     setPasswordChangeStep("idle");
   };
 
-  const handleRefresh = async () => {
-    try {
-      setLoading(true);
-      const snapshot = await getDocs(collection(db, "users"));
-      const usersData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setUsers(usersData);
-    } catch (error) {
-      console.error("Error refreshing users:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="page-container">
       <Sidebar />
@@ -351,19 +335,8 @@ export default function UserManagement() {
           <div className="page-header">
             <div className="header-title">
               <h1>User Management</h1>
-              <button
-                className="refresh-btn"
-                onClick={handleRefresh}
-                disabled={loading}
-                title="Refresh users"
-              >
-                <FontAwesomeIcon
-                  icon={faSync}
-                  className={loading ? "spinning" : ""}
-                />
-              </button>
             </div>
-            <p>Manage system users, roles, and permissions</p>
+            <p>Manage system users, and roles</p>
             {syncing && (
               <div className="sync-indicator">
                 <FontAwesomeIcon icon={faSync} className="spinning" />
@@ -682,19 +655,7 @@ export default function UserManagement() {
                     />
                   </div>
 
-                  <div className="form-group">
-                    <label>Email Address *</label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) =>
-                        setFormData({ ...formData, email: e.target.value })
-                      }
-                      placeholder="Enter email address"
-                      required
-                      disabled={syncing}
-                    />
-                  </div>
+                  <div className="form-group"></div>
                 </div>
 
                 <div className="form-row">

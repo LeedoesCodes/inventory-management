@@ -63,7 +63,16 @@ export default function Header() {
         />
         {!isMobile && (
           <div className="profile-info">
-            <p className="role">{role === "admin" ? "Admin" : "User"}</p>
+            <p className="display-name">
+              {user?.displayName || user?.name || "User"}
+            </p>
+            <p className="role">
+              {role === "admin"
+                ? "Administrator"
+                : role === "developer"
+                ? "Developer"
+                : "Employee"}
+            </p>
           </div>
         )}
       </Link>

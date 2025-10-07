@@ -237,11 +237,11 @@
             flex: 1.5;
             color: #718096;
             font-style: italic;
-            padding: 4px 8px;
+            padding: 2px 4px;
             background: #f7fafc;
             border-radius: 4px;
             font-size: 0.9rem;
-            max-width: 100%;
+            max-width: 60%;
           }
         }
       }
@@ -966,7 +966,7 @@
           .product-stock,
           .product-category {
             min-width: auto;
-            width: 100%;
+            width: 80%;
             justify-content: flex-start;
           }
 
@@ -1045,4 +1045,43 @@ html {
 .products-page * {
   transition: background-color 0.3s ease, color 0.3s ease,
     border-color 0.3s ease, box-shadow 0.3s ease;
+}
+// Add these to your existing animations section:
+
+@keyframes highlight-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);
+    transform: scale(1);
+  }
+  25% {
+    box-shadow: 0 0 0 15px rgba(33, 150, 243, 0.3);
+    transform: scale(1.02);
+  }
+  50% {
+    box-shadow: 0 0 0 30px rgba(33, 150, 243, 0.1);
+    transform: scale(1.01);
+  }
+  100% {
+    box-shadow: 0 4px 20px rgba(33, 150, 243, 0.4);
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  80% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
 }

@@ -268,7 +268,7 @@ export default function Dashboard() {
   };
 
   const handleManageOrders = () => {
-    navigate("/transactionHistory");
+    navigate("/orderspage");
   };
 
   const handleViewLowStock = () => {
@@ -641,7 +641,7 @@ export default function Dashboard() {
                   onClick={handleManageOrders}
                 >
                   <FontAwesomeIcon icon={faReceipt} className="btn-icon" />
-                  Manage Orders
+                  Create Orders
                 </button>
                 <button
                   className="action-btn ai-btn"
