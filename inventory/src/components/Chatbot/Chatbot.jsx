@@ -140,6 +140,7 @@ const Chatbot = ({ isOpen, onClose }) => {
 
   const fetchAssociationRules = async () => {
     try {
+      console.log("🔄 Fetching association rules...");
       // Get recent orders to generate rules
       const ordersSnapshot = await getDocs(collection(db, "orders"));
       const allOrders = ordersSnapshot.docs.map((doc) => ({
@@ -147,7 +148,10 @@ const Chatbot = ({ isOpen, onClose }) => {
         ...doc.data(),
       }));
 
+      console.log(`📊 Total orders found: ${allOrders.length}`);
+
       if (allOrders.length === 0) {
+        console.log("❌ No orders found");
         return {
           rules: [],
           totalOrders: 0,
@@ -173,9 +177,12 @@ const Chatbot = ({ isOpen, onClose }) => {
         return orderDate ? new Date(orderDate) >= ninetyDaysAgo : true;
       });
 
+      console.log(`📅 Recent orders (90 days): ${recentOrders.length}`);
+
       // Generate association rules
       const rules = generateAssociationRules(recentOrders, userSettings);
 
+      console.log(`✅ Generated ${rules.length} association rules`);
       return {
         rules: rules,
         totalOrders: recentOrders.length,
@@ -183,7 +190,7 @@ const Chatbot = ({ isOpen, onClose }) => {
         generatedAt: new Date().toLocaleTimeString(),
       };
     } catch (error) {
-      console.error("Error fetching association rules:", error);
+      console.error("❌ Error fetching association rules:", error);
       return {
         rules: [],
         totalOrders: 0,
@@ -279,13 +286,7 @@ const Chatbot = ({ isOpen, onClose }) => {
     const { rules, totalOrders, thresholds } = associationData;
 
     if (rules.length === 0) {
-      return `**Product Association Analysis**\n\n*No association rules found based on ${totalOrders} recent orders.*\n\n**Current Thresholds:**\n• Support: ≥ ${(
-        thresholds.minSupport * 100
-      ).toFixed(1)}%\n• Confidence: ≥ ${(
-        thresholds.minConfidence * 100
-      ).toFixed(1)}%\n• Lift: ≥ ${thresholds.minLift.toFixed(
-        2
-      )}\n\n**Recommendations:**\n• Ensure you have sufficient order data with multiple items\n• The system needs more transaction history to identify patterns\n• Try lowering the thresholds in Settings if you have existing data`;
+      return `**Product Association Analysis**\n\n*No association rules found based on ${totalOrders} recent orders.*\n\n**Why this might happen:**\n• Not enough multi-item orders to detect patterns\n• Order data may not have sufficient item combinations\n• Try lowering thresholds in Settings for more results\n\n**Current Data:**\n• Orders analyzed: ${totalOrders}\n• Products in system: 304\n• Try gathering more order data with multiple items`;
     }
 
     // Get popular items and generate recommendations like the dashboard
@@ -362,13 +363,12 @@ const Chatbot = ({ isOpen, onClose }) => {
 
       return result.data.response;
     } catch (error) {
-      // Provide a response that actually analyzes the specific data
-      return analyzeDataManually(userInput, businessContext);
+      console.log("Gemini AI failed, falling back to manual analysis:", error);
+      return null;
     }
   };
 
   // Manual analysis as fallback - USES REAL DATA
-  // Replace the analyzeDataManually function with this smarter version:
   const analyzeDataManually = async (userInput, businessContext) => {
     // Extract numbers from business context
     const customerMatch = businessContext.match(/Total Customers: (\d+)/);
@@ -616,102 +616,65 @@ const Chatbot = ({ isOpen, onClose }) => {
     }
   };
 
-  // Intelligent query router - decides when to use AI vs traditional queries
+  // SIMPLIFIED Intelligent query router - FIXED VERSION
   const intelligentQueryRouter = async (userInput) => {
     const input = userInput.toLowerCase().trim();
+    console.log("🔍 Processing query:", userInput);
 
-    // Questions that should use traditional queries (structured data)
-    const traditionalQueryPatterns = [
-      "how many",
-      "count",
-      "total",
-      "list",
-      "show me",
-      "recent",
-      "top spending",
-      "low stock",
-      "today",
-      "revenue",
-      "orders",
-      "customers",
-      "products",
-      "inventory",
-    ];
-
-    // Questions that should use AI (analysis, insights, complex questions)
-    const aiQueryPatterns = [
-      "analyze",
-      "insight",
-      "trend",
-      "pattern",
-      "why",
-      "how should",
-      "recommend",
-      "suggest",
-      "what if",
-      "predict",
-      "compare",
-      "business health",
-      "performance",
-      "improve",
-      "optimize",
-      "advice",
-      "strategy",
-      "opportunity",
+    // FORCE recommendation queries to use association rules
+    const recommendationKeywords = [
       "association",
-      "product recommendation",
-      "what products",
+      "recommend",
       "bundle",
       "cross-sell",
-      "upsell",
-      "frequently bought",
-      "customers also buy",
-      "product relationships",
+      "frequently",
+      "bought together",
+      "frequently purchased",
+      "often bought",
+      "purchased together",
+      "customers also",
+      "product relationship",
     ];
 
-    const isTraditionalQuery = traditionalQueryPatterns.some((pattern) =>
-      input.includes(pattern)
+    const isRecommendationQuery = recommendationKeywords.some((keyword) =>
+      input.includes(keyword)
     );
 
-    const isAIQuery = aiQueryPatterns.some((pattern) =>
-      input.includes(pattern)
-    );
+    console.log("🎯 Query Analysis:", {
+      input: userInput,
+      isRecommendationQuery,
+      recommendationKeywordsFound: recommendationKeywords.filter((kw) =>
+        input.includes(kw)
+      ),
+    });
 
-    // Use AI for analytical questions, traditional for data lookup
-    if (isAIQuery || (!isTraditionalQuery && input.length > 15)) {
-      const businessContext = await getBusinessContext();
-
-      // If it's specifically about recommendations, fetch real-time data first
-      if (
-        input.includes("association") ||
-        input.includes("recommend") ||
-        input.includes("bundle") ||
-        input.includes("cross-sell") ||
-        input.includes("frequently") ||
-        input.includes("product relationship") ||
-        input.includes("customers also")
-      ) {
+    // 🚨 PRIORITY: Handle recommendation queries first
+    if (isRecommendationQuery) {
+      console.log("🛍️ DETECTED RECOMMENDATION QUERY - Using association rules");
+      try {
         const associationData = await fetchAssociationRules();
-        const enhancedContext = `${businessContext}\n\nASSOCIATION RULES DATA:\n${JSON.stringify(
-          associationData,
-          null,
-          2
-        )}`;
-        const aiResponse = await queryWithGemini(userInput, enhancedContext);
+        console.log("📊 Association rules result:", {
+          totalRules: associationData.rules?.length,
+          totalOrders: associationData.totalOrders,
+          hasError: associationData.error,
+        });
 
-        if (aiResponse) {
-          return aiResponse;
+        // If no rules found, provide specific feedback
+        if (!associationData.rules || associationData.rules.length === 0) {
+          return `**Product Association Analysis**\n\n*No association rules found based on ${associationData.totalOrders} recent orders.*\n\n**Why this might happen:**\n• Not enough multi-item orders to detect patterns\n• Order data may not have sufficient item combinations\n• Try lowering thresholds in Settings for more results\n\n**Current Data:**\n• Orders analyzed: ${associationData.totalOrders}\n• Products in system: 304\n• Try gathering more order data with multiple items`;
         }
-        // If AI fails, fall back to manual analysis with real data
-        return await analyzeRecommendationsManually(associationData, userInput);
-      }
 
-      const aiResponse = await queryWithGemini(userInput, businessContext);
-      if (aiResponse) {
-        return aiResponse;
+        // Use manual analysis for recommendations
+        console.log("🔄 Using manual recommendation analysis");
+        return await analyzeRecommendationsManually(associationData, userInput);
+      } catch (error) {
+        console.error("❌ Error in recommendation processing:", error);
+        return `**Product Recommendation Error**\n\nSorry, I encountered an error while analyzing product associations. Please try again later.\n\nError: ${error.message}`;
       }
     }
 
+    // For all other queries, use normal flow
+    console.log("📊 Using normal query flow");
     return null;
   };
 
@@ -1125,7 +1088,7 @@ const Chatbot = ({ isOpen, onClose }) => {
 
     // Help - Updated to show hybrid capabilities
     else if (input.includes("help") || input.includes("what can you do")) {
-      response = `**Hybrid Business Assistant**\n\n**EMERGING TECHNOLOGY FEATURES:**\n• **Intelligent Query Routing** - AI decides the best approach\n• **Google Gemini Integration** - Cutting-edge AI\n• **Real-time Business Context** - AI understands your data\n• **Hybrid Intelligence** - Combines AI + structured data\n\n**AI ANALYSIS**\n• "Analyze sales trends"\n• "Business performance insights"\n• "Recommend improvements"\n• "Identify patterns"\n• "Compare performance"\n\n**DATA QUERIES**\n• Customer counts & analytics\n• Order history & revenue\n• Product inventory & stock\n• Team members & users\n• Sales performance\n\n**BUSINESS INTELLIGENCE**\n• Combined AI + data insights\n• Real-time analytics\n• Predictive suggestions`;
+      response = `**Hybrid Business Assistant**\n\n**EMERGING TECHNOLOGY FEATURES:**\n• **Intelligent Query Routing** - AI decides the best approach\n• **Google Gemini Integration** - Cutting-edge AI\n• **Real-time Business Context** - AI understands your data\n• **Hybrid Intelligence** - Combines AI + structured data\n\n**AI ANALYSIS**\n• "Analyze sales trends"\n• "Business performance insights"\n• "Recommend improvements"\n• "Identify patterns"\n• "Compare performance"\n\n**DATA QUERIES**\n• Customer counts & analytics\n• Order history & revenue\n• Product inventory & stock\n• Team members & users\n• Sales performance\n\n**BUSINESS INTELLIGENCE**\n• Combined AI + data insights\n• Real-time analytics\n• Predictive suggestions\n\n**PRODUCT RECOMMENDATIONS**\n• "Show me product recommendations"\n• "What products are frequently bought together?"\n• "Generate association rules"\n• "Customers also buy..."`;
     }
 
     // Customer queries
@@ -1251,7 +1214,7 @@ const Chatbot = ({ isOpen, onClose }) => {
       response = `**Business Overview**\n\n${customerSummary}\n\n${orderSummary}\n\n${productSummary}`;
     }
 
-    // Product recommendations and associations
+    // Product recommendations and associations - IMPROVED VERSION
     else if (
       input.includes("association") ||
       input.includes("recommend") ||
@@ -1259,8 +1222,14 @@ const Chatbot = ({ isOpen, onClose }) => {
       input.includes("cross-sell") ||
       input.includes("frequently") ||
       input.includes("product relationship") ||
-      input.includes("customers also")
+      input.includes("customers also") ||
+      input.includes("bought together") ||
+      input.includes("frequently purchased") ||
+      input.includes("often bought")
     ) {
+      console.log(
+        "🛍️ Traditional query handler: Processing recommendation query"
+      );
       const associationData = await fetchAssociationRules();
       response = await analyzeRecommendationsManually(associationData, input);
     }
@@ -1272,7 +1241,7 @@ const Chatbot = ({ isOpen, onClose }) => {
       input.includes("intelligent")
     ) {
       response =
-        'I\'m a **hybrid AI assistant**! I combine **Google Gemini AI** with your **real business data**. This is **emerging technology**!\n\nTry asking:\n\n• "Analyze my sales trends"\n• "What business insights can you provide?"\n• "Recommend ways to improve performance"\n• "Identify patterns in customer behavior"';
+        'I\'m a **hybrid AI assistant**! I combine **Google Gemini AI** with your **real business data**. This is **emerging technology**!\n\nTry asking:\n\n• "Analyze my sales trends"\n• "What business insights can you provide?"\n• "Recommend ways to improve performance"\n• "Identify patterns in customer behavior"\n• "What products are frequently bought together?"\n• "Show me product recommendations"';
     }
 
     return response;
@@ -1292,18 +1261,28 @@ const Chatbot = ({ isOpen, onClose }) => {
     setMessages((prev) => [...prev, userMessage]);
     setLoading(true);
 
+    console.log("🚀 PROCESS COMMAND STARTED:", userInput);
+
     try {
       let response;
 
       // First, try AI for complex queries
+      console.log("🔄 Attempting intelligent routing...");
       const aiResponse = await intelligentQueryRouter(userInput);
+
       if (aiResponse) {
+        console.log("✅ Using response from intelligent router");
         response = aiResponse;
-      }
-      // If AI didn't handle it, use traditional queries
-      else {
+      } else {
+        // If AI didn't handle it, use traditional queries
+        console.log("🔄 Falling back to traditional queries");
         response = await handleTraditionalQueries(input);
       }
+
+      console.log(
+        "📝 Final response type:",
+        response?.substring(0, 100) + "..."
+      );
 
       // Add bot response to local state
       const botMessage = {
@@ -1314,6 +1293,7 @@ const Chatbot = ({ isOpen, onClose }) => {
       };
       setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
+      console.error("❌ Error processing command:", error);
       const errorMessage = {
         id: Date.now() + 1,
         role: "assistant",
@@ -1323,6 +1303,7 @@ const Chatbot = ({ isOpen, onClose }) => {
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setLoading(false);
+      console.log("🏁 PROCESS COMMAND COMPLETED");
     }
   };
 
@@ -1405,6 +1386,10 @@ const Chatbot = ({ isOpen, onClose }) => {
                 <div>• "Low stock products" (Data)</div>
                 <div>• "Customer buying patterns" (AI)</div>
                 <div>• "Association rules analysis" (Real-time Data)</div>
+                <div>
+                  • "What products are frequently bought together?" (Association
+                  Rules)
+                </div>
               </div>
             </div>
           ) : (
