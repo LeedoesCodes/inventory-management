@@ -333,12 +333,11 @@ export default function Dashboard() {
         <h1>Dashboard Overview</h1>
         <div className="header-info">
           <span className="threshold-info">
-            <FontAwesomeIcon icon={faCube} className="info-icon" />
-            Global Low Stock Threshold: {userSettings.lowStockThreshold}
+            Default Low Stock Threshold: {userSettings.lowStockThreshold}
           </span>
           <span className="ml-info">
             <FontAwesomeIcon icon={faChartLine} className="info-icon" />
-            Association Rules: <strong>{associationRules.length}</strong> active
+            Association Rules: {associationRules.length} active
           </span>
 
           <button

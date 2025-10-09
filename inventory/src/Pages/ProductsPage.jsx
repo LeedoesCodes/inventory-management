@@ -297,12 +297,24 @@ export default function ProductsPage() {
       <div className={`products-page ${isCollapsed ? "collapsed" : ""}`}>
         <Header />
         <div className="products-content">
-          <div className="header">
-            <h1>Products Management</h1>
+          {/* Updated Header Section - Matching Analytics Style */}
+          <div className="products-header">
+            <div className="header-content">
+              <h1>Products Management</h1>
+              <p>Manage your product inventory and details</p>
+            </div>
+
+            <div className="header-actions">
+              <button className="add-product-btn" onClick={handleAddProduct}>
+                Add Product
+              </button>
+            </div>
           </div>
 
-          <div className="search-container">
+          {/* Search and Filters Section */}
+          <div className="search-filters-section">
             <ProductSearch onSearch={handleSearch} categories={categories} />
+
             {(searchTerm || selectedCategory) && (
               <button
                 className="clear-filters-btn"
@@ -313,8 +325,8 @@ export default function ProductsPage() {
             )}
           </div>
 
-          {/* Controls Bar */}
-          <div className="controls-bar">
+          {/* Controls Bar - Updated Style */}
+          <div className="products-controls-bar">
             <div className="control-group">
               <label>
                 <FontAwesomeIcon icon={faSort} />
@@ -347,18 +359,22 @@ export default function ProductsPage() {
             </div>
           </div>
 
-          <ProductList
-            products={filteredProducts}
-            onEdit={handleEditProduct}
-            onDelete={handleDeleteProduct}
-            highlightedProductId={highlightedProductId}
-          />
+          {/* Products List */}
+          <div className="products-list-container">
+            <ProductList
+              products={filteredProducts}
+              onEdit={handleEditProduct}
+              onDelete={handleDeleteProduct}
+              highlightedProductId={highlightedProductId}
+            />
+          </div>
 
+          {/* FAB Button */}
           <button className="fab" onClick={handleAddProduct}>
             +
           </button>
 
-          {/* FIXED: Added product-form-container wrapper */}
+          {/* Product Form Modal */}
           {showForm && (
             <div className="product-form-container">
               <div className="modal-overlay">
