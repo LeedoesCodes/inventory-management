@@ -58,9 +58,13 @@ const LowStockPage = () => {
         ...docSnap.data(),
       }));
 
-      // Use dynamic threshold from user settings
+      // UPDATED: Use individual thresholds with global fallback
       const lowStock = products
-        .filter((p) => p.stock <= userSettings.lowStockThreshold)
+        .filter((p) => {
+          const threshold =
+            p.lowStockThreshold || userSettings.lowStockThreshold;
+          return p.stock <= threshold;
+        })
         .sort((a, b) => a.stock - b.stock);
 
       setLowStockProducts(lowStock);
@@ -84,12 +88,6 @@ const LowStockPage = () => {
     }
   };
 
-  const handleQuickReorder = (product) => {
-    alert(
-      `Quick reorder for ${product.name}. This could integrate with your supplier system.`
-    );
-  };
-
   useEffect(() => {
     fetchLowStockProducts();
   }, [userSettings.lowStockThreshold]); // Re-fetch when threshold changes
@@ -108,15 +106,18 @@ const LowStockPage = () => {
     return "Adequate";
   };
 
-  // Count products by stock level
+  // Count products by stock level - UPDATED to use individual thresholds
   const getStockLevelCounts = () => {
     const outOfStock = lowStockProducts.filter((p) => p.stock === 0).length;
     const criticalStock = lowStockProducts.filter(
       (p) => p.stock > 0 && p.stock <= 2
     ).length;
-    const lowStock = lowStockProducts.filter(
-      (p) => p.stock > 2 && p.stock <= userSettings.lowStockThreshold
-    ).length;
+
+    // UPDATED: Use individual thresholds for low stock count
+    const lowStock = lowStockProducts.filter((p) => {
+      const threshold = p.lowStockThreshold || userSettings.lowStockThreshold;
+      return p.stock > 2 && p.stock <= threshold;
+    }).length;
 
     return { outOfStock, criticalStock, lowStock };
   };
@@ -167,9 +168,7 @@ const LowStockPage = () => {
             <div className="summary-item">
               <span className="count">{lowStockProducts.length}</span>
               <span className="label">Products Need Restocking</span>
-              <span className="threshold-info">
-                (Below {userSettings.lowStockThreshold})
-              </span>
+              <span className="threshold-info">(Below threshold)</span>
             </div>
             <div className="summary-item">
               <span className="count critical">{stockCounts.outOfStock}</span>
@@ -183,9 +182,7 @@ const LowStockPage = () => {
             <div className="summary-item">
               <span className="count warning">{stockCounts.lowStock}</span>
               <span className="label">Low Stock</span>
-              <span className="threshold-info">
-                (3-{userSettings.lowStockThreshold} items)
-              </span>
+              <span className="threshold-info">(3+ items below threshold)</span>
             </div>
           </div>
 
@@ -193,7 +190,7 @@ const LowStockPage = () => {
             <div className="no-products">
               <div className="success-icon">✅</div>
               <h3>All products are well-stocked!</h3>
-              <p>No products below {userSettings.lowStockThreshold} items.</p>
+              <p>No products below threshold.</p>
             </div>
           ) : (
             <div className="products-table">
@@ -203,70 +200,99 @@ const LowStockPage = () => {
                 <span>Status</span>
                 <span>Price</span>
                 <span>Category</span>
+                <span>Threshold</span>
                 <span>Actions</span>
               </div>
 
               <div className="table-body">
-                {lowStockProducts.map((product) => (
-                  <div
-                    key={product.id}
-                    className={`table-row ${getStockLevelClass(product.stock)}`}
-                  >
-                    <div className="product-info">
-                      {product.imageUrl && (
-                        <img
-                          src={product.imageUrl}
-                          alt={product.name}
-                          className="product-image"
-                        />
-                      )}
-                      <div className="product-details">
-                        <span className="product-name">{product.name}</span>
-                        {product.description && (
-                          <span className="product-description">
-                            {product.description}
+                {lowStockProducts.map((product) => {
+                  // Calculate which threshold is being used for this product
+                  const productThreshold =
+                    product.lowStockThreshold || userSettings.lowStockThreshold;
+                  const isCustomThreshold = !!product.lowStockThreshold;
+
+                  return (
+                    <div
+                      key={product.id}
+                      className={`table-row ${getStockLevelClass(
+                        product.stock
+                      )}`}
+                    >
+                      <div className="product-info">
+                        {product.imageUrl && (
+                          <img
+                            src={product.imageUrl}
+                            alt={product.name}
+                            className="product-image"
+                          />
+                        )}
+                        <div className="product-details">
+                          <span className="product-name">{product.name}</span>
+                          {product.description && (
+                            <span className="product-description">
+                              {product.description}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="stock-info">
+                        <span className="stock-count">{product.stock}</span>
+                        <div className="stock-input">
+                          <span className="threshold-reference"></span>
+                        </div>
+                      </div>
+
+                      <div className="status-info">
+                        <span
+                          className={`status-badge ${getStockLevelClass(
+                            product.stock
+                          )}`}
+                        >
+                          {getStockLevelText(product.stock)}
+                        </span>
+                      </div>
+
+                      <div className="price-info">
+                        ₱{product.price?.toFixed(2)}
+                      </div>
+
+                      <div className="category-info">
+                        {product.category || "Uncategorized"}
+                      </div>
+
+                      {/* NEW: Threshold Information Column */}
+                      <div className="threshold-info">
+                        <div className="threshold-display">
+                          <span className="threshold-value">
+                            {productThreshold} items
                           </span>
+                          {isCustomThreshold && (
+                            <span className="custom-threshold-badge">
+                              Custom
+                            </span>
+                          )}
+                        </div>
+                        {!isCustomThreshold && (
+                          <small className="threshold-source">
+                            Global setting
+                          </small>
                         )}
                       </div>
-                    </div>
 
-                    <div className="stock-info">
-                      <span className="stock-count">{product.stock}</span>
-                      <div className="stock-input">
-                        <span className="threshold-reference"></span>
+                      <div className="action-buttons">
+                        <button
+                          onClick={() =>
+                            navigate(`/products?highlight=${product.id}`)
+                          }
+                          className="action-btn view-btn"
+                        >
+                          View
+                        </button>
                       </div>
                     </div>
-
-                    <div className="status-info">
-                      <span
-                        className={`status-badge ${getStockLevelClass(
-                          product.stock
-                        )}`}
-                      >
-                        {getStockLevelText(product.stock)}
-                      </span>
-                    </div>
-
-                    <div className="price-info">
-                      ₱{product.price?.toFixed(2)}
-                    </div>
-
-                    <div className="category-info">
-                      {product.category || "Uncategorized"}
-                    </div>
-
-                    <div className="action-buttons">
-                      <button
-                        onClick={() =>
-                          navigate(`/products?highlight=${product.id}`)
-                        }
-                        className="action-btn view-btn"
-                      >
-                        View
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

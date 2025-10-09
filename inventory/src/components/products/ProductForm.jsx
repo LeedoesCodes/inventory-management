@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { storage } from "../../Firebase/firebase"; // Adjust the import path to your firebase config
+import { storage } from "../../Firebase/firebase";
 
 const categories = [
   "LARGE",
@@ -34,6 +34,16 @@ export default function ProductForm({ selectedProduct, onSave, onClose }) {
   const [barcode, setBarcode] = useState("");
   const [imageFile, setImageFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [useCustomThreshold, setUseCustomThreshold] = useState(false);
+  const [customThreshold, setCustomThreshold] = useState("");
+  const [defaultThreshold, setDefaultThreshold] = useState(5);
+
+  useEffect(() => {
+    const fetchDefaultThreshold = async () => {
+      setDefaultThreshold(5);
+    };
+    fetchDefaultThreshold();
+  }, []);
 
   useEffect(() => {
     if (selectedProduct) {
@@ -43,20 +53,43 @@ export default function ProductForm({ selectedProduct, onSave, onClose }) {
       setStock(selectedProduct.stock || "");
       setCategory(selectedProduct.category || "");
       setBarcode(selectedProduct.barcode || "");
-      setImageFile(null); // Reset file input when editing existing product
+
+      const hasCustomThreshold =
+        selectedProduct.lowStockThreshold !== null &&
+        selectedProduct.lowStockThreshold !== undefined;
+      setUseCustomThreshold(hasCustomThreshold);
+      setCustomThreshold(
+        hasCustomThreshold
+          ? selectedProduct.lowStockThreshold.toString()
+          : defaultThreshold.toString()
+      );
+
+      setImageFile(null);
     } else {
       setName("");
       setPrice("");
       setStock("");
       setCategory("");
       setBarcode("");
+      setUseCustomThreshold(false);
+      setCustomThreshold(defaultThreshold.toString());
       setImageFile(null);
     }
-  }, [selectedProduct]);
+  }, [selectedProduct, defaultThreshold]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        alert("File size must be less than 5MB");
+        return;
+      }
+      // Validate file type
+      if (!file.type.match("image/(png|jpg|jpeg)")) {
+        alert("Please select a PNG, JPG, or JPEG image");
+        return;
+      }
       setImageFile(file);
     }
   };
@@ -84,6 +117,32 @@ export default function ProductForm({ selectedProduct, onSave, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validation
+    if (!name.trim()) {
+      alert("Product name is required");
+      return;
+    }
+    if (!category) {
+      alert("Category is required");
+      return;
+    }
+    if (!price || parseFloat(price) <= 0) {
+      alert("Please enter a valid price");
+      return;
+    }
+    if (!stock || parseInt(stock) < 0) {
+      alert("Please enter a valid stock quantity");
+      return;
+    }
+    if (
+      useCustomThreshold &&
+      (!customThreshold || parseInt(customThreshold) < 1)
+    ) {
+      alert("Please enter a valid custom threshold");
+      return;
+    }
+
     setUploading(true);
 
     try {
@@ -94,17 +153,31 @@ export default function ProductForm({ selectedProduct, onSave, onClose }) {
       }
 
       const productData = {
-        name,
+        name: name.trim(),
         price: parseFloat(price),
         stock: parseInt(stock),
         category,
-        barcode,
+        barcode: barcode.trim(),
         imageUrl,
+        lowStockThreshold: useCustomThreshold
+          ? parseInt(customThreshold)
+          : null,
       };
 
+      console.log("🟡 [ProductForm] SAVING PRODUCT DATA:", {
+        useCustomThreshold,
+        customThreshold,
+        savedThreshold: productData.lowStockThreshold,
+        isEditing: !!selectedProduct,
+        productId: selectedProduct?.id,
+        productData,
+      });
+
       await onSave(productData, imageFile);
+
+      console.log("🟢 [ProductForm] PRODUCT SAVED SUCCESSFULLY");
     } catch (error) {
-      console.error("Error saving product:", error);
+      console.error("🔴 [ProductForm] Error saving product:", error);
       alert("Error saving product: " + error.message);
     } finally {
       setUploading(false);
@@ -113,24 +186,30 @@ export default function ProductForm({ selectedProduct, onSave, onClose }) {
 
   const clearImage = () => {
     setImageFile(null);
-    // Clear the file input
     const fileInput = document.querySelector('input[type="file"]');
     if (fileInput) fileInput.value = "";
   };
 
-  // Extract filename from URL for existing products
+  const handleToggleChange = (enabled) => {
+    setUseCustomThreshold(enabled);
+    if (enabled && !customThreshold) {
+      setCustomThreshold(defaultThreshold.toString());
+    }
+  };
+
   const getFileNameFromUrl = (url) => {
     if (!url) return null;
     try {
       const urlObj = new URL(url);
       const pathname = urlObj.pathname;
-      // Extract the filename from the path
       const filename = pathname.split("/").pop();
-      // Remove the timestamp and random string to get original filename
-      const originalName = filename.split("_").slice(2).join("_");
-      return originalName || "uploaded-image.jpg";
+      // Extract original filename if possible
+      const parts = filename.split("_");
+      if (parts.length > 2) {
+        return parts.slice(2).join("_");
+      }
+      return filename || "uploaded-image.jpg";
     } catch (error) {
-      // If it's not a valid URL, try to extract from the string
       const parts = url.split("/");
       return parts[parts.length - 1] || "uploaded-image.jpg";
     }
@@ -142,110 +221,255 @@ export default function ProductForm({ selectedProduct, onSave, onClose }) {
     : null;
 
   return (
-    <form onSubmit={handleSubmit} className="product-form">
-      <div className="form-group">
-        <label>Product Name *</label>
-        <input
-          type="text"
-          value={name}
-          placeholder="Product Name"
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
+    <form onSubmit={handleSubmit} className="product-form horizontal-layout">
+      <div className="form-columns">
+        {/* Left Column - Basic Information */}
+        <div className="form-column">
+          <div className="form-section">
+            <h3 className="section-title">Basic Information</h3>
+
+            <div className="form-group">
+              <label htmlFor="product-name">Product Name *</label>
+              <input
+                id="product-name"
+                type="text"
+                value={name}
+                placeholder="Enter product name"
+                onChange={(e) => setName(e.target.value)}
+                required
+                disabled={uploading}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="product-category">Category *</label>
+              <select
+                id="product-category"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                required
+                disabled={uploading}
+              >
+                <option value="" disabled>
+                  Select Category
+                </option>
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="product-barcode">Barcode Number</label>
+              <input
+                id="product-barcode"
+                type="text"
+                value={barcode}
+                placeholder="e.g., 4800016022361"
+                onChange={(e) => setBarcode(e.target.value)}
+                disabled={uploading}
+              />
+              {selectedProduct && selectedProduct.barcode && (
+                <small className="current-barcode">
+                  Current: {selectedProduct.barcode}
+                </small>
+              )}
+            </div>
+          </div>
+
+          <div className="form-section">
+            <h3 className="section-title">Pricing & Stock</h3>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="product-price">Price *</label>
+                <div className="input-with-symbol">
+                  <span className="currency-symbol">₱</span>
+                  <input
+                    id="product-price"
+                    type="number"
+                    value={price}
+                    placeholder="0.00"
+                    onChange={(e) => setPrice(e.target.value)}
+                    step="0.01"
+                    min="0"
+                    required
+                    disabled={uploading}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="product-stock">Stock Quantity *</label>
+                <input
+                  id="product-stock"
+                  type="number"
+                  value={stock}
+                  placeholder="0"
+                  onChange={(e) => setStock(e.target.value)}
+                  min="0"
+                  required
+                  disabled={uploading}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column - Advanced Settings */}
+        <div className="form-column">
+          <div className="form-section">
+            <h3 className="section-title">Stock Alert Settings</h3>
+
+            <div className="form-group">
+              <div className="threshold-header">
+                <label>Low Stock Alert</label>
+                <div className="toggle-container">
+                  <span
+                    className={`toggle-label ${
+                      !useCustomThreshold ? "active" : ""
+                    }`}
+                  >
+                    Global
+                  </span>
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={useCustomThreshold}
+                      onChange={(e) => handleToggleChange(e.target.checked)}
+                      disabled={uploading}
+                    />
+                    <span className="toggle-slider"></span>
+                  </label>
+                  <span
+                    className={`toggle-label ${
+                      useCustomThreshold ? "active" : ""
+                    }`}
+                  >
+                    Custom
+                  </span>
+                </div>
+              </div>
+
+              {useCustomThreshold ? (
+                <div className="custom-threshold-input">
+                  <label htmlFor="custom-threshold">Custom Threshold</label>
+                  <div className="input-with-suffix">
+                    <input
+                      id="custom-threshold"
+                      type="number"
+                      value={customThreshold}
+                      onChange={(e) => setCustomThreshold(e.target.value)}
+                      min="1"
+                      placeholder="Enter threshold"
+                      required={useCustomThreshold}
+                      disabled={uploading}
+                    />
+                    <span className="input-suffix">items</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="global-threshold-display">
+                  <div className="global-threshold-value">
+                    {defaultThreshold} items
+                  </div>
+                  <span className="global-threshold-label">
+                    Using global setting from System Settings
+                  </span>
+                </div>
+              )}
+
+              {selectedProduct && (
+                <div className="current-threshold-info">
+                  <span className="current-threshold-label">
+                    Current setting:
+                  </span>
+                  <span className="current-threshold-value">
+                    {selectedProduct.lowStockThreshold
+                      ? `${selectedProduct.lowStockThreshold} items (custom)`
+                      : `${defaultThreshold} items (global)`}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="form-section">
+            <h3 className="section-title">Product Image</h3>
+
+            <div className="form-group">
+              <label>Upload Image</label>
+              <div className="file-upload-area">
+                <input
+                  type="file"
+                  onChange={handleImageChange}
+                  accept="image/png, image/jpg, image/jpeg"
+                  className="file-input"
+                  disabled={uploading}
+                />
+                <div className="file-upload-prompt">
+                  <span className="upload-icon">📁</span>
+                  <span>Click to upload image</span>
+                  <small>PNG, JPG, JPEG up to 5MB</small>
+                </div>
+              </div>
+
+              {/* File Previews */}
+              {hasExistingImage && (
+                <div className="file-preview existing-file">
+                  <div className="file-info">
+                    <span className="file-name">{existingFileName}</span>
+                    <span className="file-status">Current image</span>
+                  </div>
+                </div>
+              )}
+
+              {imageFile && (
+                <div className="file-preview new-file">
+                  <div className="file-info">
+                    <span className="file-name">{imageFile.name}</span>
+                    <span className="file-size">
+                      {(imageFile.size / 1024 / 1024).toFixed(2)} MB
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearImage}
+                    className="clear-file-btn"
+                    disabled={uploading}
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="form-group">
-        <label>Barcode Number</label>
-        <input
-          type="text"
-          value={barcode}
-          placeholder="Barcode Number (e.g., 4800016022361)"
-          onChange={(e) => setBarcode(e.target.value)}
-        />
-        {selectedProduct && selectedProduct.barcode && (
-          <small className="current-barcode">
-            Current barcode: {selectedProduct.barcode}
-          </small>
-        )}
-      </div>
-
-      <div className="form-group">
-        <label>Price *</label>
-        <input
-          type="number"
-          value={price}
-          placeholder="Price"
-          onChange={(e) => setPrice(e.target.value)}
-          step="0.01"
-          min="0"
-          required
-        />
-      </div>
-
-      <div className="form-group">
-        <label>Stock Quantity *</label>
-        <input
-          type="number"
-          value={stock}
-          placeholder="Stock Quantity"
-          onChange={(e) => setStock(e.target.value)}
-          min="0"
-          required
-        />
-      </div>
-
-      <div className="form-group">
-        <label>Category *</label>
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          required
+      {/* Form Actions - Fixed to always be visible */}
+      <div className="form-actions-sticky">
+        <button
+          type="button"
+          onClick={onClose}
+          className="btn-secondary"
+          disabled={uploading}
         >
-          <option value="" disabled>
-            Select Category
-          </option>
-          {categories.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="form-group">
-        <label>Product Image</label>
-        <input type="file" onChange={handleImageChange} accept="image/*" />
-
-        {/* Show current file name when editing */}
-        {hasExistingImage && (
-          <div className="file-preview existing-file">
-            <span className="file-name">Current: {existingFileName}</span>
-            <span className="file-status">(Upload new image to replace)</span>
-          </div>
-        )}
-
-        {/* Show new file name when a file is selected */}
-        {imageFile && (
-          <div className="file-preview new-file">
-            <span className="file-name">New: {imageFile.name}</span>
-            <button
-              type="button"
-              onClick={clearImage}
-              className="clear-file-btn"
-            >
-              ×
-            </button>
-          </div>
-        )}
-      </div>
-
-      <div className="form-buttons">
-        <button type="submit" disabled={uploading}>
-          {uploading ? "Uploading..." : selectedProduct ? "Update" : "Add"}{" "}
-          Product
-        </button>
-        <button type="button" onClick={onClose} disabled={uploading}>
           Cancel
+        </button>
+        <button type="submit" className="btn-primary" disabled={uploading}>
+          {uploading ? (
+            <>
+              <span className="loading-spinner"></span>
+              Saving...
+            </>
+          ) : selectedProduct ? (
+            "Update Product"
+          ) : (
+            "Add Product"
+          )}
         </button>
       </div>
     </form>

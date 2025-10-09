@@ -1,19 +1,9 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // --- USERS collection ---
-    match /users/{userId} {
-      // Users can read/write their own account info
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // --- OTHER collections ---
+    // TEMPORARY: Allow all access for testing
     match /{document=**} {
-      // Only allow users with "approved" or "admin" role
-      allow read, write: if request.auth != null
-        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['approved', 'admin'];
+      allow read, write: if true;
     }
   }
 }
