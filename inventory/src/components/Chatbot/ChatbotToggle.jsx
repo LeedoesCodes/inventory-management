@@ -1,5 +1,7 @@
 import React from "react";
 import "./ChatbotToggle.scss";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faRobot } from "@fortawesome/free-solid-svg-icons";
 
 const ChatbotToggle = ({ onClick, isOpen }) => {
   return (
@@ -8,8 +10,8 @@ const ChatbotToggle = ({ onClick, isOpen }) => {
       onClick={onClick}
       title="Chat with AI Assistant"
     >
-      <span className="chatbot-toggle-icon">🤖</span>
-      <span className="chatbot-toggle-text">AI Assistant</span>
+      <FontAwesomeIcon icon={faRobot} className="btn-icon" />
+      <span className="chatbot-toggle-text">Assistant</span>
     </button>
   );
 };

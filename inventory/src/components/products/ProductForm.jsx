@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "../../Firebase/firebase";
+import "./productform.scss";
 
 const categories = [
   "LARGE",
@@ -221,7 +222,14 @@ export default function ProductForm({ selectedProduct, onSave, onClose }) {
     : null;
 
   return (
-    <form onSubmit={handleSubmit} className="product-form horizontal-layout">
+    <form
+      onSubmit={handleSubmit}
+      className="product-form horizontal-layout"
+      style={{
+        position: "relative",
+        zIndex: 10000,
+      }}
+    >
       <div className="form-columns">
         {/* Left Column - Basic Information */}
         <div className="form-column">

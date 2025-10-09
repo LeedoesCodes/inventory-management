@@ -668,7 +668,7 @@ export default function Dashboard() {
                   title="Get AI assistance"
                 >
                   <FontAwesomeIcon icon={faRobot} className="btn-icon" />
-                  AI Assistant
+                  Assistant
                 </button>
               </div>
             </div>
