@@ -358,30 +358,24 @@ export default function ProductsPage() {
             +
           </button>
 
+          {/* FIXED: Added product-form-container wrapper */}
           {showForm && (
-            <div className="modal-overlay">
-              <div
-                className="modal"
-                style={{
-                  width: "95%",
-                  maxWidth: "1000px",
-                  height: "95vh",
-                  minHeight: "600px",
-                  maxHeight: "800px",
-                }}
-              >
-                <button
-                  className="close-btn"
-                  onClick={() => setShowForm(false)}
-                >
-                  ✕
-                </button>
-                <div className="form-container">
-                  <ProductForm
-                    selectedProduct={selectedProduct}
-                    onSave={handleSave}
-                    onClose={() => setShowForm(false)}
-                  />
+            <div className="product-form-container">
+              <div className="modal-overlay">
+                <div className="modal">
+                  <button
+                    className="close-btn"
+                    onClick={() => setShowForm(false)}
+                  >
+                    ✕
+                  </button>
+                  <div className="form-container">
+                    <ProductForm
+                      selectedProduct={selectedProduct}
+                      onSave={handleSave}
+                      onClose={() => setShowForm(false)}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
