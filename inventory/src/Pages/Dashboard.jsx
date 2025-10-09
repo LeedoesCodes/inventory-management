@@ -152,9 +152,16 @@ export default function Dashboard() {
         ...doc.data(),
       }));
 
-      const lowStockCount = products.filter(
-        (p) => p.stock <= userSettings.lowStockThreshold
-      ).length;
+      // UPDATED: Calculate low stock count considering both custom and global thresholds
+      const lowStockCount = products.filter((p) => {
+        // Use custom threshold if set, otherwise use global threshold
+        const threshold =
+          p.lowStockThreshold !== null && p.lowStockThreshold !== undefined
+            ? p.lowStockThreshold
+            : userSettings.lowStockThreshold;
+
+        return p.stock <= threshold;
+      }).length;
 
       let totalRevenue = 0;
       const itemCounts = {};
@@ -182,12 +189,24 @@ export default function Dashboard() {
         totalRevenue,
         loading: false,
       });
+
+      // Debug: Log threshold usage
+      console.log("📊 DASHBOARD LOW STOCK CALCULATION:");
+      console.log("Global threshold:", userSettings.lowStockThreshold);
+      console.log(
+        "Products with custom thresholds:",
+        products.filter(
+          (p) =>
+            p.lowStockThreshold !== null && p.lowStockThreshold !== undefined
+        ).length
+      );
+      console.log("Total low stock items:", lowStockCount);
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
       setError("Failed to load dashboard data");
       setDashboardData((prev) => ({ ...prev, loading: false }));
     }
-  }, [userSettings.lowStockThreshold]);
+  }, [userSettings.lowStockThreshold]); // Added dependency
 
   // Enhanced strength calculation with lift - ADD SAFE ACCESS
   const getRecommendationStrength = (confidence, lift) => {
@@ -315,14 +334,12 @@ export default function Dashboard() {
         <div className="header-info">
           <span className="threshold-info">
             <FontAwesomeIcon icon={faCube} className="info-icon" />
-            Low Stock Threshold:{" "}
-            <strong>{userSettings.lowStockThreshold}</strong> items
+            Global Low Stock Threshold: {userSettings.lowStockThreshold}
           </span>
           <span className="ml-info">
             <FontAwesomeIcon icon={faChartLine} className="info-icon" />
             Association Rules: <strong>{associationRules.length}</strong> active
           </span>
-          {/* FIXED: Add safe access to threshold values */}
 
           <button
             onClick={handleRefreshRules}
@@ -388,11 +405,12 @@ export default function Dashboard() {
               <h2>{dashboardData.lowStock}</h2>
               <p>Low Stock Items</p>
               <span className="stock-warning">
-                Below {userSettings.lowStockThreshold} items
+                Below threshold (Global + Custom)
               </span>
             </div>
           </div>
 
+          {/* Rest of your dashboard content remains the same */}
           <div className="dashboard-content">
             <div className="ml-recommendations main-section">
               <div className="section-header">
@@ -403,7 +421,6 @@ export default function Dashboard() {
                   />
                   Smart Recommendations
                 </h2>
-                {/* FIXED: Add safe threshold display */}
                 <div className="threshold-info">
                   <small>
                     Current Thresholds: Support ≥{" "}
@@ -619,7 +636,9 @@ export default function Dashboard() {
             <div className="quick-actions">
               <div className="section-header">
                 <h2>Quick Actions</h2>
-                <span>Threshold: {userSettings.lowStockThreshold} items</span>
+                <span>
+                  Threshold: {userSettings.lowStockThreshold} items (Global)
+                </span>
               </div>
               <div className="action-buttons">
                 <button

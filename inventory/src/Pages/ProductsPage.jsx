@@ -71,19 +71,34 @@ export default function ProductsPage() {
 
   const fetchProducts = async () => {
     console.log("🟡 FETCHING PRODUCTS FROM FIREBASE");
-    const snapshot = await getDocs(collection(db, "products"));
-    const productsData = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    }));
-    console.log("🟡 PRODUCTS FETCHED:", productsData.length);
-    setProducts(productsData);
+    try {
+      const snapshot = await getDocs(collection(db, "products"));
+      const productsData = snapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data(),
+      }));
+      console.log("🟡 PRODUCTS FETCHED:", productsData.length);
 
-    // Apply current filters and sorting
-    applyFiltersAndSorting(productsData);
+      // Debug: Check if lowStockThreshold is being loaded
+      console.log("📦 LOADED PRODUCTS WITH THRESHOLDS:");
+      productsData.forEach((product) => {
+        console.log(
+          `  ${product.name}: lowStockThreshold =`,
+          product.lowStockThreshold,
+          `(type: ${typeof product.lowStockThreshold})`
+        );
+      });
 
-    const uniqueCategories = [...new Set(productsData.map((p) => p.category))];
-    setCategories(uniqueCategories);
+      setProducts(productsData);
+      applyFiltersAndSorting(productsData);
+
+      const uniqueCategories = [
+        ...new Set(productsData.map((p) => p.category)),
+      ];
+      setCategories(uniqueCategories);
+    } catch (error) {
+      console.error("🔴 Error fetching products:", error);
+    }
   };
 
   useEffect(() => {
@@ -128,18 +143,19 @@ export default function ProductsPage() {
       if (bValue === undefined || bValue === null) bValue = "";
 
       // Convert to numbers for numeric fields
-      if (sortBy === "price" || sortBy === "stock" || sortBy === "sold") {
+      if (
+        sortBy === "price" ||
+        sortBy === "stock" ||
+        sortBy === "sold" ||
+        sortBy === "lowStockThreshold"
+      ) {
         aValue = Number(aValue) || 0;
         bValue = Number(bValue) || 0;
 
-        console.log(
-          `🔢 Comparing ${aValue} vs ${bValue} - Order: ${sortOrder}`
-        );
-
         if (sortOrder === "asc") {
-          return aValue - bValue; // Lower values first (1, 2, 3...)
+          return aValue - bValue;
         } else {
-          return bValue - aValue; // Higher values first (100, 99, 98...)
+          return bValue - aValue;
         }
       }
       // Handle string fields
@@ -147,14 +163,10 @@ export default function ProductsPage() {
         aValue = String(aValue).toLowerCase();
         bValue = String(bValue).toLowerCase();
 
-        console.log(
-          `🔤 Comparing "${aValue}" vs "${bValue}" - Order: ${sortOrder}`
-        );
-
         if (sortOrder === "asc") {
-          return aValue.localeCompare(bValue); // A-Z
+          return aValue.localeCompare(bValue);
         } else {
-          return bValue.localeCompare(aValue); // Z-A
+          return bValue.localeCompare(aValue);
         }
       }
     });
@@ -163,13 +175,6 @@ export default function ProductsPage() {
       "🟡 FILTERING: Final filtered products count:",
       filtered.length
     );
-
-    // Log first few items to verify sorting
-    console.log(
-      "📊 SORTED RESULTS (first 5):",
-      filtered.slice(0, 5).map((p) => ({ name: p.name, [sortBy]: p[sortBy] }))
-    );
-
     setFilteredProducts(filtered);
   };
 
@@ -178,21 +183,18 @@ export default function ProductsPage() {
     console.log("🔍 SEARCH: Term:", term, "Category:", category);
     setSearchTerm(term);
     setSelectedCategory(category);
-    // Don't call applyFiltersAndSorting here - let useEffect handle it
   };
 
   // Handle sort changes
   const handleSortChange = (field) => {
     console.log("📊 SORT: Changing to", field);
     setSortBy(field);
-    // Don't call applyFiltersAndSorting here - let useEffect handle it
   };
 
   // Handle sort order changes
   const handleSortOrderChange = (order) => {
     console.log("📊 SORT: Changing order to", order);
     setSortOrder(order);
-    // Don't call applyFiltersAndSorting here - let useEffect handle it
   };
 
   // Apply filters and sorting whenever relevant states change
@@ -208,6 +210,7 @@ export default function ProductsPage() {
   };
 
   const handleEditProduct = (product) => {
+    console.log("✏️ EDITING PRODUCT:", product);
     setSelectedProduct(product);
     setShowForm(true);
   };
@@ -219,11 +222,19 @@ export default function ProductsPage() {
     }
   };
 
+  // UPDATED: handleSave function with proper lowStockThreshold handling
   const handleSave = async (productData, imageFile) => {
     try {
+      console.log("🟡 [ProductsPage] RECEIVED PRODUCT DATA:", {
+        ...productData,
+        lowStockThreshold: productData.lowStockThreshold,
+        lowStockThresholdType: typeof productData.lowStockThreshold,
+      });
+
       let imageUrl = selectedProduct?.imageUrl || "";
 
       if (imageFile) {
+        console.log("🟡 Uploading image...");
         const storageRef = ref(
           storage,
           `products/${imageFile.name}_${Date.now()}`
@@ -232,6 +243,7 @@ export default function ProductsPage() {
         imageUrl = await getDownloadURL(storageRef);
       }
 
+      // Build the product payload - MAKE SURE lowStockThreshold is included
       const productPayload = {
         name: productData.name,
         description: productData.description || "",
@@ -243,21 +255,39 @@ export default function ProductsPage() {
         updatedAt: new Date(),
       };
 
+      // CRITICAL: Add lowStockThreshold to payload (can be null, number, or undefined)
+      if (productData.lowStockThreshold !== undefined) {
+        productPayload.lowStockThreshold = productData.lowStockThreshold;
+      } else {
+        productPayload.lowStockThreshold = null;
+      }
+
+      console.log("🟡 [ProductsPage] FINAL FIREBASE PAYLOAD:", productPayload);
+
       if (selectedProduct) {
+        console.log("🟡 UPDATING EXISTING PRODUCT:", selectedProduct.id);
         await updateDoc(
           doc(db, "products", selectedProduct.id),
           productPayload
         );
+        console.log("🟢 PRODUCT UPDATED IN FIREBASE");
       } else {
+        console.log("🟡 CREATING NEW PRODUCT");
         productPayload.createdAt = new Date();
         await addDoc(collection(db, "products"), productPayload);
+        console.log("🟢 PRODUCT CREATED IN FIREBASE");
       }
 
+      // Refresh the products list
+      console.log("🟡 REFRESHING PRODUCTS LIST...");
       await fetchProducts();
+
       setShowForm(false);
       setSelectedProduct(null);
+      console.log("🟢 FORM CLOSED SUCCESSFULLY");
     } catch (error) {
-      console.error("Error saving product:", error);
+      console.error("🔴 [ProductsPage] Error saving product:", error);
+      alert("Error saving product: " + error.message);
     }
   };
 
@@ -300,6 +330,7 @@ export default function ProductsPage() {
                 <option value="category">Category</option>
                 <option value="stock">Stock</option>
                 <option value="sold">Sold</option>
+                <option value="lowStockThreshold">Low Stock Threshold</option>
               </select>
               <select
                 value={sortOrder}
@@ -329,18 +360,29 @@ export default function ProductsPage() {
 
           {showForm && (
             <div className="modal-overlay">
-              <div className="modal">
+              <div
+                className="modal"
+                style={{
+                  width: "95%",
+                  maxWidth: "1000px",
+                  height: "95vh",
+                  minHeight: "600px",
+                  maxHeight: "800px",
+                }}
+              >
                 <button
                   className="close-btn"
                   onClick={() => setShowForm(false)}
                 >
                   ✕
                 </button>
-                <ProductForm
-                  selectedProduct={selectedProduct}
-                  onSave={handleSave}
-                  onClose={() => setShowForm(false)}
-                />
+                <div className="form-container">
+                  <ProductForm
+                    selectedProduct={selectedProduct}
+                    onSave={handleSave}
+                    onClose={() => setShowForm(false)}
+                  />
+                </div>
               </div>
             </div>
           )}
