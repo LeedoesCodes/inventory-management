@@ -1,3 +1,4 @@
+// pages/ProductsPage.jsx
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -14,8 +15,9 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSort } from "@fortawesome/free-solid-svg-icons";
 
 import ProductList from "../components/products/ProductsList";
-import ProductForm from "../components/products/ProductForm";
+import ProductForm from "../components/products/ProductForm/ProductForm";
 import ProductSearch from "../components/products/ProductSearch";
+import PackagingManager from "../components/products/PackagingManager";
 import Header from "../components/UI/Headers";
 import Sidebar from "../components/UI/Sidebar";
 import { useSidebar } from "../context/SidebarContext";
@@ -28,14 +30,19 @@ export default function ProductsPage() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [units, setUnits] = useState([]);
   const [highlightedProductId, setHighlightedProductId] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedUnit, setSelectedUnit] = useState("");
 
   // Sorting state
   const [sortBy, setSortBy] = useState("name");
   const [sortOrder, setSortOrder] = useState("asc");
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState("products");
 
   // Check for highlighted product on component mount and URL changes
   useEffect(() => {
@@ -48,6 +55,7 @@ export default function ProductsPage() {
       setHighlightedProductId(highlightId);
       setSearchTerm("");
       setSelectedCategory("");
+      setSelectedUnit("");
 
       // Clear the URL parameter after 5 seconds
       const timer = setTimeout(() => {
@@ -79,23 +87,29 @@ export default function ProductsPage() {
       }));
       console.log("🟡 PRODUCTS FETCHED:", productsData.length);
 
-      // Debug: Check if lowStockThreshold is being loaded
-      console.log("📦 LOADED PRODUCTS WITH THRESHOLDS:");
+      // Debug: Check packaging data
+      console.log("📦 LOADED PRODUCTS WITH PACKAGING:");
       productsData.forEach((product) => {
         console.log(
-          `  ${product.name}: lowStockThreshold =`,
-          product.lowStockThreshold,
-          `(type: ${typeof product.lowStockThreshold})`
+          `  ${product.name}: packagingType = ${
+            product.packagingType || "single"
+          }, parentProductId = ${product.parentProductId || "none"}`
         );
       });
 
       setProducts(productsData);
       applyFiltersAndSorting(productsData);
 
+      // Extract unique categories and units
       const uniqueCategories = [
-        ...new Set(productsData.map((p) => p.category)),
+        ...new Set(productsData.map((p) => p.category).filter(Boolean)),
       ];
+
+      // Use hardcoded units like in OrdersPage
+      const defaultUnits = ["piece", "bag", "pack", "bottle", "can", "box"];
+
       setCategories(uniqueCategories);
+      setUnits(defaultUnits);
     } catch (error) {
       console.error("🔴 Error fetching products:", error);
     }
@@ -111,29 +125,31 @@ export default function ProductsPage() {
     console.log("🟡 HIGHLIGHTED PRODUCT ID:", highlightedProductId);
     console.log("🟡 SEARCH TERM:", searchTerm);
     console.log("🟡 SELECTED CATEGORY:", selectedCategory);
+    console.log("🟡 SELECTED UNIT:", selectedUnit);
     console.log("🟡 SORT BY:", sortBy, "ORDER:", sortOrder);
 
     let filtered = productsArray.filter((p) => {
       const matchesSearch =
         !searchTerm || p.name?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory =
-        !selectedCategory ||
-        p.category?.toLowerCase() === selectedCategory.toLowerCase();
+        !selectedCategory || p.category === selectedCategory;
+      const matchesUnit = !selectedUnit || (p.unit || "piece") === selectedUnit;
 
       // If this is the highlighted product, show it regardless of stock
       const isHighlightedProduct = p.id === highlightedProductId;
 
       // Only show products with stock > 0, OR if it's the highlighted product
-      const matchesStock = p.stock > 0 || isHighlightedProduct;
+      const matchesStock = (p.stock || 0) > 0 || isHighlightedProduct;
 
-      const shouldInclude = matchesSearch && matchesCategory && matchesStock;
+      const shouldInclude =
+        matchesSearch && matchesCategory && matchesUnit && matchesStock;
 
       return shouldInclude;
     });
 
     console.log("🟡 FILTERING: After filtering -", filtered.length, "products");
 
-    // Apply sorting - FIXED: Ensure proper sorting
+    // Apply sorting
     filtered = [...filtered].sort((a, b) => {
       let aValue = a[sortBy];
       let bValue = b[sortBy];
@@ -145,9 +161,11 @@ export default function ProductsPage() {
       // Convert to numbers for numeric fields
       if (
         sortBy === "price" ||
+        sortBy === "costPrice" ||
         sortBy === "stock" ||
         sortBy === "sold" ||
-        sortBy === "lowStockThreshold"
+        sortBy === "lowStockThreshold" ||
+        sortBy === "piecesPerPackage"
       ) {
         aValue = Number(aValue) || 0;
         bValue = Number(bValue) || 0;
@@ -178,11 +196,12 @@ export default function ProductsPage() {
     setFilteredProducts(filtered);
   };
 
-  // Handle search
-  const handleSearch = (term, category) => {
-    console.log("🔍 SEARCH: Term:", term, "Category:", category);
+  // Handle search with unit filter
+  const handleSearch = (term, category, unit = "") => {
+    console.log("🔍 SEARCH: Term:", term, "Category:", category, "Unit:", unit);
     setSearchTerm(term);
     setSelectedCategory(category);
+    setSelectedUnit(unit);
   };
 
   // Handle sort changes
@@ -197,12 +216,19 @@ export default function ProductsPage() {
     setSortOrder(order);
   };
 
+  // Clear all filters
+  const handleClearFilters = () => {
+    setSearchTerm("");
+    setSelectedCategory("");
+    setSelectedUnit("");
+  };
+
   // Apply filters and sorting whenever relevant states change
   useEffect(() => {
     if (products.length > 0) {
       applyFiltersAndSorting(products);
     }
-  }, [searchTerm, selectedCategory, sortBy, sortOrder, products]);
+  }, [searchTerm, selectedCategory, selectedUnit, sortBy, sortOrder, products]);
 
   const handleAddProduct = () => {
     setSelectedProduct(null);
@@ -222,14 +248,10 @@ export default function ProductsPage() {
     }
   };
 
-  // UPDATED: handleSave function with proper lowStockThreshold handling
+  // Updated handleSave function with packaging data
   const handleSave = async (productData, imageFile) => {
     try {
-      console.log("🟡 [ProductsPage] RECEIVED PRODUCT DATA:", {
-        ...productData,
-        lowStockThreshold: productData.lowStockThreshold,
-        lowStockThresholdType: typeof productData.lowStockThreshold,
-      });
+      console.log("🟡 [ProductsPage] RECEIVED PRODUCT DATA:", productData);
 
       let imageUrl = selectedProduct?.imageUrl || "";
 
@@ -243,29 +265,37 @@ export default function ProductsPage() {
         imageUrl = await getDownloadURL(storageRef);
       }
 
-      // Build the product payload - MAKE SURE lowStockThreshold is included
+      // Enhanced product payload with packaging
       const productPayload = {
         name: productData.name,
-        description: productData.description || "",
         price: Number(productData.price),
+        costPrice: productData.costPrice ? Number(productData.costPrice) : null,
         stock: Number(productData.stock),
         category: productData.category || "none",
         barcode: productData.barcode || "",
+        unit: productData.unit || "piece",
         imageUrl,
+        sold: selectedProduct?.sold || 0,
+        lowStockThreshold:
+          productData.lowStockThreshold !== undefined
+            ? productData.lowStockThreshold
+            : null,
+
+        // Packaging fields
+        packagingType: productData.packagingType || "single",
+        piecesPerPackage: productData.piecesPerPackage || 1,
+        parentProductId: productData.parentProductId || null,
+        isBulkPackage: productData.packagingType === "bulk",
+
         updatedAt: new Date(),
       };
-
-      // CRITICAL: Add lowStockThreshold to payload (can be null, number, or undefined)
-      if (productData.lowStockThreshold !== undefined) {
-        productPayload.lowStockThreshold = productData.lowStockThreshold;
-      } else {
-        productPayload.lowStockThreshold = null;
-      }
 
       console.log("🟡 [ProductsPage] FINAL FIREBASE PAYLOAD:", productPayload);
 
       if (selectedProduct) {
         console.log("🟡 UPDATING EXISTING PRODUCT:", selectedProduct.id);
+        // Keep the sold count from existing product
+        productPayload.sold = selectedProduct.sold || 0;
         await updateDoc(
           doc(db, "products", selectedProduct.id),
           productPayload
@@ -274,6 +304,7 @@ export default function ProductsPage() {
       } else {
         console.log("🟡 CREATING NEW PRODUCT");
         productPayload.createdAt = new Date();
+        productPayload.sold = 0;
         await addDoc(collection(db, "products"), productPayload);
         console.log("🟢 PRODUCT CREATED IN FIREBASE");
       }
@@ -291,112 +322,177 @@ export default function ProductsPage() {
     }
   };
 
+  const handleCloseForm = () => {
+    setShowForm(false);
+    setSelectedProduct(null);
+  };
+
   return (
     <div className="page-container">
       <Sidebar />
       <div className={`products-page ${isCollapsed ? "collapsed" : ""}`}>
         <Header />
-        <div className="products-content">
-          {/* Updated Header Section - Matching Analytics Style */}
-          <div className="products-header">
-            <div className="header-content">
-              <h1>Products Management</h1>
-              <p>Manage your product inventory and details</p>
-            </div>
 
-            <div className="header-actions">
-              <button className="add-product-btn" onClick={handleAddProduct}>
-                Add Product
-              </button>
-            </div>
-          </div>
-
-          {/* Search and Filters Section */}
-          <div className="search-filters-section">
-            <ProductSearch onSearch={handleSearch} categories={categories} />
-
-            {(searchTerm || selectedCategory) && (
-              <button
-                className="clear-filters-btn"
-                onClick={() => handleSearch("", "")}
-              >
-                Clear Filters
-              </button>
-            )}
-          </div>
-
-          {/* Controls Bar - Updated Style */}
-          <div className="products-controls-bar">
-            <div className="control-group">
-              <label>
-                <FontAwesomeIcon icon={faSort} />
-                Sort by:
-              </label>
-              <select
-                value={sortBy}
-                onChange={(e) => handleSortChange(e.target.value)}
-                className="control-select"
-              >
-                <option value="name">Name</option>
-                <option value="price">Price</option>
-                <option value="category">Category</option>
-                <option value="stock">Stock</option>
-                <option value="sold">Sold</option>
-                <option value="lowStockThreshold">Low Stock Threshold</option>
-              </select>
-              <select
-                value={sortOrder}
-                onChange={(e) => handleSortOrderChange(e.target.value)}
-                className="control-select"
-              >
-                <option value="asc">Ascending</option>
-                <option value="desc">Descending</option>
-              </select>
-            </div>
-
-            <div className="products-count">
-              <span>{filteredProducts.length} products</span>
-            </div>
-          </div>
-
-          {/* Products List */}
-          <div className="products-list-container">
-            <ProductList
-              products={filteredProducts}
-              onEdit={handleEditProduct}
-              onDelete={handleDeleteProduct}
-              highlightedProductId={highlightedProductId}
-            />
-          </div>
-
-          {/* FAB Button */}
-          <button className="fab" onClick={handleAddProduct}>
-            +
-          </button>
-
-          {/* Product Form Modal */}
-          {showForm && (
-            <div className="product-form-container">
-              <div className="modal-overlay">
-                <div className="modal">
-                  <button
-                    className="close-btn"
-                    onClick={() => setShowForm(false)}
-                  >
-                    ✕
-                  </button>
-                  <div className="form-container">
-                    <ProductForm
-                      selectedProduct={selectedProduct}
-                      onSave={handleSave}
-                      onClose={() => setShowForm(false)}
-                    />
-                  </div>
-                </div>
+        {/* Show either the form or the products list */}
+        {showForm ? (
+          // Full-page form layout - FIXED: Added products-content class
+          <div className="product-form-fullpage products-content">
+            <div className="form-header">
+              <div className="header-content">
+                <h1>{selectedProduct ? "Edit Product" : "Add New Product"}</h1>
+                <p>
+                  {selectedProduct
+                    ? "Update the product details below"
+                    : "Fill in the details to add a new product to your inventory"}
+                </p>
+              </div>
+              <div className="header-actions">
+                <button className="back-btn" onClick={handleCloseForm}>
+                  ← Back to Products
+                </button>
               </div>
             </div>
-          )}
-        </div>
+
+            <div className="form-content">
+              <ProductForm
+                selectedProduct={selectedProduct}
+                onSave={handleSave}
+                onClose={handleCloseForm}
+                isFullPage={true}
+                allProducts={products} // Pass all products for packaging relationships
+              />
+            </div>
+          </div>
+        ) : (
+          // Main content with tabs
+          <div className="products-content">
+            {/* Tab Navigation */}
+            <div className="products-tabs">
+              <button
+                className={`tab-button ${
+                  activeTab === "products" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("products")}
+              >
+                Products List
+              </button>
+              <button
+                className={`tab-button ${
+                  activeTab === "packaging" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("packaging")}
+              >
+                Packaging Management
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            {activeTab === "products" ? (
+              <>
+                <div className="products-header">
+                  <div className="header-content">
+                    <h1>Products Management</h1>
+                    <p>Manage your product inventory and details</p>
+                  </div>
+
+                  <div className="header-actions">
+                    <button
+                      className="add-product-btn"
+                      onClick={handleAddProduct}
+                    >
+                      Add Product
+                    </button>
+                  </div>
+                </div>
+
+                {/* Search and Filters Section */}
+                <div className="search-filters-section">
+                  <ProductSearch
+                    onSearch={handleSearch}
+                    categories={categories}
+                    units={units}
+                    selectedCategory={selectedCategory}
+                    selectedUnit={selectedUnit}
+                  />
+
+                  {(searchTerm || selectedCategory || selectedUnit) && (
+                    <button
+                      className="clear-filters-btn"
+                      onClick={handleClearFilters}
+                    >
+                      Clear All Filters
+                    </button>
+                  )}
+                </div>
+
+                {/* Controls Bar */}
+                <div className="products-controls-bar">
+                  <div className="control-group">
+                    <label>
+                      <FontAwesomeIcon icon={faSort} />
+                      Sort by:
+                    </label>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => handleSortChange(e.target.value)}
+                      className="control-select"
+                    >
+                      <option value="name">Name</option>
+                      <option value="price">Selling Price</option>
+                      <option value="costPrice">Cost Price</option>
+                      <option value="category">Category</option>
+                      <option value="unit">Unit</option>
+                      <option value="packagingType">Packaging Type</option>
+                      <option value="piecesPerPackage">
+                        Pieces per Package
+                      </option>
+                      <option value="stock">Stock</option>
+                      <option value="sold">Sold</option>
+                      <option value="lowStockThreshold">
+                        Low Stock Threshold
+                      </option>
+                    </select>
+                    <select
+                      value={sortOrder}
+                      onChange={(e) => handleSortOrderChange(e.target.value)}
+                      className="control-select"
+                    >
+                      <option value="asc">Ascending</option>
+                      <option value="desc">Descending</option>
+                    </select>
+                  </div>
+
+                  <div className="products-count">
+                    <span>{filteredProducts.length} products</span>
+                    {(selectedCategory || selectedUnit) && (
+                      <span className="filter-info">
+                        {selectedCategory && ` • ${selectedCategory}`}
+                        {selectedUnit && ` • ${selectedUnit}`}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Products List */}
+                <div className="products-list-container">
+                  <ProductList
+                    products={filteredProducts}
+                    onEdit={handleEditProduct}
+                    onDelete={handleDeleteProduct}
+                    highlightedProductId={highlightedProductId}
+                  />
+                </div>
+
+                {/* FAB Button */}
+                <button className="fab" onClick={handleAddProduct}>
+                  +
+                </button>
+              </>
+            ) : (
+              <PackagingManager products={products} onUpdate={fetchProducts} />
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

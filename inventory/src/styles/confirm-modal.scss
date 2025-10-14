@@ -1,59 +1,412 @@
+// confirm-modal.scss
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 2000;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: overlayFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  // Theme variables
+  --modal-bg: var(--bg-secondary);
+  --modal-text: var(--text-primary);
+  --modal-border: var(--border-color);
+  --modal-shadow: rgba(0, 0, 0, 0.2);
+  --danger-color: #dc3545;
+  --danger-hover: #c82333;
+  --warning-color: #ffc107;
+  --warning-hover: #e0a800;
+  --success-color: #28a745;
+  --success-hover: #218838;
+  --secondary-color: #6c757d;
+  --secondary-hover: #545b62;
 }
 
 .modal {
-  background: white;
-  padding: 2rem;
-  border-radius: 10px;
+  background: var(--modal-bg);
+  padding: 2.5rem;
+  border-radius: 16px;
   text-align: center;
-  width: 300px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  width: 90%;
+  max-width: 420px;
+  box-shadow: 0 20px 60px var(--modal-shadow),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  border: 1px solid var(--modal-border);
+  animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(
+      90deg,
+      var(--accent-color),
+      var(--accent-hover)
+    );
+  }
 
   h3 {
+    margin-bottom: 1.25rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--modal-text);
+    background: linear-gradient(
+      135deg,
+      var(--accent-color),
+      var(--accent-hover)
+    );
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  p {
     margin-bottom: 1.5rem;
-    font-size: 1.2rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    font-size: 1rem;
+  }
+
+  .modal-extra {
+    margin: 1.5rem 0;
+    padding: 1.25rem;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    border-left: 4px solid var(--accent-color);
+    text-align: left;
+
+    .order-cancel-details {
+      p {
+        margin: 0.5rem 0;
+        font-size: 0.9rem;
+
+        strong {
+          color: var(--modal-text);
+          font-weight: 600;
+        }
+      }
+    }
+
+    .warning-text {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: var(--danger-color);
+      font-weight: 600;
+      margin: 1rem 0 0 0;
+      padding: 0.75rem;
+      background: rgba(220, 53, 69, 0.1);
+      border-radius: 8px;
+      border-left: 3px solid var(--danger-color);
+
+      svg {
+        color: var(--danger-color);
+        font-size: 1.1rem;
+        flex-shrink: 0;
+      }
+    }
   }
 
   .modal-actions {
     display: flex;
-    justify-content: space-around;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
 
     .btn-confirm,
     .btn-cancel {
-      margin-top: 1rem;
-      padding: 0.5rem 1rem;
+      padding: 0.875rem 2rem;
       border: none;
-      border-radius: 5px;
+      border-radius: 10px;
       cursor: pointer;
-      font-weight: bold;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      min-width: 120px;
+
+      &::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        transition: all 0.3s ease;
+        transform: translate(-50%, -50%);
+      }
+
+      &:hover::before {
+        width: 300px;
+        height: 300px;
+      }
+
+      &:active {
+        transform: translateY(1px);
+        transition: transform 0.1s ease;
+      }
     }
 
     .btn-confirm {
-      background: #d9534f;
+      background: linear-gradient(
+        135deg,
+        var(--danger-color),
+        var(--danger-hover)
+      );
       color: white;
+      box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
 
       &:hover {
-        background: #c9302c;
+        background: linear-gradient(
+          135deg,
+          var(--danger-hover),
+          var(--danger-color)
+        );
+        box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+        transform: translateY(-2px);
       }
     }
 
     .btn-cancel {
-      background: #ccc;
-      color: #333;
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      border: 1px solid var(--modal-border);
+      box-shadow: 0 2px 8px var(--modal-shadow);
 
       &:hover {
-        background: #999;
+        background: var(--modal-border);
+        color: var(--modal-text);
+        box-shadow: 0 4px 15px var(--modal-shadow);
+        transform: translateY(-2px);
       }
     }
+
+    // For different modal types
+    &.actions-warning .btn-confirm {
+      background: linear-gradient(
+        135deg,
+        var(--warning-color),
+        var(--warning-hover)
+      );
+      color: #212529;
+      box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+
+      &:hover {
+        background: linear-gradient(
+          135deg,
+          var(--warning-hover),
+          var(--warning-color)
+        );
+        box-shadow: 0 6px 20px rgba(255, 193, 7, 0.4);
+      }
+    }
+
+    &.actions-success .btn-confirm {
+      background: linear-gradient(
+        135deg,
+        var(--success-color),
+        var(--success-hover)
+      );
+      box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+
+      &:hover {
+        background: linear-gradient(
+          135deg,
+          var(--success-hover),
+          var(--success-color)
+        );
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+      }
+    }
+  }
+}
+
+// Dark mode specific adjustments
+[data-theme="dark"] {
+  .modal-overlay {
+    --modal-shadow: rgba(0, 0, 0, 0.4);
+
+    .modal {
+      box-shadow: 0 20px 60px var(--modal-shadow),
+        0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+
+      .modal-extra {
+        background: rgba(255, 255, 255, 0.05);
+        border-left-color: var(--accent-color);
+
+        .warning-text {
+          background: rgba(220, 53, 69, 0.15);
+        }
+      }
+
+      .btn-cancel {
+        background: rgba(255, 255, 255, 0.1);
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.2);
+        }
+      }
+    }
+  }
+}
+
+// Animations
+@keyframes overlayFadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes modalSlideIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+// Mobile responsiveness
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 1rem;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .modal {
+    padding: 2rem 1.5rem;
+    width: 95%;
+    max-width: 350px;
+    border-radius: 12px;
+
+    h3 {
+      font-size: 1.3rem;
+    }
+
+    p {
+      font-size: 0.95rem;
+    }
+
+    .modal-actions {
+      flex-direction: column-reverse;
+      gap: 0.75rem;
+
+      .btn-confirm,
+      .btn-cancel {
+        width: 100%;
+        padding: 1rem 1.5rem;
+        min-width: auto;
+      }
+    }
+
+    .modal-extra {
+      padding: 1rem;
+      margin: 1.25rem 0;
+
+      .order-cancel-details p {
+        font-size: 0.85rem;
+      }
+
+      .warning-text {
+        padding: 0.625rem;
+        font-size: 0.9rem;
+      }
+    }
+  }
+}
+
+// Small mobile devices
+@media (max-width: 480px) {
+  .modal {
+    padding: 1.75rem 1.25rem;
+
+    h3 {
+      font-size: 1.2rem;
+    }
+
+    p {
+      font-size: 0.9rem;
+    }
+  }
+}
+
+// Enhanced modal types for different use cases
+.modal-overlay.confirm-danger .modal::before {
+  background: linear-gradient(90deg, var(--danger-color), var(--danger-hover));
+}
+
+.modal-overlay.confirm-warning .modal::before {
+  background: linear-gradient(
+    90deg,
+    var(--warning-color),
+    var(--warning-hover)
+  );
+}
+
+.modal-overlay.confirm-success .modal::before {
+  background: linear-gradient(
+    90deg,
+    var(--success-color),
+    var(--success-hover)
+  );
+}
+
+// Loading state for buttons
+.btn-confirm.loading,
+.btn-cancel.loading {
+  position: relative;
+  color: transparent !important;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: buttonSpin 0.8s linear infinite;
+  }
+}
+
+.btn-confirm.loading::after {
+  border-top-color: white;
+}
+
+.btn-cancel.loading::after {
+  border-top-color: var(--text-secondary);
+}
+
+@keyframes buttonSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
   }
 }
