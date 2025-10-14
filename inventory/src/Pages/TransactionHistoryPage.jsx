@@ -7,6 +7,8 @@ import {
   deleteDoc,
   doc,
   writeBatch,
+  updateDoc,
+  increment,
 } from "firebase/firestore";
 import { db } from "../Firebase/firebase";
 import Sidebar from "../components/UI/Sidebar";
@@ -28,7 +30,9 @@ import {
   faEye,
   faUndo,
   faExclamationTriangle,
+  faTimesCircle,
 } from "@fortawesome/free-solid-svg-icons";
+import ConfirmModal from "../components/UI/ConfirmModal"; // Import the modal
 import "../styles/transaction.scss";
 
 export default function TransactionHistory() {
@@ -43,6 +47,11 @@ export default function TransactionHistory() {
   const [loading, setLoading] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [highlightedOrderId, setHighlightedOrderId] = useState(null);
+
+  // New state for modals
+  const [cancelModal, setCancelModal] = useState(null);
+  const [deleteModal, setDeleteModal] = useState(null);
+  const [restoreStockModal, setRestoreStockModal] = useState(null);
 
   const orderRefs = useRef({});
 
@@ -74,7 +83,6 @@ export default function TransactionHistory() {
   useEffect(() => {
     if (location.state?.highlightedOrder) {
       setHighlightedOrderId(location.state.highlightedOrder);
-
       // Clear the state to prevent re-highlighting on refresh
       window.history.replaceState({}, document.title);
     }
@@ -108,34 +116,59 @@ export default function TransactionHistory() {
     }
   }, [highlightedOrderId, loading]);
 
-  const handleDeleteOrder = async (orderId) => {
-    if (
-      !window.confirm(
-        "Are you sure you want to delete this transaction? This action cannot be undone."
-      )
-    ) {
-      return;
-    }
+  const handleCancelOrder = async (order) => {
+    try {
+      const batch = writeBatch(db);
 
+      // Restock all items in the order
+      order.items.forEach((item) => {
+        const productRef = doc(db, "products", item.id);
+        // Restore stock and adjust sold count
+        batch.update(productRef, {
+          stock: increment(item.quantity),
+          sold: increment(-item.quantity),
+        });
+      });
+
+      // Update order status to "cancelled"
+      const orderRef = doc(db, "orders", order.id);
+      batch.update(orderRef, {
+        status: "cancelled",
+        cancelledAt: new Date(),
+      });
+
+      await batch.commit();
+
+      // Update local state
+      setOrders(
+        orders.map((o) =>
+          o.id === order.id
+            ? { ...o, status: "cancelled", cancelledAt: new Date() }
+            : o
+        )
+      );
+
+      setCancelModal(null);
+    } catch (err) {
+      console.error("Error cancelling order:", err);
+      alert("Failed to cancel order. Please try again.");
+      setCancelModal(null);
+    }
+  };
+
+  const handleDeleteOrder = async (orderId) => {
     try {
       await deleteDoc(doc(db, "orders", orderId));
       setOrders(orders.filter((order) => order.id !== orderId));
-      alert("Transaction deleted successfully!");
+      setDeleteModal(null);
     } catch (err) {
       console.error("Error deleting order:", err);
       alert("Failed to delete transaction. Please try again.");
+      setDeleteModal(null);
     }
   };
 
   const handleRestoreStock = async (order) => {
-    if (
-      !window.confirm(
-        "Restore stock levels for this order? This will add back the quantities to inventory."
-      )
-    ) {
-      return;
-    }
-
     try {
       const batch = writeBatch(db);
 
@@ -149,10 +182,11 @@ export default function TransactionHistory() {
       });
 
       await batch.commit();
-      alert("Stock restored successfully!");
+      setRestoreStockModal(null);
     } catch (err) {
       console.error("Error restoring stock:", err);
       alert("Failed to restore stock. Please try again.");
+      setRestoreStockModal(null);
     }
   };
 
@@ -169,13 +203,27 @@ export default function TransactionHistory() {
             .items { width: 100%; border-collapse: collapse; margin: 20px 0; }
             .items th, .items td { border: 1px solid #ddd; padding: 8px; text-align: left; }
             .total { font-weight: bold; font-size: 1.2em; margin-top: 20px; }
+            .status { color: ${
+              order.status === "cancelled" ? "#dc3545" : "#28a745"
+            }; font-weight: bold; }
             @media print { body { margin: 0; } }
           </style>
         </head>
         <body>
           <div class="header">
             <h2>ORDER RECEIPT</h2>
-            <p>Order ID: ${order.id}</p>
+            <p>Order ID: ${order.id.slice(-8)}</p>
+            <p class="status">Status: ${
+              order.status?.toUpperCase() || "COMPLETED"
+            }</p>
+            ${
+              order.status === "cancelled"
+                ? `<p><strong>Cancelled:</strong> ${
+                    order.cancelledAt?.toLocaleString?.() ||
+                    new Date().toLocaleString()
+                  }</p>`
+                : ""
+            }
           </div>
           <div class="info">
             <p><strong>Date:</strong> ${order.createdAt.toLocaleString()}</p>
@@ -211,6 +259,11 @@ export default function TransactionHistory() {
             <p>Total Items: ${order.totalItems}</p>
             <p>Total Amount: ₱${order.totalAmount.toFixed(2)}</p>
           </div>
+          ${
+            order.status === "cancelled"
+              ? '<div style="color: #dc3545; text-align: center; margin-top: 20px; border: 2px solid #dc3545; padding: 10px;"><strong>ORDER CANCELLED</strong></div>'
+              : ""
+          }
         </body>
       </html>
     `;
@@ -323,10 +376,10 @@ export default function TransactionHistory() {
   // Apply filters and sorting whenever relevant states change
   const filteredOrders = applyFiltersAndSorting(orders);
 
-  const totalRevenue = orders.reduce(
-    (sum, order) => sum + order.totalAmount,
-    0
-  );
+  const totalRevenue = orders
+    .filter((order) => order.status !== "cancelled")
+    .reduce((sum, order) => sum + order.totalAmount, 0);
+
   const totalTransactions = orders.length;
 
   return (
@@ -366,8 +419,17 @@ export default function TransactionHistory() {
                 <FontAwesomeIcon icon={faBox} />
               </div>
               <div className="stat-info">
-                <h3>₱{(totalRevenue / totalTransactions || 0).toFixed(2)}</h3>
+                <h3>₱{(totalRevenue / (totalTransactions || 1)).toFixed(2)}</h3>
                 <p>Average Order Value</p>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon cancelled-orders">
+                <FontAwesomeIcon icon={faTimesCircle} />
+              </div>
+              <div className="stat-info">
+                <h3>{orders.filter((o) => o.status === "cancelled").length}</h3>
+                <p>Cancelled Orders</p>
               </div>
             </div>
           </div>
@@ -384,6 +446,19 @@ export default function TransactionHistory() {
             </div>
 
             <div className="filter-controls">
+              <div className="filter-group">
+                <FontAwesomeIcon icon={faFilter} />
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="control-select"
+                >
+                  <option value="all">All Status</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+
               <div className="filter-group">
                 <FontAwesomeIcon icon={faSort} />
                 <select
@@ -424,12 +499,15 @@ export default function TransactionHistory() {
                   ref={(el) => (orderRefs.current[order.id] = el)}
                   className={`transaction-card ${
                     highlightedOrderId === order.id ? "highlighted-order" : ""
-                  }`}
+                  } ${order.status === "cancelled" ? "cancelled-order" : ""}`}
                 >
                   <div className="transaction-header">
                     <div className="order-info">
                       <span className="order-id">
                         Order #{order.id.slice(-8)}
+                        {order.status === "cancelled" && (
+                          <span className="cancelled-badge">CANCELLED</span>
+                        )}
                       </span>
                       <span
                         className={`status-badge ${
@@ -440,6 +518,15 @@ export default function TransactionHistory() {
                       </span>
                     </div>
                     <div className="order-actions">
+                      {order.status !== "cancelled" && (
+                        <button
+                          className="action-btn cancel-btn"
+                          onClick={() => setCancelModal(order)}
+                          title="Cancel Order"
+                        >
+                          <FontAwesomeIcon icon={faTimesCircle} />
+                        </button>
+                      )}
                       <button
                         className="action-btn print-btn"
                         onClick={() => printReceipt(order)}
@@ -457,7 +544,7 @@ export default function TransactionHistory() {
 
                       <button
                         className="action-btn delete-btn"
-                        onClick={() => handleDeleteOrder(order.id)}
+                        onClick={() => setDeleteModal(order)}
                         title="Delete Transaction"
                       >
                         <FontAwesomeIcon icon={faTrash} />
@@ -480,7 +567,15 @@ export default function TransactionHistory() {
                         <span>{order.totalItems} items</span>
                       </div>
                       <div className="detail-item">
-                        <span>₱{order.totalAmount.toFixed(2)}</span>
+                        <span
+                          className={
+                            order.status === "cancelled"
+                              ? "cancelled-amount"
+                              : ""
+                          }
+                        >
+                          ₱{order.totalAmount.toFixed(2)}
+                        </span>
                       </div>
                     </div>
 
@@ -504,6 +599,7 @@ export default function TransactionHistory() {
             </div>
           )}
 
+          {/* Order Details Modal */}
           {selectedOrder && (
             <div className="modal-overlay">
               <div className="modal-content">
@@ -537,6 +633,16 @@ export default function TransactionHistory() {
                         {selectedOrder.status || "completed"}
                       </span>
                     </div>
+                    {selectedOrder.status === "cancelled" &&
+                      selectedOrder.cancelledAt && (
+                        <div className="detail-row">
+                          <span>Cancelled:</span>
+                          <span>
+                            {selectedOrder.cancelledAt.toLocaleString?.() ||
+                              new Date().toLocaleString()}
+                          </span>
+                        </div>
+                      )}
                   </div>
 
                   <div className="items-list">
@@ -562,7 +668,15 @@ export default function TransactionHistory() {
                     </div>
                     <div className="total-row grand-total">
                       <span>Total Amount:</span>
-                      <span>₱{selectedOrder.totalAmount.toFixed(2)}</span>
+                      <span
+                        className={
+                          selectedOrder.status === "cancelled"
+                            ? "cancelled-amount"
+                            : ""
+                        }
+                      >
+                        ₱{selectedOrder.totalAmount.toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -573,6 +687,17 @@ export default function TransactionHistory() {
                   >
                     Close
                   </button>
+                  {selectedOrder.status !== "cancelled" && (
+                    <button
+                      className="btn-warning"
+                      onClick={() => {
+                        setCancelModal(selectedOrder);
+                        setSelectedOrder(null);
+                      }}
+                    >
+                      Cancel Order
+                    </button>
+                  )}
                   <button
                     className="btn-primary"
                     onClick={() => printReceipt(selectedOrder)}
@@ -583,15 +708,102 @@ export default function TransactionHistory() {
               </div>
             </div>
           )}
+
+          {/* Cancel Order Confirmation Modal */}
+          {cancelModal && (
+            <ConfirmModal
+              message={
+                <div>
+                  <h3>Cancel Order</h3>
+                  <p>Are you sure you want to cancel this order?</p>
+                  <div className="order-cancel-details">
+                    <p>
+                      <strong>Order ID:</strong> {cancelModal.id.slice(-8)}
+                    </p>
+                    <p>
+                      <strong>Customer:</strong>{" "}
+                      {cancelModal.customerName || "Walk-in Customer"}
+                    </p>
+                    <p>
+                      <strong>Total Amount:</strong> ₱
+                      {cancelModal.totalAmount.toFixed(2)}
+                    </p>
+                    <p>
+                      <strong>Items:</strong> {cancelModal.totalItems} items
+                    </p>
+                  </div>
+                  <p className="warning-text">
+                    <FontAwesomeIcon icon={faExclamationTriangle} />
+                    This will restock all items and cannot be undone.
+                  </p>
+                </div>
+              }
+              onConfirm={() => handleCancelOrder(cancelModal)}
+              onCancel={() => setCancelModal(null)}
+            />
+          )}
+
+          {/* Delete Order Confirmation Modal */}
+          {deleteModal && (
+            <ConfirmModal
+              message={
+                <div>
+                  <h3>Delete Transaction</h3>
+                  <p>Are you sure you want to delete this transaction?</p>
+                  <div className="order-cancel-details">
+                    <p>
+                      <strong>Order ID:</strong> {deleteModal.id.slice(-8)}
+                    </p>
+                    <p>
+                      <strong>Customer:</strong>{" "}
+                      {deleteModal.customerName || "Walk-in Customer"}
+                    </p>
+                    <p>
+                      <strong>Total Amount:</strong> ₱
+                      {deleteModal.totalAmount.toFixed(2)}
+                    </p>
+                  </div>
+                  <p className="warning-text">
+                    <FontAwesomeIcon icon={faExclamationTriangle} />
+                    This action cannot be undone.
+                  </p>
+                </div>
+              }
+              onConfirm={() => handleDeleteOrder(deleteModal.id)}
+              onCancel={() => setDeleteModal(null)}
+            />
+          )}
+
+          {/* Restore Stock Confirmation Modal */}
+          {restoreStockModal && (
+            <ConfirmModal
+              message={
+                <div>
+                  <h3>Restore Stock</h3>
+                  <p>Restore stock levels for this order?</p>
+                  <div className="order-cancel-details">
+                    <p>
+                      <strong>Order ID:</strong>{" "}
+                      {restoreStockModal.id.slice(-8)}
+                    </p>
+                    <p>
+                      <strong>Customer:</strong>{" "}
+                      {restoreStockModal.customerName || "Walk-in Customer"}
+                    </p>
+                    <p>
+                      <strong>Items to restock:</strong>{" "}
+                      {restoreStockModal.totalItems} items
+                    </p>
+                  </div>
+                  <p>This will add back the quantities to inventory.</p>
+                </div>
+              }
+              onConfirm={() => handleRestoreStock(restoreStockModal)}
+              onCancel={() => setRestoreStockModal(null)}
+            />
+          )}
         </div>
       </div>
     </div>
   );
 }
-
-// Helper function for Firestore increment
-const increment = (n) => {
-  return {
-    increment: n,
-  };
-};

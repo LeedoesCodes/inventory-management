@@ -1,10 +1,19 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, {
+  useState,
+  useEffect,
+  useContext,
+  useCallback,
+  useMemo,
+} from "react";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "../Firebase/firebase";
 import { AuthContext } from "../context/AuthContext";
 import { useSidebar } from "../context/SidebarContext";
 import Header from "../components/UI/Headers";
 import "../styles/analytics.scss";
+
+// Custom hooks
+import { useDebounce } from "../hooks/useDebounce";
 
 // FontAwesome imports
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -20,27 +29,37 @@ import {
   faSpinner,
   faExclamationTriangle,
   faFilter,
-  faChartArea, // Use this instead of faCompare
+  faChartArea,
 } from "@fortawesome/free-solid-svg-icons";
 
+// Chart components
 import RevenueChart from "../components/Analytics/RevenueChart";
 import SalesTrendChart from "../components/Analytics/SalesTrendChart";
 import ProductPerformance from "../components/Analytics/ProductPerformance";
-import ProductComparisonChart from "../components/Analytics/ProductComparisonChart"; // New component
+import ProductComparisonChart from "../components/Analytics/ProductComparisonChart";
 import DummyDataButton from "../components/Analytics/DummyDataButton";
 
 export default function Analytics() {
   const { isCollapsed } = useSidebar();
   const { user } = useContext(AuthContext);
   const [timeRange, setTimeRange] = useState("all");
+
+  // Debounce sidebar collapse to prevent excessive re-renders
+  const debouncedIsCollapsed = useDebounce(isCollapsed, 300);
+
   const [analyticsData, setAnalyticsData] = useState({
     revenueData: [],
     salesTrends: [],
     topProducts: [],
-    allProducts: [], // Added for product comparison
+    allProducts: [],
     loading: true,
     error: null,
   });
+
+  // Memoized time range handler
+  const handleTimeRangeChange = useCallback((e) => {
+    setTimeRange(e.target.value);
+  }, []);
 
   const fetchAnalyticsData = async () => {
     try {
@@ -77,13 +96,13 @@ export default function Analytics() {
       const revenueData = processRevenueData(transactions, timeRange);
       const salesTrends = processSalesTrends(transactions, timeRange);
       const topProducts = processTopProducts(transactions, products, timeRange);
-      const allProducts = processAllProducts(transactions, products, timeRange); // New function
+      const allProducts = processAllProducts(transactions, products, timeRange);
 
       setAnalyticsData({
         revenueData,
         salesTrends,
         topProducts,
-        allProducts, // Add to state
+        allProducts,
         loading: false,
         error: null,
       });
@@ -97,7 +116,7 @@ export default function Analytics() {
     }
   };
 
-  // New function: Process all products for comparison
+  // Process all products for comparison
   const processAllProducts = (transactions, products, range) => {
     const filteredTransactions = filterTransactionsByTimeRange(
       transactions,
@@ -155,7 +174,7 @@ export default function Analytics() {
     }));
   };
 
-  // Rest of your existing functions (filterTransactionsByTimeRange, processRevenueData, etc.)
+  // Filter transactions by time range
   const filterTransactionsByTimeRange = (transactions, range) => {
     const now = new Date();
     let startDate;
@@ -276,15 +295,21 @@ export default function Analytics() {
     };
   };
 
+  // Memoize summary metrics to prevent recalculation on every render
+  const summaryMetrics = useMemo(() => {
+    return calculateSummaryMetrics();
+  }, [analyticsData]);
+
   useEffect(() => {
     fetchAnalyticsData();
   }, [timeRange]);
 
-  const summaryMetrics = calculateSummaryMetrics();
-
+  // Loading state
   if (analyticsData.loading) {
     return (
-      <div className={`analytics-page ${isCollapsed ? "collapsed" : ""}`}>
+      <div
+        className={`analytics-page ${debouncedIsCollapsed ? "collapsed" : ""}`}
+      >
         <Header />
         <div className="analytics-content">
           <div className="loading-state">
@@ -300,9 +325,12 @@ export default function Analytics() {
     );
   }
 
+  // Error state
   if (analyticsData.error) {
     return (
-      <div className={`analytics-page ${isCollapsed ? "collapsed" : ""}`}>
+      <div
+        className={`analytics-page ${debouncedIsCollapsed ? "collapsed" : ""}`}
+      >
         <Header />
         <div className="analytics-content">
           <div className="error-state">
@@ -321,7 +349,9 @@ export default function Analytics() {
   }
 
   return (
-    <div className={`analytics-page ${isCollapsed ? "collapsed" : ""}`}>
+    <div
+      className={`analytics-page ${debouncedIsCollapsed ? "collapsed" : ""}`}
+    >
       <Header />
 
       <div className="analytics-content">
@@ -339,7 +369,7 @@ export default function Analytics() {
             <select
               id="time-range"
               value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
+              onChange={handleTimeRangeChange}
             >
               <option value="7days">Last 7 Days</option>
               <option value="30days">Last 30 Days</option>
@@ -409,8 +439,7 @@ export default function Analytics() {
             <RevenueChart data={analyticsData.revenueData} />
           </div>
 
-          {/* NEW: Product Comparison Chart */}
-          {/* NEW: Product Comparison Chart */}
+          {/* Product Comparison Chart */}
           <div className="analytics-card full-width">
             <div className="card-header">
               <span className="chart-subtitle"></span>
@@ -420,6 +449,7 @@ export default function Analytics() {
               timeRange={timeRange}
             />
           </div>
+
           {/* Sales Trends */}
           <div className="analytics-card">
             <div className="card-header">

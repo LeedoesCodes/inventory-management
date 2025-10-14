@@ -22,11 +22,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSearch,
   faSort,
-  faEye,
-  faEyeSlash,
   faShoppingCart,
   faExclamationTriangle,
-  faTimes,
 } from "@fortawesome/free-solid-svg-icons";
 import "../styles/orders.scss";
 
@@ -39,7 +36,6 @@ export default function OrdersPage() {
   const [customerName, setCustomerName] = useState("");
   const [sortBy, setSortBy] = useState("name");
   const [sortOrder, setSortOrder] = useState("asc");
-  const [showOutOfStock, setShowOutOfStock] = useState(false);
   const [loading, setLoading] = useState(true);
   const [recentCustomers, setRecentCustomers] = useState([]);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -87,7 +83,7 @@ export default function OrdersPage() {
     }
   };
 
-  // Fixed: Handle barcode scans from the BarcodeScanner component
+  // Simple barcode scanning
   const handleBarcodeScanned = (barcode) => {
     if (!barcode || barcode.trim() === "") return false;
 
@@ -112,7 +108,7 @@ export default function OrdersPage() {
         return false;
       }
 
-      // Always update quantity - this will create or update the cart item
+      // Update cart
       setCart((prev) => ({
         ...prev,
         [product.id]: {
@@ -157,10 +153,13 @@ export default function OrdersPage() {
           totalSpent: 0,
           lastOrderDate: null,
         });
-        console.log("New customer created:", customerName);
+        console.log("✅ New customer created:", customerName);
+      } else {
+        console.log("ℹ️ Customer already exists:", customerName);
       }
     } catch (error) {
-      console.error("Error saving customer data:", error);
+      console.error("❌ Error saving customer data:", error);
+      throw error;
     }
   };
 
@@ -188,9 +187,13 @@ export default function OrdersPage() {
           totalSpent: (customerData.totalSpent || 0) + orderAmount,
           lastOrderDate: new Date(),
         });
+        console.log("✅ Customer stats updated for:", customerName);
+      } else {
+        console.warn("⚠️ Customer not found for stats update:", customerName);
       }
     } catch (error) {
-      console.error("Error updating customer stats:", error);
+      console.error("❌ Error updating customer stats:", error);
+      throw error;
     }
   };
 
@@ -281,7 +284,7 @@ export default function OrdersPage() {
     setSelectedCategory(category);
   };
 
-  // Totals calculation
+  // Simple totals calculation
   const getTotals = () => {
     let totalItems = 0;
     let totalAmount = 0;
@@ -297,6 +300,18 @@ export default function OrdersPage() {
 
   const { totalItems, totalAmount } = getTotals();
 
+  // Simple cart items for FloatingCheckout
+  const cartItems = products
+    .filter((p) => cart[p.id]?.checked)
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      quantity: cart[p.id].quantity,
+      subtotal: p.price * cart[p.id].quantity,
+      productId: p.id,
+    }));
+
   // Checkout functions
   const handleCheckoutClick = () => {
     if (totalItems === 0) {
@@ -304,15 +319,13 @@ export default function OrdersPage() {
       return;
     }
 
-    const orderItems = products
-      .filter((p) => cart[p.id]?.checked)
-      .map((p) => ({
-        id: p.id,
-        name: p.name,
-        price: p.price,
-        quantity: cart[p.id].quantity,
-        subtotal: p.price * cart[p.id].quantity,
-      }));
+    const orderItems = cartItems.map((item) => ({
+      id: item.productId,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      subtotal: item.subtotal,
+    }));
 
     setPendingOrder({
       items: orderItems,
@@ -324,32 +337,60 @@ export default function OrdersPage() {
     setShowConfirmation(true);
   };
 
-  // Fixed: Order confirmation with success animation
+  // Order confirmation with success animation
   const handleConfirmOrder = async () => {
     if (!pendingOrder) return;
 
     try {
+      console.log("🔄 Starting order confirmation process...");
+
       const batch = writeBatch(db);
 
-      // Check stock availability
+      // Check stock availability for all items
+      console.log("📦 Checking stock availability...");
       for (const item of pendingOrder.items) {
         const product = products.find((p) => p.id === item.id);
+
+        if (!product) {
+          const errorMsg = `Product not found: ${item.name} (ID: ${item.id})`;
+          console.error("❌", errorMsg);
+          alert(errorMsg);
+          setShowConfirmation(false);
+          return;
+        }
+
+        console.log(
+          `📊 Product stock: ${product.stock}, requested: ${item.quantity}`
+        );
+
         if (product.stock < item.quantity) {
-          alert(
-            `Not enough stock for ${product.name}. Only ${product.stock} available.`
-          );
+          const errorMsg = `Not enough stock for ${item.name}. Only ${product.stock} available.`;
+          console.error("❌", errorMsg);
+          alert(errorMsg);
           setShowConfirmation(false);
           return;
         }
       }
 
       // Update stock and sold quantities
+      console.log("🔄 Updating stock quantities...");
       pendingOrder.items.forEach((item) => {
         const productRef = doc(db, "products", item.id);
         const currentProduct = products.find((p) => p.id === item.id);
+
+        if (!currentProduct) {
+          console.error(`❌ Product not found for stock update: ${item.id}`);
+          return;
+        }
+
+        // Simple product stock update
         const currentSold = currentProduct.sold || 0;
         const currentStock = currentProduct.stock || 0;
-
+        console.log(
+          `📊 Updating product stock: ${currentStock} -> ${
+            currentStock - item.quantity
+          }`
+        );
         batch.update(productRef, {
           stock: currentStock - item.quantity,
           sold: currentSold + item.quantity,
@@ -361,41 +402,87 @@ export default function OrdersPage() {
         pendingOrder.customerName &&
         pendingOrder.customerName !== "Walk-in Customer"
       ) {
-        await saveCustomerToManagement(pendingOrder.customerName);
+        console.log(
+          `👤 Saving/updating customer: ${pendingOrder.customerName}`
+        );
+        try {
+          await saveCustomerToManagement(pendingOrder.customerName);
+        } catch (customerError) {
+          console.warn(
+            "⚠️ Could not save customer data, but continuing with order:",
+            customerError
+          );
+        }
       }
 
+      console.log("🔥 Committing batch write...");
       await batch.commit();
+      console.log("✅ Batch write committed successfully");
 
       // Create order record
-      await addDoc(collection(db, "orders"), {
+      console.log("📝 Creating order record...");
+      const orderData = {
         customerName: pendingOrder.customerName,
         items: pendingOrder.items,
         totalItems: pendingOrder.totalItems,
         totalAmount: pendingOrder.totalAmount,
         createdAt: new Date(),
         status: "completed",
-      });
+      };
+
+      console.log("Order data:", orderData);
+
+      const orderRef = await addDoc(collection(db, "orders"), orderData);
+      console.log("✅ Order record created with ID:", orderRef.id);
 
       // Update customer stats
       if (
         pendingOrder.customerName &&
         pendingOrder.customerName !== "Walk-in Customer"
       ) {
-        await updateCustomerStats(
-          pendingOrder.customerName,
-          pendingOrder.totalAmount
-        );
+        console.log("📊 Updating customer stats...");
+        try {
+          await updateCustomerStats(
+            pendingOrder.customerName,
+            pendingOrder.totalAmount
+          );
+          console.log("✅ Customer stats updated");
+        } catch (statsError) {
+          console.warn(
+            "⚠️ Could not update customer stats, but order was successful:",
+            statsError
+          );
+        }
       }
 
       // Order completed successfully - Show animation
-      console.log("✅ Order completed successfully!");
+      console.log("🎉 Order completed successfully!");
 
       // Close confirmation dialog and show success animation
       setShowConfirmation(false);
       setShowSuccessAnimation(true);
     } catch (err) {
-      console.error("Checkout error:", err);
-      alert("Something went wrong while completing the order.");
+      console.error("❌ Checkout error:", err);
+      console.error("Error details:", {
+        name: err.name,
+        message: err.message,
+        code: err.code,
+        stack: err.stack,
+      });
+
+      // More specific error messages
+      if (err.code === "permission-denied") {
+        alert("Permission denied. Please check your Firebase security rules.");
+      } else if (err.code === "unavailable") {
+        alert("Network error. Please check your internet connection.");
+      } else if (err.code === "invalid-argument") {
+        alert("Invalid data. Please check the order information.");
+      } else {
+        alert(
+          `Something went wrong while completing the order: ${err.message}`
+        );
+      }
+
       setShowConfirmation(false);
     }
   };
@@ -465,13 +552,18 @@ export default function OrdersPage() {
     }
   }, [cart, showConfirmation, products]);
 
-  // Filter and sort products
+  // Get unique categories from products
+  const categories = [
+    ...new Set(products.map((p) => p.category).filter(Boolean)),
+  ];
+
+  // Filter and sort products (only show in-stock products)
   const filteredAndSortedProducts = products
     .filter((p) => {
       const matchesSearch = p.name.toLowerCase().includes(searchTerm);
       const matchesCategory =
         !selectedCategory || p.category === selectedCategory;
-      const matchesStock = showOutOfStock || p.stock > 0;
+      const matchesStock = p.stock > 0; // Only show products with stock > 0
       return matchesSearch && matchesCategory && matchesStock;
     })
     .sort((a, b) => {
@@ -493,14 +585,6 @@ export default function OrdersPage() {
       }
     });
 
-  const cartItems = products
-    .filter((p) => cart[p.id]?.checked)
-    .map((p) => ({
-      ...p,
-      quantity: cart[p.id].quantity,
-      subtotal: p.price * cart[p.id].quantity,
-    }));
-
   return (
     <div className="page-container">
       <Sidebar />
@@ -510,6 +594,7 @@ export default function OrdersPage() {
         <div className="orders-content">
           <div className="page-header">
             <h2>Create new orders</h2>
+            <p>Select products and manage customer orders</p>
           </div>
 
           {/* Barcode Scanner Component */}
@@ -518,10 +603,25 @@ export default function OrdersPage() {
             products={products}
           />
 
-          <div className="search-container">
-            <ProductSearch onSearch={handleSearch} />
+          {/* Enhanced Search & Filters Section */}
+          <div className="search-filters-section">
+            <ProductSearch
+              onSearch={handleSearch}
+              categories={categories}
+              selectedCategory={selectedCategory}
+            />
+
+            {(searchTerm || selectedCategory) && (
+              <button
+                className="clear-filters-btn"
+                onClick={() => handleSearch("", "")}
+              >
+                Clear Filters
+              </button>
+            )}
           </div>
 
+          {/* Simplified Controls Bar */}
           <div className="controls-bar">
             <div className="control-group">
               <label>
@@ -548,22 +648,17 @@ export default function OrdersPage() {
               </select>
             </div>
 
-            <div className="control-group">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={showOutOfStock}
-                  onChange={(e) => setShowOutOfStock(e.target.checked)}
-                />
-                <FontAwesomeIcon icon={showOutOfStock ? faEye : faEyeSlash} />
-                Show out of stock
-              </label>
-            </div>
-
             <div className="cart-summary-mini">
               <FontAwesomeIcon icon={faShoppingCart} />
               <span>{totalItems} items</span>
               <span className="amount">₱{totalAmount.toFixed(2)}</span>
+            </div>
+
+            <div className="products-count">
+              <span>{filteredAndSortedProducts.length} products</span>
+              {selectedCategory && (
+                <span className="filter-info">• {selectedCategory}</span>
+              )}
             </div>
           </div>
 
@@ -585,14 +680,26 @@ export default function OrdersPage() {
           )}
 
           <div className="products-grid">
-            <h2>Available Products ({filteredAndSortedProducts.length})</h2>
+            <h2>Available Products</h2>
 
             {loading ? (
-              <div className="loading">Loading products...</div>
+              <div className="loading">
+                <FontAwesomeIcon icon={faSearch} size="3x" />
+                <p>Loading products...</p>
+              </div>
             ) : filteredAndSortedProducts.length === 0 ? (
               <div className="no-products">
                 <FontAwesomeIcon icon={faSearch} size="3x" />
                 <p>No products found matching your criteria</p>
+                {(searchTerm || selectedCategory) && (
+                  <button
+                    className="clear-filters-btn"
+                    onClick={() => handleSearch("", "")}
+                    style={{ marginTop: "1rem" }}
+                  >
+                    Clear Filters
+                  </button>
+                )}
               </div>
             ) : (
               <div className="products-list">
@@ -606,6 +713,17 @@ export default function OrdersPage() {
                       className={`product-card ${
                         item.checked ? "selected" : ""
                       } ${isOutOfStock ? "out-of-stock" : ""}`}
+                      onClick={(e) => {
+                        // Don't trigger if clicking on the checkbox itself or quantity controls
+                        if (
+                          e.target.type !== "checkbox" &&
+                          !e.target.closest(".quantity-controls") &&
+                          !isOutOfStock
+                        ) {
+                          toggleProduct(p.id);
+                        }
+                      }}
+                      style={{ cursor: isOutOfStock ? "default" : "pointer" }}
                     >
                       <div className="product-header">
                         <input
@@ -613,13 +731,13 @@ export default function OrdersPage() {
                           checked={item.checked || false}
                           onChange={() => toggleProduct(p.id)}
                           disabled={isOutOfStock}
+                          onClick={(e) => e.stopPropagation()} // Prevent card click when clicking checkbox
                         />
                         <span className="product-name">{p.name}</span>
                         <span className="product-category">{p.category}</span>
+                        {p.unit && <span className="unit-badge">{p.unit}</span>}
                         {p.barcode && (
-                          <span className="product-barcode">
-                            📊 {p.barcode}
-                          </span>
+                          <span className="barcode-badge">📊 {p.barcode}</span>
                         )}
                       </div>
 
@@ -640,7 +758,10 @@ export default function OrdersPage() {
                         <div className="quantity-section">
                           <div className="quantity-controls">
                             <button
-                              onClick={() => changeQuantity(p.id, -1)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                changeQuantity(p.id, -1);
+                              }}
                               disabled={item.quantity <= 1}
                             >
                               -
@@ -651,11 +772,15 @@ export default function OrdersPage() {
                               onChange={(e) =>
                                 setQuantity(p.id, e.target.value)
                               }
+                              onClick={(e) => e.stopPropagation()}
                               min="1"
                               max={p.stock}
                             />
                             <button
-                              onClick={() => changeQuantity(p.id, 1)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                changeQuantity(p.id, 1);
+                              }}
                               disabled={item.quantity >= p.stock}
                             >
                               +

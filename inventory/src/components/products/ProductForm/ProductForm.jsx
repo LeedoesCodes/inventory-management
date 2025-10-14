@@ -1,6 +1,7 @@
+// components/products/ProductForm/ProductForm.jsx
 import { useState, useEffect } from "react";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { storage } from "../../Firebase/firebase";
+import { storage } from "../../../Firebase/firebase";
 import "./productform.scss";
 
 const categories = [
@@ -27,9 +28,19 @@ const categories = [
   "none",
 ];
 
-export default function ProductForm({ selectedProduct, onSave, onClose }) {
+// Add unit types
+const unitTypes = ["piece", "bag", "pack", "bottle", "can", "box"];
+
+export default function ProductForm({
+  selectedProduct,
+  onSave,
+  onClose,
+  isFullPage = false,
+  allProducts = [], // Add this prop to get all products for packaging relationships
+}) {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
+  const [costPrice, setCostPrice] = useState("");
   const [stock, setStock] = useState("");
   const [category, setCategory] = useState("");
   const [barcode, setBarcode] = useState("");
@@ -38,6 +49,37 @@ export default function ProductForm({ selectedProduct, onSave, onClose }) {
   const [useCustomThreshold, setUseCustomThreshold] = useState(false);
   const [customThreshold, setCustomThreshold] = useState("");
   const [defaultThreshold, setDefaultThreshold] = useState(5);
+
+  // Packaging states
+  const [unit, setUnit] = useState("piece");
+  const [packagingType, setPackagingType] = useState("single");
+  const [piecesPerPackage, setPiecesPerPackage] = useState("");
+  const [parentProductId, setParentProductId] = useState("");
+
+  // Filter available parent products (single items only)
+  const availableParentProducts = allProducts.filter(
+    (product) =>
+      product.packagingType === "single" && product.id !== selectedProduct?.id
+  );
+
+  const calculateProfitMargin = () => {
+    if (!price || !costPrice) return null;
+
+    const sellingPrice = parseFloat(price);
+    const cost = parseFloat(costPrice);
+
+    if (cost <= 0) return null;
+
+    const profit = sellingPrice - cost;
+    const margin = (profit / cost) * 100;
+
+    return {
+      profit: profit.toFixed(2),
+      margin: margin.toFixed(1),
+    };
+  };
+
+  const profitData = calculateProfitMargin();
 
   useEffect(() => {
     const fetchDefaultThreshold = async () => {
@@ -51,9 +93,16 @@ export default function ProductForm({ selectedProduct, onSave, onClose }) {
       console.log("Selected Product Data:", selectedProduct);
       setName(selectedProduct.name || "");
       setPrice(selectedProduct.price || "");
+      setCostPrice(selectedProduct.costPrice || "");
       setStock(selectedProduct.stock || "");
       setCategory(selectedProduct.category || "");
       setBarcode(selectedProduct.barcode || "");
+      setUnit(selectedProduct.unit || "piece");
+
+      // Packaging fields
+      setPackagingType(selectedProduct.packagingType || "single");
+      setPiecesPerPackage(selectedProduct.piecesPerPackage || "");
+      setParentProductId(selectedProduct.parentProductId || "");
 
       const hasCustomThreshold =
         selectedProduct.lowStockThreshold !== null &&
@@ -67,11 +116,17 @@ export default function ProductForm({ selectedProduct, onSave, onClose }) {
 
       setImageFile(null);
     } else {
+      // Reset all fields for new product
       setName("");
       setPrice("");
+      setCostPrice("");
       setStock("");
       setCategory("");
       setBarcode("");
+      setUnit("piece");
+      setPackagingType("single");
+      setPiecesPerPackage("");
+      setParentProductId("");
       setUseCustomThreshold(false);
       setCustomThreshold(defaultThreshold.toString());
       setImageFile(null);
@@ -81,12 +136,10 @@ export default function ProductForm({ selectedProduct, onSave, onClose }) {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Validate file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
         alert("File size must be less than 5MB");
         return;
       }
-      // Validate file type
       if (!file.type.match("image/(png|jpg|jpeg)")) {
         alert("Please select a PNG, JPG, or JPEG image");
         return;
@@ -129,12 +182,26 @@ export default function ProductForm({ selectedProduct, onSave, onClose }) {
       return;
     }
     if (!price || parseFloat(price) <= 0) {
-      alert("Please enter a valid price");
+      alert("Please enter a valid selling price");
+      return;
+    }
+    if (costPrice && parseFloat(costPrice) < 0) {
+      alert("Cost price cannot be negative");
       return;
     }
     if (!stock || parseInt(stock) < 0) {
       alert("Please enter a valid stock quantity");
       return;
+    }
+    if (packagingType === "bulk") {
+      if (!piecesPerPackage || parseInt(piecesPerPackage) < 1) {
+        alert("Please enter valid pieces per package for bulk items");
+        return;
+      }
+      if (!parentProductId) {
+        alert("Please select a parent product for bulk items");
+        return;
+      }
     }
     if (
       useCustomThreshold &&
@@ -153,25 +220,32 @@ export default function ProductForm({ selectedProduct, onSave, onClose }) {
         imageUrl = await uploadImageToFirebase(imageFile);
       }
 
+      // Enhanced product data structure with packaging
       const productData = {
         name: name.trim(),
         price: parseFloat(price),
+        costPrice: costPrice ? parseFloat(costPrice) : null,
         stock: parseInt(stock),
         category,
         barcode: barcode.trim(),
+        unit: unit,
         imageUrl,
         lowStockThreshold: useCustomThreshold
           ? parseInt(customThreshold)
           : null,
+
+        // Packaging fields
+        packagingType: packagingType,
+        piecesPerPackage:
+          packagingType === "bulk" ? parseInt(piecesPerPackage) : 1,
+        parentProductId: packagingType === "bulk" ? parentProductId : null,
+        isBulkPackage: packagingType === "bulk",
       };
 
       console.log("🟡 [ProductForm] SAVING PRODUCT DATA:", {
-        useCustomThreshold,
-        customThreshold,
-        savedThreshold: productData.lowStockThreshold,
+        productData,
         isEditing: !!selectedProduct,
         productId: selectedProduct?.id,
-        productData,
       });
 
       await onSave(productData, imageFile);
@@ -204,7 +278,6 @@ export default function ProductForm({ selectedProduct, onSave, onClose }) {
       const urlObj = new URL(url);
       const pathname = urlObj.pathname;
       const filename = pathname.split("/").pop();
-      // Extract original filename if possible
       const parts = filename.split("_");
       if (parts.length > 2) {
         return parts.slice(2).join("_");
@@ -224,14 +297,12 @@ export default function ProductForm({ selectedProduct, onSave, onClose }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="product-form horizontal-layout"
-      style={{
-        position: "relative",
-        zIndex: 10000,
-      }}
+      className={`product-form horizontal-layout ${
+        isFullPage ? "full-page-mode" : ""
+      }`}
     >
       <div className="form-columns">
-        {/* Left Column - Basic Information */}
+        {/* Left Column - Basic Information and Packaging */}
         <div className="form-column">
           <div className="form-section">
             <h3 className="section-title">Basic Information</h3>
@@ -270,12 +341,28 @@ export default function ProductForm({ selectedProduct, onSave, onClose }) {
             </div>
 
             <div className="form-group">
+              <label htmlFor="product-unit">Unit Type</label>
+              <select
+                id="product-unit"
+                value={unit}
+                onChange={(e) => setUnit(e.target.value)}
+                disabled={uploading}
+              >
+                {unitTypes.map((unitType) => (
+                  <option key={unitType} value={unitType}>
+                    {unitType}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
               <label htmlFor="product-barcode">Barcode Number</label>
               <input
                 id="product-barcode"
                 type="text"
                 value={barcode}
-                placeholder="e.g., 4800016022361"
+                placeholder="e.g., 4800016022361 (Optional)"
                 onChange={(e) => setBarcode(e.target.value)}
                 disabled={uploading}
               />
@@ -288,46 +375,71 @@ export default function ProductForm({ selectedProduct, onSave, onClose }) {
           </div>
 
           <div className="form-section">
-            <h3 className="section-title">Pricing & Stock</h3>
+            <h3 className="section-title">Packaging Information</h3>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="product-price">Price *</label>
-                <div className="input-with-symbol">
-                  <span className="currency-symbol">₱</span>
+            <div className="form-group">
+              <label htmlFor="packaging-type">Packaging Type</label>
+              <select
+                id="packaging-type"
+                value={packagingType}
+                onChange={(e) => setPackagingType(e.target.value)}
+                disabled={uploading}
+              >
+                <option value="single">Single Item</option>
+                <option value="bulk">Bulk Package</option>
+              </select>
+              <small className="field-description">
+                {packagingType === "single"
+                  ? "Individual items sold separately"
+                  : "Packages containing multiple individual items"}
+              </small>
+            </div>
+
+            {packagingType === "bulk" && (
+              <>
+                <div className="form-group">
+                  <label htmlFor="pieces-per-package">
+                    Pieces per Package *
+                  </label>
                   <input
-                    id="product-price"
+                    id="pieces-per-package"
                     type="number"
-                    value={price}
-                    placeholder="0.00"
-                    onChange={(e) => setPrice(e.target.value)}
-                    step="0.01"
-                    min="0"
-                    required
+                    value={piecesPerPackage}
+                    onChange={(e) => setPiecesPerPackage(e.target.value)}
+                    min="1"
+                    placeholder="e.g., 50"
+                    required={packagingType === "bulk"}
                     disabled={uploading}
                   />
+                  <small className="field-description">
+                    Number of individual pieces in one package
+                  </small>
                 </div>
-              </div>
 
-              <div className="form-group">
-                <label htmlFor="product-stock">Stock Quantity *</label>
-                <input
-                  id="product-stock"
-                  type="number"
-                  value={stock}
-                  placeholder="0"
-                  onChange={(e) => setStock(e.target.value)}
-                  min="0"
-                  required
-                  disabled={uploading}
-                />
-              </div>
-            </div>
+                <div className="form-group">
+                  <label htmlFor="parent-product">Parent Product *</label>
+                  <select
+                    id="parent-product"
+                    value={parentProductId}
+                    onChange={(e) => setParentProductId(e.target.value)}
+                    required={packagingType === "bulk"}
+                    disabled={uploading}
+                  >
+                    <option value="">Select individual product</option>
+                    {availableParentProducts.map((product) => (
+                      <option key={product.id} value={product.id}>
+                        {product.name} ({product.unit})
+                      </option>
+                    ))}
+                  </select>
+                  <small className="field-description">
+                    Select the individual product that this package contains
+                  </small>
+                </div>
+              </>
+            )}
           </div>
-        </div>
 
-        {/* Right Column - Advanced Settings */}
-        <div className="form-column">
           <div className="form-section">
             <h3 className="section-title">Stock Alert Settings</h3>
 
@@ -403,6 +515,97 @@ export default function ProductForm({ selectedProduct, onSave, onClose }) {
               )}
             </div>
           </div>
+        </div>
+
+        {/* Right Column - Pricing Information and Product Image */}
+        <div className="form-column">
+          <div className="form-section">
+            <h3 className="section-title">Pricing Information</h3>
+
+            <div className="form-group">
+              <label htmlFor="cost-price">Cost Price (Purchase Price)</label>
+              <div className="input-with-symbol">
+                <span className="currency-symbol">₱</span>
+                <input
+                  id="cost-price"
+                  type="number"
+                  value={costPrice}
+                  placeholder="0.00"
+                  onChange={(e) => setCostPrice(e.target.value)}
+                  step="0.01"
+                  min="0"
+                  disabled={uploading}
+                />
+              </div>
+              <small className="field-description">
+                The price you paid when buying this product
+              </small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="product-price">Selling Price *</label>
+              <div className="input-with-symbol">
+                <span className="currency-symbol">₱</span>
+                <input
+                  id="product-price"
+                  type="number"
+                  value={price}
+                  placeholder="0.00"
+                  onChange={(e) => setPrice(e.target.value)}
+                  step="0.01"
+                  min="0"
+                  required
+                  disabled={uploading}
+                />
+              </div>
+              <small className="field-description">
+                The price customers will pay
+              </small>
+            </div>
+
+            {/* Profit Margin Display */}
+            {profitData && (
+              <div className="profit-margin-display">
+                <div className="profit-row">
+                  <span className="profit-label">Profit per item:</span>
+                  <span className="profit-value profit-amount">
+                    ₱{profitData.profit}
+                  </span>
+                </div>
+                <div className="profit-row">
+                  <span className="profit-label">Profit margin:</span>
+                  <span
+                    className={`profit-value profit-margin ${
+                      parseFloat(profitData.margin) >= 0
+                        ? "positive"
+                        : "negative"
+                    }`}
+                  >
+                    {profitData.margin}%
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="form-group">
+              <label htmlFor="product-stock">Stock Quantity *</label>
+              <input
+                id="product-stock"
+                type="number"
+                value={stock}
+                placeholder="0"
+                onChange={(e) => setStock(e.target.value)}
+                min="0"
+                required
+                disabled={uploading}
+              />
+              {packagingType === "bulk" && piecesPerPackage && (
+                <small className="field-description">
+                  Equivalent to {stock * piecesPerPackage} individual pieces
+                </small>
+              )}
+            </div>
+          </div>
 
           <div className="form-section">
             <h3 className="section-title">Product Image</h3>
@@ -457,15 +660,19 @@ export default function ProductForm({ selectedProduct, onSave, onClose }) {
         </div>
       </div>
 
-      {/* Form Actions - Fixed to always be visible */}
-      <div className="form-actions-sticky">
+      {/* Form Actions */}
+      <div
+        className={`form-actions-sticky ${
+          isFullPage ? "full-page-actions" : ""
+        }`}
+      >
         <button
           type="button"
           onClick={onClose}
           className="btn-secondary"
           disabled={uploading}
         >
-          Cancel
+          {isFullPage ? "Back to Products" : "Cancel"}
         </button>
         <button type="submit" className="btn-primary" disabled={uploading}>
           {uploading ? (

@@ -1,4 +1,6 @@
 import { useEffect, useRef } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faEdit, faTrash } from "@fortawesome/free-solid-svg-icons";
 
 export default function ProductList({
   products,
@@ -8,37 +10,23 @@ export default function ProductList({
 }) {
   const highlightedRef = useRef(null);
 
-  // Scroll to highlighted product when it changes and is in the filtered list
   useEffect(() => {
-    console.log(
-      "🎯 PRODUCT LIST: highlightedProductId =",
-      highlightedProductId
-    );
-    console.log("🎯 PRODUCT LIST: products count =", products.length);
-
     if (highlightedProductId) {
-      console.log("🎯 SCROLLING TO HIGHLIGHTED PRODUCT");
-
       const highlightedProduct = products.find(
         (p) => p.id === highlightedProductId
       );
-      console.log("🎯 HIGHLIGHTED PRODUCT FOUND:", highlightedProduct);
 
       if (highlightedProduct && highlightedRef.current) {
-        console.log("🎯 SCROLLING TO ELEMENT");
-        // Small delay to ensure DOM is updated
         setTimeout(() => {
           highlightedRef.current?.scrollIntoView({
             behavior: "smooth",
             block: "center",
-            inline: "center",
           });
         }, 200);
       }
     }
   }, [highlightedProductId, products]);
 
-  // Find the highlighted product
   const highlightedProduct = products.find(
     (p) => p.id === highlightedProductId
   );
@@ -53,9 +41,7 @@ export default function ProductList({
         <ul>
           {products.map((p) => {
             const isHighlighted = p.id === highlightedProductId;
-            if (isHighlighted) {
-              console.log("🎯 RENDERING HIGHLIGHTED PRODUCT:", p.name);
-            }
+
             return (
               <li
                 key={p.id}
@@ -64,20 +50,57 @@ export default function ProductList({
                 id={isHighlighted ? "highlighted-product" : ""}
               >
                 <div className="product-details">
+                  {/* Product Image */}
                   {p.imageUrl && (
-                    <div className="product-image">
-                      <img src={p.imageUrl} alt={p.name} />
-                    </div>
+                    <img
+                      src={p.imageUrl}
+                      alt={p.name}
+                      className="product-image"
+                    />
                   )}
+
+                  {/* Product Name */}
                   <div className="product-name">{p.name}</div>
-                  <div className="product-price">₱{p.price}</div>
-                  <div className="product-stock">Stock: {p.stock}</div>
-                  <div className="product-sold">Sold: {p.sold || 0}</div>
-                  <div className="product-category">Category: {p.category}</div>
+
+                  {/* Product Price */}
+                  <div className="product-price">
+                    <span className="field-label">Price: </span>₱{p.price}
+                  </div>
+
+                  {/* Product Stock */}
+                  <div className={`product-stock ${getStockLevel(p.stock)}`}>
+                    <span className="field-label">Stock: </span>
+                    {p.stock}
+                  </div>
+
+                  {/* Product Sold */}
+                  <div className="product-sold">
+                    <span className="field-label">Sold: </span>
+                    {p.sold || 0}
+                  </div>
+
+                  {/* Product Category */}
+                  <div className="product-category">
+                    <span className="field-label">Category: </span>
+                    {p.category}
+                  </div>
                 </div>
+
                 <div className="actions">
-                  <button onClick={() => onEdit(p)}>Edit</button>
-                  <button onClick={() => onDelete(p.id)}>Delete</button>
+                  <button
+                    onClick={() => onEdit(p)}
+                    className="icon-btn edit-btn"
+                    title="Edit Product"
+                  >
+                    <FontAwesomeIcon icon={faEdit} />
+                  </button>
+                  <button
+                    onClick={() => onDelete(p.id)}
+                    className="icon-btn delete-btn"
+                    title="Delete Product"
+                  >
+                    <FontAwesomeIcon icon={faTrash} />
+                  </button>
                 </div>
               </li>
             );
@@ -85,7 +108,6 @@ export default function ProductList({
         </ul>
       )}
 
-      {/* Show message if highlighted product is not in filtered list */}
       {highlightedProductId && !highlightedProduct && (
         <div className="highlighted-product-missing">
           <p>
@@ -95,4 +117,12 @@ export default function ProductList({
       )}
     </div>
   );
+}
+
+// Helper function to determine stock level
+function getStockLevel(stock) {
+  if (stock === 0) return "out-of-stock";
+  if (stock <= 5) return "low-stock";
+  if (stock <= 15) return "medium-stock";
+  return "high-stock";
 }
