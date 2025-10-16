@@ -12,7 +12,12 @@ import {
 import { db, storage } from "../Firebase/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSort } from "@fortawesome/free-solid-svg-icons";
+import {
+  faSort,
+  faBox,
+  faBoxOpen,
+  faLink,
+} from "@fortawesome/free-solid-svg-icons";
 
 import ProductList from "../components/products/ProductsList";
 import ProductForm from "../components/products/ProductForm/ProductForm";
@@ -37,12 +42,22 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedUnit, setSelectedUnit] = useState("");
 
-  // Sorting state
+  // Enhanced filtering states
   const [sortBy, setSortBy] = useState("name");
   const [sortOrder, setSortOrder] = useState("asc");
+  const [packagingFilter, setPackagingFilter] = useState("all");
+  const [stockFilter, setStockFilter] = useState("all");
 
   // Tab state
   const [activeTab, setActiveTab] = useState("products");
+
+  // Packaging statistics
+  const [packagingStats, setPackagingStats] = useState({
+    singleItems: 0,
+    bulkPackages: 0,
+    withRelationships: 0,
+    // Removed lowStockItems from here
+  });
 
   // Check for highlighted product on component mount and URL changes
   useEffect(() => {
@@ -56,6 +71,8 @@ export default function ProductsPage() {
       setSearchTerm("");
       setSelectedCategory("");
       setSelectedUnit("");
+      setPackagingFilter("all");
+      setStockFilter("all");
 
       // Clear the URL parameter after 5 seconds
       const timer = setTimeout(() => {
@@ -68,6 +85,32 @@ export default function ProductsPage() {
       return () => clearTimeout(timer);
     }
   }, [searchParams, setSearchParams]);
+
+  // Calculate packaging statistics whenever products change
+  useEffect(() => {
+    if (products.length > 0) {
+      const singleItems = products.filter(
+        (p) => p.packagingType === "single"
+      ).length;
+      const bulkPackages = products.filter(
+        (p) => p.packagingType === "bulk"
+      ).length;
+
+      // Products with packaging relationships (single items that have bulk packages)
+      const withRelationships = products.filter(
+        (p) =>
+          p.packagingType === "single" &&
+          products.some((bp) => bp.parentProductId === p.id)
+      ).length;
+
+      setPackagingStats({
+        singleItems,
+        bulkPackages,
+        withRelationships,
+        // Removed lowStockItems calculation
+      });
+    }
+  }, [products]);
 
   // This useEffect will handle highlighting when products are loaded
   useEffect(() => {
@@ -119,13 +162,15 @@ export default function ProductsPage() {
     fetchProducts();
   }, []);
 
-  // Apply filtering and sorting
+  // Enhanced filtering and sorting function
   const applyFiltersAndSorting = (productsArray) => {
     console.log("🟡 FILTERING: Applying filters and sorting");
     console.log("🟡 HIGHLIGHTED PRODUCT ID:", highlightedProductId);
     console.log("🟡 SEARCH TERM:", searchTerm);
     console.log("🟡 SELECTED CATEGORY:", selectedCategory);
     console.log("🟡 SELECTED UNIT:", selectedUnit);
+    console.log("🟡 PACKAGING FILTER:", packagingFilter);
+    console.log("🟡 STOCK FILTER:", stockFilter);
     console.log("🟡 SORT BY:", sortBy, "ORDER:", sortOrder);
 
     let filtered = productsArray.filter((p) => {
@@ -135,21 +180,53 @@ export default function ProductsPage() {
         !selectedCategory || p.category === selectedCategory;
       const matchesUnit = !selectedUnit || (p.unit || "piece") === selectedUnit;
 
+      // Enhanced: Packaging type filter
+      const matchesPackaging =
+        packagingFilter === "all" ||
+        (packagingFilter === "single" && p.packagingType === "single") ||
+        (packagingFilter === "bulk" && p.packagingType === "bulk") ||
+        (packagingFilter === "withBulk" &&
+          p.packagingType === "single" &&
+          productsArray.some((bp) => bp.parentProductId === p.id)) ||
+        (packagingFilter === "withoutBulk" &&
+          p.packagingType === "single" &&
+          !productsArray.some((bp) => bp.parentProductId === p.id));
+
+      // Enhanced: Stock filter
+      const currentStock = p.stock || 0;
+      const threshold = p.lowStockThreshold || 5;
+      const matchesStock =
+        stockFilter === "all" ||
+        (stockFilter === "inStock" && currentStock > 0) ||
+        (stockFilter === "outOfStock" && currentStock === 0) ||
+        (stockFilter === "lowStock" &&
+          currentStock > 0 &&
+          currentStock <= threshold);
+
       // If this is the highlighted product, show it regardless of stock
       const isHighlightedProduct = p.id === highlightedProductId;
 
-      // Only show products with stock > 0, OR if it's the highlighted product
-      const matchesStock = (p.stock || 0) > 0 || isHighlightedProduct;
+      // Only show products with stock > 0, OR if it's the highlighted product, OR if showing out of stock
+      const matchesStockVisibility =
+        currentStock > 0 ||
+        isHighlightedProduct ||
+        stockFilter === "outOfStock" ||
+        stockFilter === "all";
 
       const shouldInclude =
-        matchesSearch && matchesCategory && matchesUnit && matchesStock;
+        matchesSearch &&
+        matchesCategory &&
+        matchesUnit &&
+        matchesPackaging &&
+        matchesStock &&
+        matchesStockVisibility;
 
       return shouldInclude;
     });
 
     console.log("🟡 FILTERING: After filtering -", filtered.length, "products");
 
-    // Apply sorting
+    // Apply enhanced sorting
     filtered = [...filtered].sort((a, b) => {
       let aValue = a[sortBy];
       let bValue = b[sortBy];
@@ -157,6 +234,18 @@ export default function ProductsPage() {
       // Handle undefined values
       if (aValue === undefined || aValue === null) aValue = "";
       if (bValue === undefined || bValue === null) bValue = "";
+
+      // Special handling for packaging type
+      if (sortBy === "packagingType") {
+        const aType = a.packagingType || "single";
+        const bType = b.packagingType || "single";
+
+        if (sortOrder === "asc") {
+          return aType.localeCompare(bType);
+        } else {
+          return bType.localeCompare(aType);
+        }
+      }
 
       // Convert to numbers for numeric fields
       if (
@@ -221,6 +310,57 @@ export default function ProductsPage() {
     setSearchTerm("");
     setSelectedCategory("");
     setSelectedUnit("");
+    setPackagingFilter("all");
+    setStockFilter("all");
+  };
+
+  // Quick action to create bulk package from single item
+  const handleQuickCreateBulk = (product) => {
+    if (product.packagingType === "single") {
+      setActiveTab("packaging");
+      // You could store the product ID to pre-select it in PackagingManager
+      localStorage.setItem("preSelectedProduct", product.id);
+
+      // Show notification
+      alert(
+        `Navigating to Packaging Manager. Please select "${product.name}" to create bulk package.`
+      );
+    } else {
+      alert(
+        "This product is already a bulk package. Please select a single item."
+      );
+    }
+  };
+
+  // Quick action to view related products
+  const handleViewRelated = (product) => {
+    if (product.packagingType === "single") {
+      // Find bulk packages for this single item
+      const relatedBulks = products.filter(
+        (p) => p.packagingType === "bulk" && p.parentProductId === product.id
+      );
+
+      if (relatedBulks.length > 0) {
+        setPackagingFilter("all");
+        setSearchTerm(product.name);
+        alert(
+          `Showing ${relatedBulks.length} bulk package(s) for ${product.name}`
+        );
+      } else {
+        alert(
+          `No bulk packages found for ${product.name}. You can create one in Packaging Manager.`
+        );
+      }
+    } else if (product.packagingType === "bulk") {
+      // Find parent single item
+      const parentProduct = products.find(
+        (p) => p.id === product.parentProductId
+      );
+      if (parentProduct) {
+        setSearchTerm(parentProduct.name);
+        alert(`Showing parent product: ${parentProduct.name}`);
+      }
+    }
   };
 
   // Apply filters and sorting whenever relevant states change
@@ -228,7 +368,16 @@ export default function ProductsPage() {
     if (products.length > 0) {
       applyFiltersAndSorting(products);
     }
-  }, [searchTerm, selectedCategory, selectedUnit, sortBy, sortOrder, products]);
+  }, [
+    searchTerm,
+    selectedCategory,
+    selectedUnit,
+    packagingFilter,
+    stockFilter,
+    sortBy,
+    sortOrder,
+    products,
+  ]);
 
   const handleAddProduct = () => {
     setSelectedProduct(null);
@@ -389,10 +538,46 @@ export default function ProductsPage() {
             {/* Tab Content */}
             {activeTab === "products" ? (
               <>
+                {/* Enhanced Header with Statistics */}
                 <div className="products-header">
                   <div className="header-content">
                     <h1>Products Management</h1>
                     <p>Manage your product inventory and details</p>
+
+                    {/* Packaging Statistics - Removed Low Stock */}
+                    <div className="packaging-stats">
+                      <div className="stat-item">
+                        <FontAwesomeIcon
+                          icon={faBoxOpen}
+                          className="stat-icon single"
+                        />
+                        <span className="stat-count">
+                          {packagingStats.singleItems}
+                        </span>
+                        <span className="stat-label">Single Items</span>
+                      </div>
+                      <div className="stat-item">
+                        <FontAwesomeIcon
+                          icon={faBox}
+                          className="stat-icon bulk"
+                        />
+                        <span className="stat-count">
+                          {packagingStats.bulkPackages}
+                        </span>
+                        <span className="stat-label">Bulk Packages</span>
+                      </div>
+                      <div className="stat-item">
+                        <FontAwesomeIcon
+                          icon={faLink}
+                          className="stat-icon related"
+                        />
+                        <span className="stat-count">
+                          {packagingStats.withRelationships}
+                        </span>
+                        <span className="stat-label">With Bulk</span>
+                      </div>
+                      {/* Removed the Low Stock stat item */}
+                    </div>
                   </div>
 
                   <div className="header-actions">
@@ -405,8 +590,8 @@ export default function ProductsPage() {
                   </div>
                 </div>
 
-                {/* Search and Filters Section */}
-                <div className="search-filters-section">
+                {/* Enhanced Search and Filters Section */}
+                <div className="search-filters-section enhanced-filters">
                   <ProductSearch
                     onSearch={handleSearch}
                     categories={categories}
@@ -415,18 +600,54 @@ export default function ProductsPage() {
                     selectedUnit={selectedUnit}
                   />
 
-                  {(searchTerm || selectedCategory || selectedUnit) && (
-                    <button
-                      className="clear-filters-btn"
-                      onClick={handleClearFilters}
-                    >
-                      Clear All Filters
-                    </button>
-                  )}
+                  {/* Enhanced Filter Groups */}
+                  <div className="filter-groups-row">
+                    <div className="filter-group">
+                      <label>Packaging Type:</label>
+                      <select
+                        value={packagingFilter}
+                        onChange={(e) => setPackagingFilter(e.target.value)}
+                        className="control-select"
+                      >
+                        <option value="all">All Types</option>
+                        <option value="single">Single Items</option>
+                        <option value="bulk">Bulk Packages</option>
+                        <option value="withBulk">Single with Bulk</option>
+                        <option value="withoutBulk">Single without Bulk</option>
+                      </select>
+                    </div>
+
+                    <div className="filter-group">
+                      <label>Stock Status:</label>
+                      <select
+                        value={stockFilter}
+                        onChange={(e) => setStockFilter(e.target.value)}
+                        className="control-select"
+                      >
+                        <option value="all">All Stock</option>
+                        <option value="inStock">In Stock</option>
+                        <option value="lowStock">Low Stock</option>
+                        <option value="outOfStock">Out of Stock</option>
+                      </select>
+                    </div>
+
+                    {(searchTerm ||
+                      selectedCategory ||
+                      selectedUnit ||
+                      packagingFilter !== "all" ||
+                      stockFilter !== "all") && (
+                      <button
+                        className="clear-filters-btn"
+                        onClick={handleClearFilters}
+                      >
+                        Clear All Filters
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                {/* Controls Bar */}
-                <div className="products-controls-bar">
+                {/* Enhanced Controls Bar */}
+                <div className="products-controls-bar enhanced-controls">
                   <div className="control-group">
                     <label>
                       <FontAwesomeIcon icon={faSort} />
@@ -464,10 +685,15 @@ export default function ProductsPage() {
 
                   <div className="products-count">
                     <span>{filteredProducts.length} products</span>
-                    {(selectedCategory || selectedUnit) && (
+                    {(selectedCategory ||
+                      selectedUnit ||
+                      packagingFilter !== "all" ||
+                      stockFilter !== "all") && (
                       <span className="filter-info">
                         {selectedCategory && ` • ${selectedCategory}`}
                         {selectedUnit && ` • ${selectedUnit}`}
+                        {packagingFilter !== "all" && ` • ${packagingFilter}`}
+                        {stockFilter !== "all" && ` • ${stockFilter}`}
                       </span>
                     )}
                   </div>
@@ -479,7 +705,10 @@ export default function ProductsPage() {
                     products={filteredProducts}
                     onEdit={handleEditProduct}
                     onDelete={handleDeleteProduct}
+                    onQuickCreateBulk={handleQuickCreateBulk}
+                    onViewRelated={handleViewRelated}
                     highlightedProductId={highlightedProductId}
+                    allProducts={products}
                   />
                 </div>
 

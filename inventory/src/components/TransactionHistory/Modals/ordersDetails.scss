@@ -1,0 +1,882 @@
+// Order Details Modal Styles
+.order-details-modal {
+  .modal-content {
+    max-width: 900px;
+    animation: modalSlideIn 0.3s ease-out;
+
+    .modal-header {
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      border-bottom: 1px solid #e2e8f0;
+      padding: 1.5rem 2rem;
+
+      h3 {
+        margin: 0;
+        color: #2d3748;
+        font-size: 1.5rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      button {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #64748b;
+        transition: all 0.3s ease;
+        padding: 0.5rem;
+        border-radius: 4px;
+
+        &:hover {
+          color: #374151;
+          background: rgba(0, 0, 0, 0.05);
+          transform: scale(1.1);
+        }
+      }
+    }
+
+    .modal-body {
+      padding: 2rem;
+      max-height: 70vh;
+      overflow-y: auto;
+      background: #f8fafc;
+
+      // Section Titles
+      .section-title {
+        color: #2d3748;
+        margin: 0 0 1rem 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e2e8f0;
+      }
+
+      // Order Details Sections
+      .order-details,
+      .items-section,
+      .order-totals,
+      .payment-history-section,
+      .order-notes-section {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s ease;
+
+        &:hover {
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+        }
+      }
+
+      // Detail Sections
+      .detail-section {
+        margin-bottom: 1.5rem;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+
+      .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 0.75rem;
+      }
+
+      .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+
+        &:hover {
+          background: #f7fafc;
+        }
+
+        .detail-label {
+          font-weight: 600;
+          color: #4a5568;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+
+          svg {
+            color: #718096;
+            width: 14px;
+          }
+        }
+
+        .detail-value {
+          color: #2d3748;
+          font-weight: 500;
+
+          &.customer-name {
+            font-weight: 700;
+            color: #2d3748;
+          }
+
+          &.customer-contact,
+          &.order-date {
+            color: #718096;
+          }
+
+          &.order-id {
+            font-family: "Courier New", monospace;
+            font-weight: 600;
+            color: #009feb;
+          }
+        }
+
+        // Status Badges
+        .status-badge {
+          padding: 0.4rem 0.8rem;
+          border-radius: 20px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .payment-method-badge {
+          padding: 0.3rem 0.75rem;
+          border-radius: 15px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+      }
+
+      // Payment Status Summary
+      .payment-status-summary {
+        background: linear-gradient(135deg, #f0fff4, #f7fafc);
+        border: 1px solid #c6f6d5;
+        border-radius: 8px;
+        padding: 1.25rem;
+        margin-top: 1rem;
+
+        &.payment-pending {
+          background: linear-gradient(135deg, #fffaf0, #f7fafc);
+          border-color: #fed7aa;
+        }
+
+        &.payment-partial {
+          background: linear-gradient(135deg, #f0f9ff, #f7fafc);
+          border-color: #bae6fd;
+        }
+
+        .payment-summary-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.5rem;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          .summary-label {
+            font-weight: 600;
+            color: #4a5568;
+          }
+
+          .summary-value {
+            font-weight: 700;
+
+            &.total-amount {
+              color: #2d3748;
+              font-size: 1.1rem;
+            }
+
+            &.paid-amount {
+              color: #10b981;
+              font-size: 1.05rem;
+            }
+
+            &.balance-amount {
+              color: #ef4444;
+              font-size: 1.05rem;
+            }
+          }
+        }
+      }
+
+      // Items List
+      .items-list {
+        .item-row {
+          display: grid;
+          grid-template-columns: 2fr 1fr 1fr 1fr;
+          gap: 1rem;
+          align-items: center;
+          padding: 1rem;
+          border-bottom: 1px solid #f1f5f9;
+          transition: all 0.3s ease;
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          &:hover {
+            background: #f8fafc;
+            border-radius: 6px;
+          }
+
+          .item-name {
+            font-weight: 500;
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+          }
+
+          .item-quantity,
+          .item-price {
+            text-align: center;
+            color: #4a5568;
+            font-weight: 500;
+          }
+
+          .item-subtotal {
+            text-align: right;
+            font-weight: 700;
+            color: #059669;
+          }
+
+          // Bad order item
+          &.bad-order-item {
+            background: #fff3cd;
+            border-radius: 6px;
+            margin: 0.25rem 0;
+            border: 1px solid #ffeaa7;
+
+            .item-name {
+              color: #856404;
+
+              .bad-order-indicator {
+                margin-left: 0.5rem;
+              }
+            }
+          }
+        }
+      }
+
+      // Order Totals
+      .order-totals {
+        .total-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.75rem;
+          border-bottom: 1px solid #f1f5f9;
+          transition: all 0.3s ease;
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          &:hover {
+            background: #f8fafc;
+            border-radius: 6px;
+          }
+
+          .total-label {
+            font-weight: 600;
+            color: #4a5568;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+          }
+
+          .total-value {
+            font-weight: 600;
+            color: #2d3748;
+
+            &.subtotal {
+              font-size: 1rem;
+            }
+
+            &.discount {
+              color: #ef4444;
+            }
+
+            &.tax {
+              color: #6b7280;
+            }
+
+            &.grand-total {
+              font-size: 1.2rem;
+              color: #059669;
+              font-weight: 700;
+            }
+
+            &.paid-total {
+              color: #10b981;
+              font-weight: 700;
+            }
+
+            &.balance-total {
+              color: #f59e0b;
+              font-weight: 700;
+            }
+
+            &.refund-total {
+              color: #ef4444;
+              font-weight: 700;
+            }
+          }
+
+          // Special row styles
+          &.grand-total {
+            background: linear-gradient(135deg, #f0fff4, transparent);
+            border-top: 2px solid #10b981;
+            margin-top: 0.5rem;
+            padding: 1rem;
+            border-radius: 8px;
+          }
+
+          &.balance-row {
+            &.has-balance {
+              background: linear-gradient(135deg, #fffaf0, transparent);
+              border: 1px solid #fef3c7;
+            }
+
+            &.fully-paid {
+              background: linear-gradient(135deg, #f0fff4, transparent);
+              border: 1px solid #c6f6d5;
+
+              .balance-total {
+                color: #10b981;
+              }
+            }
+          }
+
+          &.refund-row {
+            background: linear-gradient(135deg, #fef2f2, transparent);
+            border: 1px solid #fecaca;
+          }
+        }
+      }
+
+      // Payment History
+      .payment-history-list {
+        .payment-record {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 1rem;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          margin-bottom: 0.75rem;
+          transition: all 0.3s ease;
+          background: #fafafa;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: #cbd5e0;
+          }
+
+          .payment-record-header {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+
+            .payment-amount {
+              font-weight: 700;
+              font-size: 1.1rem;
+              color: #10b981;
+            }
+
+            .payment-date {
+              color: #718096;
+              font-size: 0.85rem;
+            }
+          }
+
+          .payment-record-details {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+
+            .payment-notes {
+              color: #6b7280;
+              font-size: 0.85rem;
+              font-style: italic;
+              max-width: 200px;
+            }
+          }
+
+          // Latest payment highlight
+          &:first-child {
+            background: linear-gradient(135deg, #f0fff4, #ffffff);
+            border-color: #10b981;
+            border-width: 2px;
+          }
+        }
+      }
+
+      // No Payments
+      .no-payments {
+        text-align: center;
+        padding: 2rem;
+        color: #9ca3af;
+        font-style: italic;
+        background: #f8fafc;
+        border-radius: 8px;
+        border: 2px dashed #e2e8f0;
+
+        svg {
+          margin-bottom: 0.5rem;
+          opacity: 0.5;
+        }
+
+        p {
+          margin: 0;
+        }
+      }
+
+      // Order Notes
+      .notes-content {
+        background: #f8fafc;
+        padding: 1rem;
+        border-radius: 6px;
+        border-left: 4px solid #009feb;
+        font-style: italic;
+        color: #4a5568;
+        line-height: 1.5;
+      }
+    }
+
+    .modal-footer {
+      display: flex;
+      gap: 1rem;
+      padding: 1.5rem 2rem;
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      flex-wrap: wrap;
+
+      .btn {
+        flex: 1;
+        min-width: 160px;
+        padding: 1rem 1.5rem;
+        border: none;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        position: relative;
+        overflow: hidden;
+
+        &::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.3),
+            transparent
+          );
+          transition: left 0.5s;
+        }
+
+        &:hover::before {
+          left: 100%;
+        }
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        // Button variants matching your theme
+        &.btn-secondary {
+          background: linear-gradient(135deg, #94a3b8, #64748b);
+          color: white;
+
+          &:hover {
+            background: linear-gradient(135deg, #64748b, #475569);
+            box-shadow: 0 6px 20px rgba(100, 116, 139, 0.4);
+          }
+        }
+
+        &.btn-primary {
+          background: linear-gradient(135deg, #009feb, #007bff);
+          color: white;
+
+          &:hover {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            box-shadow: 0 6px 20px rgba(0, 159, 235, 0.4);
+          }
+        }
+
+        &.btn-success {
+          background: linear-gradient(135deg, #28a745, #20c997);
+          color: white;
+
+          &:hover {
+            background: linear-gradient(135deg, #20c997, #198754);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+          }
+        }
+
+        &.btn-warning {
+          background: linear-gradient(135deg, #ffc107, #fd7e14);
+          color: white;
+
+          &:hover {
+            background: linear-gradient(135deg, #fd7e14, #e0a800);
+            box-shadow: 0 6px 20px rgba(255, 193, 7, 0.4);
+          }
+        }
+
+        &.btn-info {
+          background: linear-gradient(135deg, #17a2b8, #138496);
+          color: white;
+
+          &:hover {
+            background: linear-gradient(135deg, #138496, #117a8b);
+            box-shadow: 0 6px 20px rgba(23, 162, 184, 0.4);
+          }
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          transform: none !important;
+
+          &:hover {
+            transform: none !important;
+            box-shadow: none !important;
+          }
+        }
+      }
+
+      @media (max-width: 768px) {
+        flex-direction: column;
+
+        .btn {
+          min-width: auto;
+        }
+      }
+    }
+  }
+}
+
+// Dark Theme
+[data-theme="dark"] {
+  .order-details-modal {
+    .modal-content {
+      .modal-header {
+        background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+        border-bottom-color: #4a5568;
+
+        h3 {
+          color: #f7fafc;
+        }
+
+        button {
+          color: #a0aec0;
+
+          &:hover {
+            color: #f7fafc;
+            background: rgba(255, 255, 255, 0.1);
+          }
+        }
+      }
+
+      .modal-body {
+        background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+
+        .section-title {
+          color: #f7fafc;
+          border-bottom-color: #4a5568;
+        }
+
+        .order-details,
+        .items-section,
+        .order-totals,
+        .payment-history-section,
+        .order-notes-section {
+          background: #2d3748;
+          border-color: #4a5568;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .detail-row {
+          .detail-label {
+            color: #cbd5e0;
+
+            svg {
+              color: #a0aec0;
+            }
+          }
+
+          .detail-value {
+            color: #f7fafc;
+
+            &.customer-name {
+              color: #f7fafc;
+            }
+
+            &.customer-contact,
+            &.order-date {
+              color: #a0aec0;
+            }
+
+            &.order-id {
+              color: #63b3ed;
+            }
+          }
+
+          &:hover {
+            background: #4a5568;
+          }
+        }
+
+        .payment-status-summary {
+          background: linear-gradient(135deg, #22543d, #2d3748);
+          border-color: #2d7a5c;
+
+          &.payment-pending {
+            background: linear-gradient(135deg, #744210, #2d3748);
+            border-color: #d97706;
+          }
+
+          &.payment-partial {
+            background: linear-gradient(135deg, #1e3a5c, #2d3748);
+            border-color: #3b82f6;
+          }
+
+          .payment-summary-row {
+            .summary-label {
+              color: #cbd5e0;
+            }
+
+            .summary-value {
+              &.total-amount {
+                color: #f7fafc;
+              }
+
+              &.paid-amount {
+                color: #68d391;
+              }
+
+              &.balance-amount {
+                color: #fc8181;
+              }
+            }
+          }
+        }
+
+        .items-list .item-row {
+          border-bottom-color: #4a5568;
+
+          &:hover {
+            background: #4a5568;
+          }
+
+          .item-name {
+            color: #f7fafc;
+          }
+
+          .item-quantity,
+          .item-price {
+            color: #cbd5e0;
+          }
+
+          .item-subtotal {
+            color: #68d391;
+          }
+
+          &.bad-order-item {
+            background: #665600;
+            border-color: #856404;
+
+            .item-name {
+              color: #ffc107;
+            }
+          }
+        }
+
+        .order-totals .total-row {
+          border-bottom-color: #4a5568;
+
+          &:hover {
+            background: #4a5568;
+          }
+
+          .total-label {
+            color: #cbd5e0;
+          }
+
+          .total-value {
+            color: #f7fafc;
+
+            &.discount {
+              color: #fc8181;
+            }
+
+            &.tax {
+              color: #a0aec0;
+            }
+
+            &.grand-total {
+              color: #68d391;
+            }
+
+            &.paid-total {
+              color: #68d391;
+            }
+
+            &.balance-total {
+              color: #f6ad55;
+            }
+
+            &.refund-total {
+              color: #fc8181;
+            }
+          }
+
+          &.grand-total {
+            background: linear-gradient(135deg, #22543d, transparent);
+            border-top-color: #68d391;
+          }
+
+          &.balance-row {
+            &.has-balance {
+              background: linear-gradient(135deg, #744210, transparent);
+              border-color: #d97706;
+            }
+
+            &.fully-paid {
+              background: linear-gradient(135deg, #22543d, transparent);
+              border-color: #68d391;
+            }
+          }
+
+          &.refund-row {
+            background: linear-gradient(135deg, #742a2a, transparent);
+            border-color: #fc8181;
+          }
+        }
+
+        .payment-history-list .payment-record {
+          background: #4a5568;
+          border-color: #4a5568;
+
+          &:hover {
+            border-color: #63b3ed;
+          }
+
+          .payment-record-header {
+            .payment-date {
+              color: #a0aec0;
+            }
+          }
+
+          .payment-record-details .payment-notes {
+            color: #a0aec0;
+          }
+
+          &:first-child {
+            background: linear-gradient(135deg, #22543d, #4a5568);
+            border-color: #68d391;
+          }
+        }
+
+        .no-payments {
+          background: #2d3748;
+          border-color: #4a5568;
+          color: #a0aec0;
+        }
+
+        .notes-content {
+          background: #4a5568;
+          border-left-color: #63b3ed;
+          color: #cbd5e0;
+        }
+      }
+
+      .modal-footer {
+        background: #2d3748;
+        border-top-color: #4a5568;
+      }
+    }
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .order-details-modal {
+    .modal-content {
+      width: 95%;
+      margin: 1rem;
+
+      .modal-body {
+        padding: 1rem;
+
+        .detail-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .items-list .item-row {
+          grid-template-columns: 1fr;
+          gap: 0.5rem;
+          text-align: center;
+
+          .item-name,
+          .item-quantity,
+          .item-price,
+          .item-subtotal {
+            text-align: center;
+            justify-content: center;
+          }
+        }
+      }
+
+      .modal-footer {
+        padding: 1rem;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .order-details-modal {
+    .modal-content {
+      .modal-body {
+        .payment-record {
+          flex-direction: column;
+          gap: 1rem;
+          text-align: center;
+
+          .payment-record-details {
+            align-items: center;
+          }
+        }
+      }
+    }
+  }
+}

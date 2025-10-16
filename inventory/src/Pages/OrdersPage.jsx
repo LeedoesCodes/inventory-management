@@ -89,7 +89,6 @@ export default function OrdersPage() {
 
     console.log("Barcode scanned:", barcode);
 
-    // Find product by barcode
     const product = products.find((p) => {
       if (!p.barcode) return false;
       const productBarcode = p.barcode.toString().replace(/\D/g, "").trim();
@@ -100,7 +99,6 @@ export default function OrdersPage() {
       const currentQty = cart[product.id]?.quantity || 0;
       const newQty = currentQty + 1;
 
-      // Check stock availability
       if (newQty > product.stock) {
         console.warn(
           `❌ Not enough stock for ${product.name}. Only ${product.stock} available.`
@@ -108,7 +106,6 @@ export default function OrdersPage() {
         return false;
       }
 
-      // Update cart
       setCart((prev) => ({
         ...prev,
         [product.id]: {
@@ -338,11 +335,12 @@ export default function OrdersPage() {
   };
 
   // Order confirmation with success animation
-  const handleConfirmOrder = async () => {
+  const handleConfirmOrder = async (paymentMethod = "cash") => {
     if (!pendingOrder) return;
 
     try {
       console.log("🔄 Starting order confirmation process...");
+      console.log(`💰 Payment Method: ${paymentMethod}`);
 
       const batch = writeBatch(db);
 
@@ -383,7 +381,6 @@ export default function OrdersPage() {
           return;
         }
 
-        // Simple product stock update
         const currentSold = currentProduct.sold || 0;
         const currentStock = currentProduct.stock || 0;
         console.log(
@@ -419,13 +416,15 @@ export default function OrdersPage() {
       await batch.commit();
       console.log("✅ Batch write committed successfully");
 
-      // Create order record
+      // Create order record with payment method
       console.log("📝 Creating order record...");
       const orderData = {
         customerName: pendingOrder.customerName,
         items: pendingOrder.items,
         totalItems: pendingOrder.totalItems,
         totalAmount: pendingOrder.totalAmount,
+        paymentMethod: paymentMethod,
+        paymentStatus: paymentMethod === "credit" ? "pending" : "paid",
         createdAt: new Date(),
         status: "completed",
       };
@@ -470,7 +469,6 @@ export default function OrdersPage() {
         stack: err.stack,
       });
 
-      // More specific error messages
       if (err.code === "permission-denied") {
         alert("Permission denied. Please check your Firebase security rules.");
       } else if (err.code === "unavailable") {
@@ -489,7 +487,6 @@ export default function OrdersPage() {
 
   // Handle when success animation completes
   const handleSuccessAnimationComplete = () => {
-    // Reset everything after animation completes
     setCart({});
     setCustomerName("");
     setPendingOrder(null);
@@ -563,7 +560,7 @@ export default function OrdersPage() {
       const matchesSearch = p.name.toLowerCase().includes(searchTerm);
       const matchesCategory =
         !selectedCategory || p.category === selectedCategory;
-      const matchesStock = p.stock > 0; // Only show products with stock > 0
+      const matchesStock = p.stock > 0;
       return matchesSearch && matchesCategory && matchesStock;
     })
     .sort((a, b) => {
@@ -635,7 +632,6 @@ export default function OrdersPage() {
               >
                 <option value="name">Name</option>
                 <option value="price">Price</option>
-                <option value="category">Category</option>
                 <option value="stock">Stock</option>
               </select>
               <select
@@ -706,55 +702,50 @@ export default function OrdersPage() {
                 {filteredAndSortedProducts.map((p) => {
                   const item = cart[p.id] || {};
                   const isOutOfStock = p.stock === 0;
+                  const isSelected = item.checked;
 
                   return (
                     <div
                       key={p.id}
                       className={`product-card ${
-                        item.checked ? "selected" : ""
+                        isSelected ? "selected" : ""
                       } ${isOutOfStock ? "out-of-stock" : ""}`}
-                      onClick={(e) => {
-                        // Don't trigger if clicking on the checkbox itself or quantity controls
-                        if (
-                          e.target.type !== "checkbox" &&
-                          !e.target.closest(".quantity-controls") &&
-                          !isOutOfStock
-                        ) {
-                          toggleProduct(p.id);
-                        }
-                      }}
+                      onClick={() => !isOutOfStock && toggleProduct(p.id)}
                       style={{ cursor: isOutOfStock ? "default" : "pointer" }}
                     >
                       <div className="product-header">
-                        <input
-                          type="checkbox"
-                          checked={item.checked || false}
-                          onChange={() => toggleProduct(p.id)}
-                          disabled={isOutOfStock}
-                          onClick={(e) => e.stopPropagation()} // Prevent card click when clicking checkbox
-                        />
-                        <span className="product-name">{p.name}</span>
-                        <span className="product-category">{p.category}</span>
-                        {p.unit && <span className="unit-badge">{p.unit}</span>}
-                        {p.barcode && (
-                          <span className="barcode-badge">📊 {p.barcode}</span>
-                        )}
+                        <div className="product-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={isSelected || false}
+                            onChange={() => toggleProduct(p.id)}
+                            disabled={isOutOfStock}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                        <div className="product-info">
+                          <span className="product-name">{p.name}</span>
+                          {p.unit && (
+                            <span className="unit-badge">{p.unit}</span>
+                          )}
+                        </div>
+
+                        <div className="product-meta">
+                          <span className="product-price">
+                            ₱{p.price.toFixed(2)}
+                          </span>
+                          <span
+                            className={`stock-badge ${
+                              p.stock < 5 ? "low-stock" : ""
+                            }`}
+                          >
+                            {p.stock} in stock
+                          </span>
+                        </div>
                       </div>
 
-                      <div className="product-details">
-                        <span className="product-price">
-                          ₱{p.price.toFixed(2)}
-                        </span>
-                        <span
-                          className={`stock-badge ${
-                            p.stock < 5 ? "low-stock" : ""
-                          }`}
-                        >
-                          {p.stock} in stock
-                        </span>
-                      </div>
-
-                      {item.checked && (
+                      {/* Quantity Controls - Only show when product is selected */}
+                      {isSelected && (
                         <div className="quantity-section">
                           <div className="quantity-controls">
                             <button
@@ -786,9 +777,11 @@ export default function OrdersPage() {
                               +
                             </button>
                           </div>
-                          <span className="subtotal">
-                            ₱{(p.price * (item.quantity || 1)).toFixed(2)}
-                          </span>
+                          <div className="quantity-summary">
+                            <span className="subtotal">
+                              ₱{(p.price * (item.quantity || 1)).toFixed(2)}
+                            </span>
+                          </div>
                         </div>
                       )}
 

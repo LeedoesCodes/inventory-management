@@ -1,0 +1,260 @@
+// Transaction List Styles
+.transaction-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  .transaction-list-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e2e8f0;
+    margin-bottom: 0.5rem;
+    transition: all 0.3s ease;
+
+    &:hover {
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+      transform: translateY(-1px);
+    }
+
+    .results-count {
+      font-weight: 600;
+      color: #2d3748;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      &::before {
+        content: "📊";
+        font-size: 1.1rem;
+      }
+    }
+
+    .filter-indicator {
+      color: #f59e0b;
+      font-weight: 600;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.8rem;
+      background: linear-gradient(135deg, #fffaf0, #fefcbf);
+      border-radius: 20px;
+      border: 1px solid #fef3c7;
+
+      &::before {
+        content: "⚡";
+        font-size: 0.8rem;
+      }
+    }
+  }
+}
+
+// Loading State
+.loading {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #718096;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  animation: fadeInUp 0.5s ease-out;
+  border: 1px solid #e2e8f0;
+
+  svg {
+    margin-bottom: 1rem;
+    opacity: 0.7;
+    color: #009feb;
+  }
+
+  p {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+
+  // Loading animation
+  &::after {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 3px;
+    background: linear-gradient(90deg, #009feb, #007bff);
+    margin: 1.5rem auto 0;
+    border-radius: 2px;
+    animation: loadingPulse 1.5s ease-in-out infinite;
+  }
+}
+
+// No Transactions State
+.no-transactions {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #718096;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  animation: fadeInUp 0.5s ease-out;
+  border: 1px solid #e2e8f0;
+
+  svg {
+    margin-bottom: 1rem;
+    opacity: 0.5;
+    color: #a0aec0;
+  }
+
+  p {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+
+  .no-results-hint {
+    font-size: 1rem !important;
+    font-weight: 500 !important;
+    color: #f59e0b !important;
+    font-style: italic;
+    margin-top: 0.5rem;
+
+    &::before {
+      content: "💡 ";
+    }
+  }
+}
+
+// Dark Theme
+[data-theme="dark"] {
+  .transaction-list {
+    .transaction-list-header {
+      background: #2d3748;
+      border-color: #4a5568;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+
+      .results-count {
+        color: #f7fafc;
+
+        &::before {
+          content: "📊";
+        }
+      }
+
+      .filter-indicator {
+        color: #f6ad55;
+        background: linear-gradient(135deg, #744210, #4a5568);
+        border-color: #d97706;
+      }
+    }
+  }
+
+  .loading {
+    background: #2d3748;
+    border-color: #4a5568;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    color: #a0aec0;
+
+    svg {
+      color: #63b3ed;
+    }
+
+    &::after {
+      background: linear-gradient(90deg, #63b3ed, #4299e1);
+    }
+  }
+
+  .no-transactions {
+    background: #2d3748;
+    border-color: #4a5568;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    color: #a0aec0;
+
+    svg {
+      color: #a0aec0;
+    }
+
+    .no-results-hint {
+      color: #f6ad55 !important;
+    }
+  }
+}
+
+// Animations
+@keyframes loadingPulse {
+  0% {
+    transform: scaleX(0.5);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(0.5);
+    opacity: 0.7;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .transaction-list {
+    .transaction-list-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 1rem;
+
+      .results-count,
+      .filter-indicator {
+        font-size: 0.9rem;
+      }
+    }
+  }
+
+  .loading,
+  .no-transactions {
+    padding: 3rem 1.5rem;
+
+    p {
+      font-size: 1.1rem;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .transaction-list {
+    .transaction-list-header {
+      .results-count,
+      .filter-indicator {
+        font-size: 0.85rem;
+      }
+    }
+  }
+
+  .loading,
+  .no-transactions {
+    padding: 2rem 1rem;
+
+    svg {
+      font-size: 2.5rem !important;
+    }
+
+    p {
+      font-size: 1rem;
+    }
+  }
+}
