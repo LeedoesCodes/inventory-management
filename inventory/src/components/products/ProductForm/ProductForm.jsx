@@ -62,6 +62,71 @@ export default function ProductForm({
       product.packagingType === "single" && product.id !== selectedProduct?.id
   );
 
+  // NEW: Auto-fill bulk package details
+  useEffect(() => {
+    if (packagingType === "bulk" && parentProductId && piecesPerPackage) {
+      const parentProduct = availableParentProducts.find(
+        (p) => p.id === parentProductId
+      );
+
+      if (parentProduct) {
+        // Auto-generate name if empty or matches default pattern
+        const currentName = name.trim();
+        const shouldAutoName =
+          !currentName ||
+          currentName === `${parentProduct.name} - ${piecesPerPackage} Pack` ||
+          currentName === parentProduct.name;
+
+        if (shouldAutoName) {
+          const suggestedName = `${parentProduct.name} - ${piecesPerPackage} Pack`;
+          setName(suggestedName);
+        }
+
+        // Auto-calculate suggested price (10% discount) if price is empty
+        if (!price && parentProduct.price) {
+          const suggestedPrice = (
+            parentProduct.price *
+            piecesPerPackage *
+            0.9
+          ).toFixed(2);
+          setPrice(suggestedPrice);
+        }
+
+        // Auto-calculate cost price if costPrice is empty and parent has cost
+        if (!costPrice && parentProduct.costPrice) {
+          const suggestedCost = (
+            parentProduct.costPrice * piecesPerPackage
+          ).toFixed(2);
+          setCostPrice(suggestedCost);
+        }
+
+        // Auto-set category if empty
+        if (!category && parentProduct.category) {
+          setCategory(parentProduct.category);
+        }
+
+        // Auto-set unit to "pack" for bulk items if not set
+        if (unit === "piece") {
+          setUnit("pack");
+        }
+      }
+    }
+  }, [
+    packagingType,
+    parentProductId,
+    piecesPerPackage,
+    availableParentProducts,
+  ]);
+
+  // Reset form when packaging type changes
+  useEffect(() => {
+    if (packagingType === "single") {
+      setPiecesPerPackage("");
+      setParentProductId("");
+      // Keep unit as is, don't reset to piece
+    }
+  }, [packagingType]);
+
   const calculateProfitMargin = () => {
     if (!price || !costPrice) return null;
 
@@ -80,6 +145,26 @@ export default function ProductForm({
   };
 
   const profitData = calculateProfitMargin();
+
+  // NEW: Calculate price per piece for bulk items
+  const calculatePricePerPiece = () => {
+    if (packagingType === "bulk" && price && piecesPerPackage) {
+      return (parseFloat(price) / parseInt(piecesPerPackage)).toFixed(2);
+    }
+    return null;
+  };
+
+  const pricePerPiece = calculatePricePerPiece();
+
+  // NEW: Get parent product info for display
+  const getParentProductInfo = () => {
+    if (packagingType === "bulk" && parentProductId) {
+      return availableParentProducts.find((p) => p.id === parentProductId);
+    }
+    return null;
+  };
+
+  const parentProduct = getParentProductInfo();
 
   useEffect(() => {
     const fetchDefaultThreshold = async () => {
@@ -202,6 +287,12 @@ export default function ProductForm({
         alert("Please select a parent product for bulk items");
         return;
       }
+
+      // NEW: Validate that parent product is not itself
+      if (selectedProduct && parentProductId === selectedProduct.id) {
+        alert("A product cannot be its own parent");
+        return;
+      }
     }
     if (
       useCustomThreshold &&
@@ -318,6 +409,11 @@ export default function ProductForm({
                 required
                 disabled={uploading}
               />
+              {packagingType === "bulk" && parentProduct && (
+                <small className="field-hint">
+                  Auto-generated from {parentProduct.name}
+                </small>
+              )}
             </div>
 
             <div className="form-group">
@@ -338,6 +434,11 @@ export default function ProductForm({
                   </option>
                 ))}
               </select>
+              {packagingType === "bulk" && parentProduct && (
+                <small className="field-hint">
+                  Inherited from {parentProduct.name}
+                </small>
+              )}
             </div>
 
             <div className="form-group">
@@ -354,6 +455,11 @@ export default function ProductForm({
                   </option>
                 ))}
               </select>
+              {packagingType === "bulk" && (
+                <small className="field-hint">
+                  Recommended: "pack" for bulk packages
+                </small>
+              )}
             </div>
 
             <div className="form-group">
@@ -398,6 +504,28 @@ export default function ProductForm({
             {packagingType === "bulk" && (
               <>
                 <div className="form-group">
+                  <label htmlFor="parent-product">Parent Product *</label>
+                  <select
+                    id="parent-product"
+                    value={parentProductId}
+                    onChange={(e) => setParentProductId(e.target.value)}
+                    required={packagingType === "bulk"}
+                    disabled={uploading}
+                  >
+                    <option value="">Select individual product</option>
+                    {availableParentProducts.map((product) => (
+                      <option key={product.id} value={product.id}>
+                        {product.name} (₱{product.price} per{" "}
+                        {product.unit || "piece"})
+                      </option>
+                    ))}
+                  </select>
+                  <small className="field-description">
+                    Select the individual product that this package contains
+                  </small>
+                </div>
+
+                <div className="form-group">
                   <label htmlFor="pieces-per-package">
                     Pieces per Package *
                   </label>
@@ -416,26 +544,36 @@ export default function ProductForm({
                   </small>
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="parent-product">Parent Product *</label>
-                  <select
-                    id="parent-product"
-                    value={parentProductId}
-                    onChange={(e) => setParentProductId(e.target.value)}
-                    required={packagingType === "bulk"}
-                    disabled={uploading}
-                  >
-                    <option value="">Select individual product</option>
-                    {availableParentProducts.map((product) => (
-                      <option key={product.id} value={product.id}>
-                        {product.name} ({product.unit})
-                      </option>
-                    ))}
-                  </select>
-                  <small className="field-description">
-                    Select the individual product that this package contains
-                  </small>
-                </div>
+                {/* NEW: Parent Product Information Display */}
+                {parentProduct && (
+                  <div className="parent-product-info">
+                    <h4>Parent Product Details</h4>
+                    <div className="parent-details">
+                      <div className="detail-item">
+                        <span className="label">Name:</span>
+                        <span className="value">{parentProduct.name}</span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="label">Price per piece:</span>
+                        <span className="value">₱{parentProduct.price}</span>
+                      </div>
+                      {parentProduct.costPrice && (
+                        <div className="detail-item">
+                          <span className="label">Cost per piece:</span>
+                          <span className="value">
+                            ₱{parentProduct.costPrice}
+                          </span>
+                        </div>
+                      )}
+                      <div className="detail-item">
+                        <span className="label">Stock:</span>
+                        <span className="value">
+                          {parentProduct.stock} pieces
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -540,6 +678,18 @@ export default function ProductForm({
               <small className="field-description">
                 The price you paid when buying this product
               </small>
+              {packagingType === "bulk" &&
+                parentProduct &&
+                parentProduct.costPrice && (
+                  <small className="field-hint">
+                    Auto-calculated: {parentProduct.costPrice} ×{" "}
+                    {piecesPerPackage} = ₱
+                    {(
+                      parentProduct.costPrice *
+                      (parseInt(piecesPerPackage) || 0)
+                    ).toFixed(2)}
+                  </small>
+                )}
             </div>
 
             <div className="form-group">
@@ -561,13 +711,43 @@ export default function ProductForm({
               <small className="field-description">
                 The price customers will pay
               </small>
+              {packagingType === "bulk" && parentProduct && (
+                <small className="field-hint">
+                  Suggested: {parentProduct.price} × {piecesPerPackage} × 0.9 =
+                  ₱
+                  {(
+                    parentProduct.price *
+                    (parseInt(piecesPerPackage) || 0) *
+                    0.9
+                  ).toFixed(2)}{" "}
+                  (10% discount)
+                </small>
+              )}
+
+              {/* NEW: Price per piece display for bulk items */}
+              {packagingType === "bulk" && pricePerPiece && (
+                <div className="price-per-piece">
+                  <span className="label">Price per piece:</span>
+                  <span className="value">₱{pricePerPiece}</span>
+                  {parentProduct && (
+                    <span className="discount-info">
+                      (
+                      {(
+                        (pricePerPiece / parentProduct.price - 1) *
+                        100
+                      ).toFixed(1)}
+                      % vs individual price)
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Profit Margin Display */}
             {profitData && (
               <div className="profit-margin-display">
                 <div className="profit-row">
-                  <span className="profit-label">Profit per item:</span>
+                  <span className="profit-label">Profit per {unit}:</span>
                   <span className="profit-value profit-amount">
                     ₱{profitData.profit}
                   </span>
@@ -601,7 +781,11 @@ export default function ProductForm({
               />
               {packagingType === "bulk" && piecesPerPackage && (
                 <small className="field-description">
-                  Equivalent to {stock * piecesPerPackage} individual pieces
+                  Equivalent to{" "}
+                  <strong>
+                    {stock * (parseInt(piecesPerPackage) || 0)} individual
+                    pieces
+                  </strong>
                 </small>
               )}
             </div>
@@ -657,6 +841,41 @@ export default function ProductForm({
               )}
             </div>
           </div>
+
+          {/* NEW: Packaging Summary Section */}
+          {packagingType === "bulk" && parentProduct && piecesPerPackage && (
+            <div className="form-section packaging-summary">
+              <h3 className="section-title">Packaging Summary</h3>
+              <div className="summary-cards">
+                <div className="summary-card">
+                  <div className="summary-label">Package Composition</div>
+                  <div className="summary-value">
+                    {piecesPerPackage} × {parentProduct.name}
+                  </div>
+                </div>
+                <div className="summary-card">
+                  <div className="summary-label">Total Value</div>
+                  <div className="summary-value">
+                    ₱{(parentProduct.price * piecesPerPackage).toFixed(2)}
+                  </div>
+                </div>
+                <div className="summary-card">
+                  <div className="summary-label">Your Discount</div>
+                  <div className="summary-value discount">
+                    {price
+                      ? `${(
+                          (1 -
+                            parseFloat(price) /
+                              (parentProduct.price * piecesPerPackage)) *
+                          100
+                        ).toFixed(1)}%`
+                      : "10%"}{" "}
+                    off
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
