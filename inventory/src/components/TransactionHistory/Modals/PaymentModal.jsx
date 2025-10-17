@@ -62,7 +62,7 @@ const PaymentModal = ({
   };
 
   return (
-    <div className="modal-overlay payment-modal">
+    <div className="payment-modal-component modal-overlay">
       <div className="modal-content">
         <div className="modal-header success-header">
           <h3>

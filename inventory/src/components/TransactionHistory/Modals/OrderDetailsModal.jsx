@@ -104,7 +104,7 @@ const OrderDetailsModal = ({
   };
 
   return (
-    <div className="modal-overlay order-details-modal">
+    <div className="order-details-modal-component modal-overlay">
       <div className="modal-content">
         <div className="modal-header">
           <h3>
