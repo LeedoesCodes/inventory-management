@@ -117,7 +117,7 @@ const BadOrderModal = ({
   };
 
   return (
-    <div className="modal-overlay bad-order-modal">
+    <div className="bad-order-modal-component modal-overlay">
       <div className="modal-content">
         <div className="modal-header warning-header">
           <h3>

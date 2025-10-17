@@ -1,5 +1,9 @@
-// Order Details Modal Styles
-.order-details-modal {
+// Order Details Modal Component Styles
+// Namespaced under .order-details-modal-component
+.order-details-modal-component {
+  // Note: The .modal-overlay styles are assumed to be global.
+  // If not, they should be defined here as well.
+
   .modal-content {
     max-width: 900px;
     animation: modalSlideIn 0.3s ease-out;
@@ -8,6 +12,9 @@
       background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
       border-bottom: 1px solid #e2e8f0;
       padding: 1.5rem 2rem;
+      display: flex; // Added for proper alignment
+      justify-content: space-between; // Added for proper alignment
+      align-items: center; // Added for proper alignment
 
       h3 {
         margin: 0;
@@ -56,7 +63,7 @@
         border-bottom: 2px solid #e2e8f0;
       }
 
-      // Order Details Sections
+      // Reusable card styles for sections
       .order-details,
       .items-section,
       .order-totals,
@@ -75,7 +82,7 @@
         }
       }
 
-      // Detail Sections
+      // Detail Sections within Customer/Order Info
       .detail-section {
         margin-bottom: 1.5rem;
 
@@ -118,6 +125,7 @@
         .detail-value {
           color: #2d3748;
           font-weight: 500;
+          text-align: right; // Align values to the right
 
           &.customer-name {
             font-weight: 700;
@@ -136,27 +144,20 @@
           }
         }
 
-        // Status Badges
-        .status-badge {
+        // Status & Payment Method Badges
+        .status-badge,
+        .payment-method-badge {
           padding: 0.4rem 0.8rem;
           border-radius: 20px;
           font-size: 0.75rem;
           font-weight: 600;
           text-transform: uppercase;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .payment-method-badge {
-          padding: 0.3rem 0.75rem;
-          border-radius: 15px;
-          font-size: 0.75rem;
-          font-weight: 600;
-          text-transform: uppercase;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          color: white; // Common property
         }
       }
 
-      // Payment Status Summary
+      // Payment Status Summary for Credit
       .payment-status-summary {
         background: linear-gradient(135deg, #f0fff4, #f7fafc);
         border: 1px solid #c6f6d5;
@@ -236,6 +237,10 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+
+            .bad-order-indicator {
+              margin-left: 0.5rem;
+            }
           }
 
           .item-quantity,
@@ -251,7 +256,6 @@
             color: #059669;
           }
 
-          // Bad order item
           &.bad-order-item {
             background: #fff3cd;
             border-radius: 6px;
@@ -260,10 +264,6 @@
 
             .item-name {
               color: #856404;
-
-              .bad-order-indicator {
-                margin-left: 0.5rem;
-              }
             }
           }
         }
@@ -299,10 +299,6 @@
           .total-value {
             font-weight: 600;
             color: #2d3748;
-
-            &.subtotal {
-              font-size: 1rem;
-            }
 
             &.discount {
               color: #ef4444;
@@ -428,7 +424,7 @@
         }
       }
 
-      // No Payments
+      // No Payments Message
       .no-payments {
         text-align: center;
         padding: 2rem;
@@ -510,7 +506,6 @@
           box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
         }
 
-        // Button variants matching your theme
         &.btn-secondary {
           background: linear-gradient(135deg, #94a3b8, #64748b);
           color: white;
@@ -572,21 +567,13 @@
           }
         }
       }
-
-      @media (max-width: 768px) {
-        flex-direction: column;
-
-        .btn {
-          min-width: auto;
-        }
-      }
     }
   }
 }
 
-// Dark Theme
+// Dark Theme for the component
 [data-theme="dark"] {
-  .order-details-modal {
+  .order-details-modal-component {
     .modal-content {
       .modal-header {
         background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
@@ -627,7 +614,6 @@
         .detail-row {
           .detail-label {
             color: #cbd5e0;
-
             svg {
               color: #a0aec0;
             }
@@ -678,11 +664,9 @@
               &.total-amount {
                 color: #f7fafc;
               }
-
               &.paid-amount {
                 color: #68d391;
               }
-
               &.balance-amount {
                 color: #fc8181;
               }
@@ -713,7 +697,6 @@
           &.bad-order-item {
             background: #665600;
             border-color: #856404;
-
             .item-name {
               color: #ffc107;
             }
@@ -733,27 +716,21 @@
 
           .total-value {
             color: #f7fafc;
-
             &.discount {
               color: #fc8181;
             }
-
             &.tax {
               color: #a0aec0;
             }
-
             &.grand-total {
               color: #68d391;
             }
-
             &.paid-total {
               color: #68d391;
             }
-
             &.balance-total {
               color: #f6ad55;
             }
-
             &.refund-total {
               color: #fc8181;
             }
@@ -769,7 +746,6 @@
               background: linear-gradient(135deg, #744210, transparent);
               border-color: #d97706;
             }
-
             &.fully-paid {
               background: linear-gradient(135deg, #22543d, transparent);
               border-color: #68d391;
@@ -790,10 +766,8 @@
             border-color: #63b3ed;
           }
 
-          .payment-record-header {
-            .payment-date {
-              color: #a0aec0;
-            }
+          .payment-record-header .payment-date {
+            color: #a0aec0;
           }
 
           .payment-record-details .payment-notes {
@@ -827,12 +801,20 @@
   }
 }
 
-// Responsive Design
+// Responsive Design for the component
 @media (max-width: 768px) {
-  .order-details-modal {
+  .order-details-modal-component {
     .modal-content {
       width: 95%;
       margin: 1rem;
+
+      .modal-footer {
+        padding: 1rem;
+        flex-direction: column;
+        .btn {
+          min-width: auto;
+        }
+      }
 
       .modal-body {
         padding: 1rem;
@@ -855,26 +837,21 @@
           }
         }
       }
-
-      .modal-footer {
-        padding: 1rem;
-      }
     }
   }
 }
 
 @media (max-width: 480px) {
-  .order-details-modal {
-    .modal-content {
-      .modal-body {
-        .payment-record {
-          flex-direction: column;
-          gap: 1rem;
-          text-align: center;
+  .order-details-modal-component {
+    .modal-content .modal-body {
+      .payment-history-list .payment-record {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
 
-          .payment-record-details {
-            align-items: center;
-          }
+        .payment-record-details {
+          flex-direction: column;
+          align-items: center;
         }
       }
     }
