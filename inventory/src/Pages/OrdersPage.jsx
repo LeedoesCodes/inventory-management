@@ -334,13 +334,17 @@ export default function OrdersPage() {
     setShowConfirmation(true);
   };
 
-  // Order confirmation with success animation
-  const handleConfirmOrder = async (paymentMethod = "cash") => {
+  // Order confirmation with success animation - FIXED DUE DATE HANDLING
+  // Order confirmation with success animation - FIXED DUE DATE SAVING
+  const handleConfirmOrder = async (paymentMethod = "cash", dueDate = null) => {
     if (!pendingOrder) return;
 
     try {
       console.log("🔄 Starting order confirmation process...");
       console.log(`💰 Payment Method: ${paymentMethod}`);
+      console.log(`📅 Due Date: ${dueDate || "Not applicable"}`);
+      console.log(`📅 Due Date Type: ${typeof dueDate}`);
+      console.log(`📅 Due Date Value: ${dueDate}`);
 
       const batch = writeBatch(db);
 
@@ -416,8 +420,10 @@ export default function OrdersPage() {
       await batch.commit();
       console.log("✅ Batch write committed successfully");
 
-      // Create order record with payment method
+      // CRITICAL FIX: Create order record with proper due date handling
       console.log("📝 Creating order record...");
+
+      // Prepare the order data
       const orderData = {
         customerName: pendingOrder.customerName,
         items: pendingOrder.items,
@@ -427,9 +433,46 @@ export default function OrdersPage() {
         paymentStatus: paymentMethod === "credit" ? "pending" : "paid",
         createdAt: new Date(),
         status: "completed",
+        // Initialize payment tracking fields
+        paidAmount: paymentMethod === "credit" ? 0 : pendingOrder.totalAmount,
+        remainingBalance:
+          paymentMethod === "credit" ? pendingOrder.totalAmount : 0,
       };
 
-      console.log("Order data:", orderData);
+      // CRITICAL: Handle due date properly - only add if it exists and is valid
+      if (paymentMethod === "credit" && dueDate) {
+        console.log("💾 Saving due date to order:", dueDate);
+
+        // Convert dueDate string to a Date object for consistent storage
+        const dueDateObj = new Date(dueDate);
+        orderData.dueDate = dueDateObj;
+
+        console.log("💾 Due date saved as:", dueDateObj);
+        console.log("💾 Due date ISO string:", dueDateObj.toISOString());
+      } else {
+        console.log(
+          "💾 No due date to save (not credit order or no due date provided)"
+        );
+        orderData.dueDate = null;
+      }
+
+      // Add payment history for non-credit orders
+      if (paymentMethod !== "credit") {
+        orderData.paymentHistory = [
+          {
+            amount: pendingOrder.totalAmount,
+            paymentDate: new Date(),
+            paymentMethod: paymentMethod,
+            notes: "Initial payment",
+            processedAt: new Date(),
+          },
+        ];
+      } else {
+        orderData.paymentHistory = [];
+      }
+
+      console.log("📦 Final order data:", orderData);
+      console.log("📅 Due date in final data:", orderData.dueDate);
 
       const orderRef = await addDoc(collection(db, "orders"), orderData);
       console.log("✅ Order record created with ID:", orderRef.id);
@@ -813,7 +856,7 @@ export default function OrdersPage() {
 
         <OrderConfirmationDialog
           isOpen={showConfirmation}
-          onConfirm={handleConfirmOrder}
+          onConfirm={handleConfirmOrder} // This now accepts (paymentMethod, dueDate)
           onCancel={handleCancelOrderDialog}
           orderDetails={pendingOrder?.items || []}
           customerName={pendingOrder?.customerName}

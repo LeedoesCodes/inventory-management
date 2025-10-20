@@ -24,11 +24,19 @@ import { usePaymentTracking } from "../components/TransactionHistory/Hooks/usePa
 // Import Utils
 import { printReceipt } from "../components/TransactionHistory/utils/receiptUtils";
 
+// Import Firestore
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "../Firebase/firebase"; // Adjust path as needed
+
 import "../styles/transaction.scss";
 
 export default function TransactionHistory() {
   const { isCollapsed } = useSidebar();
   const location = useLocation();
+
+  // Add products state
+  const [products, setProducts] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(false);
 
   // Use custom hooks
   const {
@@ -65,15 +73,39 @@ export default function TransactionHistory() {
 
   // Bad Order state
   const [badOrderDetails, setBadOrderDetails] = useState({
-    badPieces: "",
+    items: [],
     action: "replace",
     reason: "",
   });
 
-  // Fetch orders on component mount
+  // Fetch orders and products on component mount
   useEffect(() => {
     fetchOrders();
+    fetchProducts();
   }, []);
+
+  // Add this function to fetch products
+  const fetchProducts = async () => {
+    try {
+      setProductsLoading(true);
+      const querySnapshot = await getDocs(collection(db, "products"));
+      const productsData = [];
+
+      querySnapshot.forEach((doc) => {
+        productsData.push({
+          id: doc.id,
+          ...doc.data(),
+        });
+      });
+
+      setProducts(productsData);
+      console.log("Fetched products:", productsData.length);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    } finally {
+      setProductsLoading(false);
+    }
+  };
 
   // Handle navigation state for highlighted order
   useEffect(() => {
@@ -87,6 +119,7 @@ export default function TransactionHistory() {
   const handleSuccess = (message) => {
     // You can add toast notifications here later
     console.log(message);
+    alert(message); // Temporary alert for feedback
   };
 
   const handleError = (error) => {
@@ -136,13 +169,16 @@ export default function TransactionHistory() {
     }
   };
 
-  const handleProcessBadOrderWithErrorHandling = async (order) => {
+  const handleProcessBadOrderWithErrorHandling = async (badOrderData) => {
     try {
-      await handleProcessBadOrder(order, badOrderDetails);
+      console.log("Processing bad order with data:", badOrderData);
+
+      // Call the hook function with the complete data object
+      await handleProcessBadOrder(badOrderData);
       handleSuccess("Bad order processed successfully");
       setBadOrderModal(null);
       setBadOrderDetails({
-        badPieces: "",
+        items: [],
         action: "replace",
         reason: "",
       });
@@ -215,6 +251,12 @@ export default function TransactionHistory() {
               setSelectedOrder(null);
             }}
             onPrintReceipt={printReceipt}
+            // --- THIS IS THE ADDED PROP ---
+            onBadOrder={() => {
+              setBadOrderModal(selectedOrder); // Open BadOrderModal with the order
+              setSelectedOrder(null); // Close OrderDetailsModal
+            }}
+            // --- END OF ADDITION ---
           />
 
           <PaymentModal
@@ -237,10 +279,11 @@ export default function TransactionHistory() {
             order={badOrderModal}
             badOrderDetails={badOrderDetails}
             setBadOrderDetails={setBadOrderDetails}
+            allProducts={products}
             onClose={() => {
               setBadOrderModal(null);
               setBadOrderDetails({
-                badPieces: "",
+                items: [],
                 action: "replace",
                 reason: "",
               });

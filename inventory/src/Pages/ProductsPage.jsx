@@ -22,7 +22,6 @@ import {
 import ProductList from "../components/products/ProductsList";
 import ProductForm from "../components/products/ProductForm/ProductForm";
 import ProductSearch from "../components/products/ProductSearch";
-import PackagingManager from "../components/products/PackagingManager";
 import Header from "../components/UI/Headers";
 import Sidebar from "../components/UI/Sidebar";
 import { useSidebar } from "../context/SidebarContext";
@@ -48,15 +47,11 @@ export default function ProductsPage() {
   const [packagingFilter, setPackagingFilter] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
 
-  // Tab state
-  const [activeTab, setActiveTab] = useState("products");
-
   // Packaging statistics
   const [packagingStats, setPackagingStats] = useState({
     singleItems: 0,
     bulkPackages: 0,
     withRelationships: 0,
-    // Removed lowStockItems from here
   });
 
   // Check for highlighted product on component mount and URL changes
@@ -107,7 +102,6 @@ export default function ProductsPage() {
         singleItems,
         bulkPackages,
         withRelationships,
-        // Removed lowStockItems calculation
       });
     }
   }, [products]);
@@ -314,55 +308,6 @@ export default function ProductsPage() {
     setStockFilter("all");
   };
 
-  // Quick action to create bulk package from single item
-  const handleQuickCreateBulk = (product) => {
-    if (product.packagingType === "single") {
-      setActiveTab("packaging");
-      // You could store the product ID to pre-select it in PackagingManager
-      localStorage.setItem("preSelectedProduct", product.id);
-
-      // Show notification
-      alert(
-        `Navigating to Packaging Manager. Please select "${product.name}" to create bulk package.`
-      );
-    } else {
-      alert(
-        "This product is already a bulk package. Please select a single item."
-      );
-    }
-  };
-
-  // Quick action to view related products
-  const handleViewRelated = (product) => {
-    if (product.packagingType === "single") {
-      // Find bulk packages for this single item
-      const relatedBulks = products.filter(
-        (p) => p.packagingType === "bulk" && p.parentProductId === product.id
-      );
-
-      if (relatedBulks.length > 0) {
-        setPackagingFilter("all");
-        setSearchTerm(product.name);
-        alert(
-          `Showing ${relatedBulks.length} bulk package(s) for ${product.name}`
-        );
-      } else {
-        alert(
-          `No bulk packages found for ${product.name}. You can create one in Packaging Manager.`
-        );
-      }
-    } else if (product.packagingType === "bulk") {
-      // Find parent single item
-      const parentProduct = products.find(
-        (p) => p.id === product.parentProductId
-      );
-      if (parentProduct) {
-        setSearchTerm(parentProduct.name);
-        alert(`Showing parent product: ${parentProduct.name}`);
-      }
-    }
-  };
-
   // Apply filters and sorting whenever relevant states change
   useEffect(() => {
     if (products.length > 0) {
@@ -513,213 +458,173 @@ export default function ProductsPage() {
             </div>
           </div>
         ) : (
-          // Main content with tabs
+          // Main content with products list
           <div className="products-content">
-            {/* Tab Navigation */}
-            <div className="products-tabs">
-              <button
-                className={`tab-button ${
-                  activeTab === "products" ? "active" : ""
-                }`}
-                onClick={() => setActiveTab("products")}
-              >
-                Products List
-              </button>
-              <button
-                className={`tab-button ${
-                  activeTab === "packaging" ? "active" : ""
-                }`}
-                onClick={() => setActiveTab("packaging")}
-              >
-                Packaging Management
-              </button>
+            {/* Enhanced Header with Statistics */}
+            <div className="products-header">
+              <div className="header-content">
+                <h1>Products Management</h1>
+                <p>Manage your product inventory and details</p>
+
+                {/* Packaging Statistics */}
+                <div className="packaging-stats">
+                  <div className="stat-item">
+                    <FontAwesomeIcon
+                      icon={faBoxOpen}
+                      className="stat-icon single"
+                    />
+                    <span className="stat-count">
+                      {packagingStats.singleItems}
+                    </span>
+                    <span className="stat-label">Single Items</span>
+                  </div>
+                  <div className="stat-item">
+                    <FontAwesomeIcon icon={faBox} className="stat-icon bulk" />
+                    <span className="stat-count">
+                      {packagingStats.bulkPackages}
+                    </span>
+                    <span className="stat-label">Bulk Packages</span>
+                  </div>
+                  <div className="stat-item">
+                    <FontAwesomeIcon
+                      icon={faLink}
+                      className="stat-icon related"
+                    />
+                    <span className="stat-count">
+                      {packagingStats.withRelationships}
+                    </span>
+                    <span className="stat-label">With Bulk</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="header-actions">
+                <button className="add-product-btn" onClick={handleAddProduct}>
+                  Add Product
+                </button>
+              </div>
             </div>
 
-            {/* Tab Content */}
-            {activeTab === "products" ? (
-              <>
-                {/* Enhanced Header with Statistics */}
-                <div className="products-header">
-                  <div className="header-content">
-                    <h1>Products Management</h1>
-                    <p>Manage your product inventory and details</p>
+            {/* Enhanced Search and Filters Section */}
+            <div className="search-filters-section enhanced-filters">
+              <ProductSearch
+                onSearch={handleSearch}
+                categories={categories}
+                units={units}
+                selectedCategory={selectedCategory}
+                selectedUnit={selectedUnit}
+              />
 
-                    {/* Packaging Statistics - Removed Low Stock */}
-                    <div className="packaging-stats">
-                      <div className="stat-item">
-                        <FontAwesomeIcon
-                          icon={faBoxOpen}
-                          className="stat-icon single"
-                        />
-                        <span className="stat-count">
-                          {packagingStats.singleItems}
-                        </span>
-                        <span className="stat-label">Single Items</span>
-                      </div>
-                      <div className="stat-item">
-                        <FontAwesomeIcon
-                          icon={faBox}
-                          className="stat-icon bulk"
-                        />
-                        <span className="stat-count">
-                          {packagingStats.bulkPackages}
-                        </span>
-                        <span className="stat-label">Bulk Packages</span>
-                      </div>
-                      <div className="stat-item">
-                        <FontAwesomeIcon
-                          icon={faLink}
-                          className="stat-icon related"
-                        />
-                        <span className="stat-count">
-                          {packagingStats.withRelationships}
-                        </span>
-                        <span className="stat-label">With Bulk</span>
-                      </div>
-                      {/* Removed the Low Stock stat item */}
-                    </div>
-                  </div>
-
-                  <div className="header-actions">
-                    <button
-                      className="add-product-btn"
-                      onClick={handleAddProduct}
-                    >
-                      Add Product
-                    </button>
-                  </div>
+              {/* Enhanced Filter Groups */}
+              <div className="filter-groups-row">
+                <div className="filter-group">
+                  <label>Packaging Type:</label>
+                  <select
+                    value={packagingFilter}
+                    onChange={(e) => setPackagingFilter(e.target.value)}
+                    className="control-select"
+                  >
+                    <option value="all">All Types</option>
+                    <option value="single">Single Items</option>
+                    <option value="bulk">Bulk Packages</option>
+                    <option value="withBulk">Single with Bulk</option>
+                    <option value="withoutBulk">Single without Bulk</option>
+                  </select>
                 </div>
 
-                {/* Enhanced Search and Filters Section */}
-                <div className="search-filters-section enhanced-filters">
-                  <ProductSearch
-                    onSearch={handleSearch}
-                    categories={categories}
-                    units={units}
-                    selectedCategory={selectedCategory}
-                    selectedUnit={selectedUnit}
-                  />
-
-                  {/* Enhanced Filter Groups */}
-                  <div className="filter-groups-row">
-                    <div className="filter-group">
-                      <label>Packaging Type:</label>
-                      <select
-                        value={packagingFilter}
-                        onChange={(e) => setPackagingFilter(e.target.value)}
-                        className="control-select"
-                      >
-                        <option value="all">All Types</option>
-                        <option value="single">Single Items</option>
-                        <option value="bulk">Bulk Packages</option>
-                        <option value="withBulk">Single with Bulk</option>
-                        <option value="withoutBulk">Single without Bulk</option>
-                      </select>
-                    </div>
-
-                    <div className="filter-group">
-                      <label>Stock Status:</label>
-                      <select
-                        value={stockFilter}
-                        onChange={(e) => setStockFilter(e.target.value)}
-                        className="control-select"
-                      >
-                        <option value="all">All Stock</option>
-                        <option value="inStock">In Stock</option>
-                        <option value="lowStock">Low Stock</option>
-                        <option value="outOfStock">Out of Stock</option>
-                      </select>
-                    </div>
-
-                    {(searchTerm ||
-                      selectedCategory ||
-                      selectedUnit ||
-                      packagingFilter !== "all" ||
-                      stockFilter !== "all") && (
-                      <button
-                        className="clear-filters-btn"
-                        onClick={handleClearFilters}
-                      >
-                        Clear All Filters
-                      </button>
-                    )}
-                  </div>
+                <div className="filter-group">
+                  <label>Stock Status:</label>
+                  <select
+                    value={stockFilter}
+                    onChange={(e) => setStockFilter(e.target.value)}
+                    className="control-select"
+                  >
+                    <option value="all">All Stock</option>
+                    <option value="inStock">In Stock</option>
+                    <option value="lowStock">Low Stock</option>
+                    <option value="outOfStock">Out of Stock</option>
+                  </select>
                 </div>
 
-                {/* Enhanced Controls Bar */}
-                <div className="products-controls-bar enhanced-controls">
-                  <div className="control-group">
-                    <label>
-                      <FontAwesomeIcon icon={faSort} />
-                      Sort by:
-                    </label>
-                    <select
-                      value={sortBy}
-                      onChange={(e) => handleSortChange(e.target.value)}
-                      className="control-select"
-                    >
-                      <option value="name">Name</option>
-                      <option value="price">Selling Price</option>
-                      <option value="costPrice">Cost Price</option>
-                      <option value="category">Category</option>
-                      <option value="unit">Unit</option>
-                      <option value="packagingType">Packaging Type</option>
-                      <option value="piecesPerPackage">
-                        Pieces per Package
-                      </option>
-                      <option value="stock">Stock</option>
-                      <option value="sold">Sold</option>
-                      <option value="lowStockThreshold">
-                        Low Stock Threshold
-                      </option>
-                    </select>
-                    <select
-                      value={sortOrder}
-                      onChange={(e) => handleSortOrderChange(e.target.value)}
-                      className="control-select"
-                    >
-                      <option value="asc">Ascending</option>
-                      <option value="desc">Descending</option>
-                    </select>
-                  </div>
+                {(searchTerm ||
+                  selectedCategory ||
+                  selectedUnit ||
+                  packagingFilter !== "all" ||
+                  stockFilter !== "all") && (
+                  <button
+                    className="clear-filters-btn"
+                    onClick={handleClearFilters}
+                  >
+                    Clear All Filters
+                  </button>
+                )}
+              </div>
+            </div>
 
-                  <div className="products-count">
-                    <span>{filteredProducts.length} products</span>
-                    {(selectedCategory ||
-                      selectedUnit ||
-                      packagingFilter !== "all" ||
-                      stockFilter !== "all") && (
-                      <span className="filter-info">
-                        {selectedCategory && ` • ${selectedCategory}`}
-                        {selectedUnit && ` • ${selectedUnit}`}
-                        {packagingFilter !== "all" && ` • ${packagingFilter}`}
-                        {stockFilter !== "all" && ` • ${stockFilter}`}
-                      </span>
-                    )}
-                  </div>
-                </div>
+            {/* Enhanced Controls Bar */}
+            <div className="products-controls-bar enhanced-controls">
+              <div className="control-group">
+                <label>
+                  <FontAwesomeIcon icon={faSort} />
+                  Sort by:
+                </label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => handleSortChange(e.target.value)}
+                  className="control-select"
+                >
+                  <option value="name">Name</option>
+                  <option value="price">Selling Price</option>
+                  <option value="costPrice">Cost Price</option>
+                  <option value="category">Category</option>
+                  <option value="unit">Unit</option>
+                  <option value="packagingType">Packaging Type</option>
+                  <option value="piecesPerPackage">Pieces per Package</option>
+                  <option value="stock">Stock</option>
+                  <option value="sold">Sold</option>
+                  <option value="lowStockThreshold">Low Stock Threshold</option>
+                </select>
+                <select
+                  value={sortOrder}
+                  onChange={(e) => handleSortOrderChange(e.target.value)}
+                  className="control-select"
+                >
+                  <option value="asc">Ascending</option>
+                  <option value="desc">Descending</option>
+                </select>
+              </div>
 
-                {/* Products List */}
-                <div className="products-list-container">
-                  <ProductList
-                    products={filteredProducts}
-                    onEdit={handleEditProduct}
-                    onDelete={handleDeleteProduct}
-                    onQuickCreateBulk={handleQuickCreateBulk}
-                    onViewRelated={handleViewRelated}
-                    highlightedProductId={highlightedProductId}
-                    allProducts={products}
-                  />
-                </div>
+              <div className="products-count">
+                <span>{filteredProducts.length} products</span>
+                {(selectedCategory ||
+                  selectedUnit ||
+                  packagingFilter !== "all" ||
+                  stockFilter !== "all") && (
+                  <span className="filter-info">
+                    {selectedCategory && ` • ${selectedCategory}`}
+                    {selectedUnit && ` • ${selectedUnit}`}
+                    {packagingFilter !== "all" && ` • ${packagingFilter}`}
+                    {stockFilter !== "all" && ` • ${stockFilter}`}
+                  </span>
+                )}
+              </div>
+            </div>
 
-                {/* FAB Button */}
-                <button className="fab" onClick={handleAddProduct}>
-                  +
-                </button>
-              </>
-            ) : (
-              <PackagingManager products={products} onUpdate={fetchProducts} />
-            )}
+            {/* Products List */}
+            <div className="products-list-container">
+              <ProductList
+                products={filteredProducts}
+                onEdit={handleEditProduct}
+                onDelete={handleDeleteProduct}
+                highlightedProductId={highlightedProductId}
+                allProducts={products}
+              />
+            </div>
+
+            {/* FAB Button */}
+            <button className="fab" onClick={handleAddProduct}>
+              +
+            </button>
           </div>
         )}
       </div>

@@ -1,0 +1,912 @@
+/* ============================== */
+/* STATISTICS CARDS COMPONENT CSS */
+/* ============================== */
+
+/* Namespaced Statistics Cards Container */
+.statistics-cards-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+
+  &.collapsed {
+    display: none;
+  }
+}
+
+/* Namespaced Stat Card - FIXED LAYOUT */
+.statistics-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  border-left: 6px solid #e2e8f0;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  margin: 0 !important;
+  border: none !important;
+
+  /* Gradient overlay for better visual appeal */
+  &::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.8),
+      transparent
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  &:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+
+    &::after {
+      opacity: 1;
+    }
+
+    .statistics-card__icon {
+      transform: scale(1.1) rotate(5deg);
+    }
+  }
+
+  .statistics-card__content {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    width: 100%;
+    height: auto !important;
+    position: relative;
+    z-index: 2;
+    flex: 1;
+  }
+
+  .statistics-card__icon {
+    width: 70px;
+    height: 70px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    color: white;
+    flex-shrink: 0;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.2) 0%,
+        transparent 50%
+      );
+      opacity: 0.5;
+    }
+  }
+
+  .statistics-card__main {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    padding-top: 0.5rem;
+
+    .statistics-card__value {
+      margin: 0 0 0.5rem 0;
+      font-size: 2rem;
+      font-weight: 800;
+      color: #1f2937;
+      line-height: 1.1;
+      background: linear-gradient(135deg, #1f2937, #374151);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .statistics-card__label {
+      display: block;
+      color: #6b7280;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.25rem;
+    }
+  }
+
+  .statistics-card__description {
+    color: #9ca3af;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(243, 244, 246, 0.8);
+    background: transparent;
+    backdrop-filter: none;
+    margin-top: auto;
+  }
+
+  .statistics-card__trend {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    transition: all 0.3s ease;
+    z-index: 3;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+
+    &.statistics-card__trend--up {
+      color: #10b981 !important;
+      background: rgba(16, 185, 129, 0.15) !important;
+      border: 2px solid rgba(16, 185, 129, 0.3) !important;
+    }
+
+    &.statistics-card__trend--down {
+      color: #ef4444 !important;
+      background: rgba(239, 68, 68, 0.15) !important;
+      border: 2px solid rgba(239, 68, 68, 0.3) !important;
+    }
+
+    &.statistics-card__trend--warning {
+      color: #f59e0b !important;
+      background: rgba(245, 158, 11, 0.15) !important;
+      border: 2px solid rgba(245, 158, 11, 0.3) !important;
+    }
+
+    &.statistics-card__trend--neutral {
+      color: #6b7280 !important;
+      background: rgba(107, 114, 128, 0.15) !important;
+      border: 2px solid rgba(107, 114, 128, 0.3) !important;
+    }
+  }
+
+  /* ============================== */
+  /* INDIVIDUAL CARD COLOR SCHEMES */
+  /* ============================== */
+
+  // Financial Success Cards - Green Theme
+  &.statistics-card--total-revenue {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #bbf7d0 100%);
+    border-left-color: #10b981;
+
+    .statistics-card__icon {
+      background: linear-gradient(135deg, #10b981, #059669, #047857) !important;
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+    }
+
+    &:hover {
+      background: linear-gradient(
+        135deg,
+        #dcfce7 0%,
+        #bbf7d0 50%,
+        #86efac 100%
+      );
+    }
+  }
+
+  &.statistics-card--collected-revenue {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 50%, #bfdbfe 100%);
+    border-left-color: #3b82f6;
+
+    .statistics-card__icon {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8, #1e40af) !important;
+      box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+    }
+
+    &:hover {
+      background: linear-gradient(
+        135deg,
+        #dbeafe 0%,
+        #bfdbfe 50%,
+        #93c5fd 100%
+      );
+    }
+  }
+
+  &.statistics-card--monthly-sales {
+    background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 50%, #e9d5ff 100%);
+    border-left-color: #8b5cf6;
+
+    .statistics-card__icon {
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed, #6d28d9) !important;
+      box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+    }
+
+    &:hover {
+      background: linear-gradient(
+        135deg,
+        #f3e8ff 0%,
+        #e9d5ff 50%,
+        #d8b4fe 100%
+      );
+    }
+  }
+
+  &.statistics-card--today-sales {
+    background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #fbcfe8 100%);
+    border-left-color: #ec4899;
+
+    .statistics-card__icon {
+      background: linear-gradient(135deg, #ec4899, #db2777, #be185d) !important;
+      box-shadow: 0 8px 25px rgba(236, 72, 153, 0.3);
+    }
+
+    &:hover {
+      background: linear-gradient(
+        135deg,
+        #fce7f3 0%,
+        #fbcfe8 50%,
+        #f9a8d4 100%
+      );
+    }
+  }
+
+  // Warning & Attention Cards - Orange/Yellow Theme
+  &.statistics-card--pending-revenue {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 50%, #fde68a 100%);
+    border-left-color: #f59e0b;
+
+    .statistics-card__icon {
+      background: linear-gradient(135deg, #f59e0b, #d97706, #b45309) !important;
+      box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+    }
+
+    &:hover {
+      background: linear-gradient(
+        135deg,
+        #fef3c7 0%,
+        #fde68a 50%,
+        #fcd34d 100%
+      );
+    }
+  }
+
+  &.statistics-card--partial-payments {
+    background: linear-gradient(135deg, #fefce8 0%, #fef9c3 50%, #fef08a 100%);
+    border-left-color: #eab308;
+
+    .statistics-card__icon {
+      background: linear-gradient(135deg, #eab308, #ca8a04, #a16207) !important;
+      box-shadow: 0 8px 25px rgba(234, 179, 8, 0.3);
+    }
+
+    &:hover {
+      background: linear-gradient(
+        135deg,
+        #fef9c3 0%,
+        #fef08a 50%,
+        #fde047 100%
+      );
+    }
+  }
+
+  // Danger & Critical Cards - Red Theme
+  &.statistics-card--overdue-revenue {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 50%, #fecaca 100%);
+    border-left-color: #ef4444;
+
+    .statistics-card__icon {
+      background: linear-gradient(135deg, #ef4444, #dc2626, #b91c1c) !important;
+      box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
+    }
+
+    &:hover {
+      background: linear-gradient(
+        135deg,
+        #fee2e2 0%,
+        #fecaca 50%,
+        #fca5a5 100%
+      );
+    }
+  }
+
+  &.statistics-card--cancelled-orders {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
+    border-left-color: #64748b;
+
+    .statistics-card__icon {
+      background: linear-gradient(135deg, #64748b, #475569, #334155) !important;
+      box-shadow: 0 8px 25px rgba(100, 116, 139, 0.3);
+    }
+
+    &:hover {
+      background: linear-gradient(
+        135deg,
+        #f1f5f9 0%,
+        #e2e8f0 50%,
+        #cbd5e1 100%
+      );
+    }
+  }
+
+  &.statistics-card--refunded-orders {
+    background: linear-gradient(135deg, #fdf4ff 0%, #fae8ff 50%, #f3e8ff 100%);
+    border-left-color: #c084fc;
+
+    .statistics-card__icon {
+      background: linear-gradient(135deg, #c084fc, #a855f7, #9333ea) !important;
+      box-shadow: 0 8px 25px rgba(192, 132, 252, 0.3);
+    }
+
+    &:hover {
+      background: linear-gradient(
+        135deg,
+        #fae8ff 0%,
+        #f3e8ff 50%,
+        #e9d5ff 100%
+      );
+    }
+  }
+
+  // Business Metrics Cards - Blue/Cyan Theme
+  &.statistics-card--total-credit {
+    background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 50%, #fdba74 100%);
+    border-left-color: #f97316;
+
+    .statistics-card__icon {
+      background: linear-gradient(135deg, #f97316, #ea580c, #c2410c) !important;
+      box-shadow: 0 8px 25px rgba(249, 115, 22, 0.3);
+    }
+
+    &:hover {
+      background: linear-gradient(
+        135deg,
+        #fed7aa 0%,
+        #fdba74 50%,
+        #fb923c 100%
+      );
+    }
+  }
+
+  &.statistics-card--total-orders {
+    background: linear-gradient(135deg, #ecfeff 0%, #cffafe 50%, #a5f3fc 100%);
+    border-left-color: #06b6d4;
+
+    .statistics-card__icon {
+      background: linear-gradient(135deg, #06b6d4, #0891b2, #0e7490) !important;
+      box-shadow: 0 8px 25px rgba(6, 182, 212, 0.3);
+    }
+
+    &:hover {
+      background: linear-gradient(
+        135deg,
+        #cffafe 0%,
+        #a5f3fc 50%,
+        #67e8f9 100%
+      );
+    }
+  }
+
+  &.statistics-card--average-order {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #bbf7d0 100%);
+    border-left-color: #22c55e;
+
+    .statistics-card__icon {
+      background: linear-gradient(135deg, #22c55e, #16a34a, #15803d) !important;
+      box-shadow: 0 8px 25px rgba(34, 197, 94, 0.3);
+    }
+
+    &:hover {
+      background: linear-gradient(
+        135deg,
+        #dcfce7 0%,
+        #bbf7d0 50%,
+        #86efac 100%
+      );
+    }
+  }
+
+  &.statistics-card--total-items {
+    background: linear-gradient(135deg, #f0fdf9 0%, #ccfbf1 50%, #99f6e4 100%);
+    border-left-color: #14b8a6;
+
+    .statistics-card__icon {
+      background: linear-gradient(135deg, #14b8a6, #0d9488, #0f766e) !important;
+      box-shadow: 0 8px 25px rgba(20, 184, 166, 0.3);
+    }
+
+    &:hover {
+      background: linear-gradient(
+        135deg,
+        #ccfbf1 0%,
+        #99f6e4 50%,
+        #5eead4 100%
+      );
+    }
+  }
+
+  // Customer & Performance Cards - Purple/Indigo Theme
+  &.statistics-card--unique-customers {
+    background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 50%, #e9d5ff 100%);
+    border-left-color: #a855f7;
+
+    .statistics-card__icon {
+      background: linear-gradient(135deg, #a855f7, #9333ea, #7e22ce) !important;
+      box-shadow: 0 8px 25px rgba(168, 85, 247, 0.3);
+    }
+
+    &:hover {
+      background: linear-gradient(
+        135deg,
+        #f3e8ff 0%,
+        #e9d5ff 50%,
+        #d8b4fe 100%
+      );
+    }
+  }
+
+  &.statistics-card--collection-rate {
+    background: linear-gradient(135deg, #fef7cd 0%, #fef08a 50%, #fde047 100%);
+    border-left-color: #eab308;
+
+    .statistics-card__icon {
+      background: linear-gradient(135deg, #eab308, #ca8a04, #a16207) !important;
+      box-shadow: 0 8px 25px rgba(234, 179, 8, 0.3);
+    }
+
+    &:hover {
+      background: linear-gradient(
+        135deg,
+        #fef08a 0%,
+        #fde047 50%,
+        #facc15 100%
+      );
+    }
+  }
+
+  // Pulse animation for important metrics
+  &.statistics-card--today-sales,
+  &.statistics-card--overdue-revenue,
+  &.statistics-card--pending-revenue {
+    animation: statistics-gentle-pulse 4s ease-in-out infinite;
+
+    &:hover {
+      animation: none;
+    }
+  }
+}
+
+/* Enhanced hover effects for all cards */
+.statistics-card:hover {
+  .statistics-card__value {
+    background: linear-gradient(135deg, #000, #374151);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .statistics-card__label {
+    color: #4b5563;
+  }
+}
+
+/* Dark Theme Support */
+[data-theme="dark"] {
+  .statistics-cards-container {
+    background: transparent !important;
+  }
+
+  .statistics-card {
+    background: #2d3748 !important;
+    border-left-color: #4a5568 !important;
+
+    &:hover {
+      background: #374151 !important;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6) !important;
+    }
+
+    .statistics-card__main {
+      .statistics-card__value {
+        background: linear-gradient(135deg, #f7fafc, #e2e8f0) !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+        background-clip: text !important;
+      }
+
+      .statistics-card__label {
+        color: #cbd5e0 !important;
+      }
+    }
+
+    .statistics-card__description {
+      color: #a0aec0 !important;
+      border-top-color: #4a5568 !important;
+      background: linear-gradient(
+        transparent,
+        rgba(45, 55, 72, 0.9)
+      ) !important;
+    }
+
+    // Dark theme specific card backgrounds
+    &.statistics-card--total-revenue {
+      background: linear-gradient(135deg, #1a3c2a, #22543d, #2d3748) !important;
+      border-left-color: #10b981 !important;
+    }
+
+    &.statistics-card--collected-revenue {
+      background: linear-gradient(135deg, #1e3a5f, #1e40af, #2d3748) !important;
+      border-left-color: #3b82f6 !important;
+    }
+
+    &.statistics-card--monthly-sales {
+      background: linear-gradient(135deg, #2a1a3c, #4c1d95, #2d3748) !important;
+      border-left-color: #8b5cf6 !important;
+    }
+
+    &.statistics-card--today-sales {
+      background: linear-gradient(135deg, #3c1a2a, #831843, #2d3748) !important;
+      border-left-color: #ec4899 !important;
+    }
+
+    &.statistics-card--pending-revenue {
+      background: linear-gradient(135deg, #3c2a1a, #78350f, #2d3748) !important;
+      border-left-color: #f59e0b !important;
+    }
+
+    &.statistics-card--overdue-revenue {
+      background: linear-gradient(135deg, #3c1a1a, #7f1d1d, #2d3748) !important;
+      border-left-color: #ef4444 !important;
+    }
+
+    &.statistics-card--total-credit {
+      background: linear-gradient(135deg, #3c2a1a, #7c2d12, #2d3748) !important;
+      border-left-color: #f97316 !important;
+    }
+
+    &.statistics-card--total-orders {
+      background: linear-gradient(135deg, #1a3c4a, #164e63, #2d3748) !important;
+      border-left-color: #06b6d4 !important;
+    }
+
+    &.statistics-card--average-order {
+      background: linear-gradient(135deg, #1a3c2a, #166534, #2d3748) !important;
+      border-left-color: #22c55e !important;
+    }
+
+    &.statistics-card--total-items {
+      background: linear-gradient(135deg, #1a3c3c, #0f766e, #2d3748) !important;
+      border-left-color: #14b8a6 !important;
+    }
+
+    &.statistics-card--unique-customers {
+      background: linear-gradient(135deg, #2a1a3c, #581c87, #2d3748) !important;
+      border-left-color: #a855f7 !important;
+    }
+
+    &.statistics-card--collection-rate {
+      background: linear-gradient(135deg, #3c2a1a, #713f12, #2d3748) !important;
+      border-left-color: #eab308 !important;
+    }
+
+    &.statistics-card--cancelled-orders {
+      background: linear-gradient(135deg, #2d3748, #374151, #4b5563) !important;
+      border-left-color: #64748b !important;
+    }
+
+    &.statistics-card--refunded-orders {
+      background: linear-gradient(135deg, #2a1a3c, #4c1d95, #2d3748) !important;
+      border-left-color: #c084fc !important;
+    }
+
+    &.statistics-card--partial-payments {
+      background: linear-gradient(135deg, #3c2a1a, #78350f, #2d3748) !important;
+      border-left-color: #eab308 !important;
+    }
+  }
+}
+
+/* Animations */
+@keyframes statistics-gentle-pulse {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.12);
+  }
+}
+
+@keyframes statistics-icon-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+  50% {
+    transform: translateY(-5px) rotate(5deg);
+  }
+}
+
+/* Enhanced hover animations */
+.statistics-card:hover .statistics-card__icon {
+  animation: statistics-icon-float 0.6s ease-in-out;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .statistics-cards-container {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+    gap: 1.25rem;
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .statistics-cards-container {
+    grid-template-columns: 1fr !important;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .statistics-card {
+    padding: 1.25rem;
+    min-height: 120px;
+
+    .statistics-card__content {
+      gap: 1rem;
+    }
+
+    .statistics-card__icon {
+      width: 60px;
+      height: 60px;
+      font-size: 1.5rem;
+    }
+
+    .statistics-card__main {
+      .statistics-card__value {
+        font-size: 1.75rem;
+      }
+
+      .statistics-card__label {
+        font-size: 0.9rem;
+      }
+    }
+
+    .statistics-card__description {
+      font-size: 0.75rem;
+    }
+
+    .statistics-card__trend {
+      top: 1.25rem;
+      right: 1.25rem;
+      width: 22px;
+      height: 22px;
+      font-size: 0.65rem;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .statistics-cards-container {
+    padding: 0.75rem;
+  }
+
+  .statistics-card {
+    padding: 1rem;
+    min-height: 110px;
+
+    .statistics-card__content {
+      gap: 0.75rem;
+    }
+
+    .statistics-card__icon {
+      width: 55px;
+      height: 55px;
+      font-size: 1.4rem;
+    }
+
+    .statistics-card__main {
+      .statistics-card__value {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .statistics-card__label {
+        font-size: 0.85rem;
+      }
+    }
+
+    .statistics-card__description {
+      font-size: 0.7rem;
+    }
+
+    .statistics-card__trend {
+      top: 1rem;
+      right: 1rem;
+      width: 20px;
+      height: 20px;
+      font-size: 0.6rem;
+    }
+  }
+}
+
+/* Print Styles */
+@media print {
+  .statistics-cards-container {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1rem;
+    padding: 1rem;
+
+    .statistics-card {
+      break-inside: avoid;
+      box-shadow: none !important;
+      border: 1px solid #e2e8f0 !important;
+      min-height: auto;
+      background: white !important;
+
+      &:hover {
+        transform: none !important;
+        box-shadow: none !important;
+      }
+
+      .statistics-card__trend {
+        display: none !important;
+      }
+
+      .statistics-card__icon {
+        box-shadow: none !important;
+      }
+    }
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .statistics-card {
+    transition: none;
+    animation: none;
+
+    &:hover {
+      transform: none;
+
+      .statistics-card__icon {
+        transform: none;
+        animation: none;
+      }
+    }
+  }
+
+  .statistics-card--today-sales,
+  .statistics-card--overdue-revenue,
+  .statistics-card--pending-revenue {
+    animation: none;
+  }
+}
+/* ============================== */
+/* SHOW MORE/LESS TOGGLE STYLES */
+/* ============================== */
+
+.statistics-cards-toggle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  grid-column: 1 / -1;
+  margin: 1rem 0;
+
+  .statistics-cards-toggle__button {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+      background: linear-gradient(135deg, #1d4ed8, #1e40af);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+
+    .statistics-cards-toggle__icon {
+      font-size: 0.8rem;
+      transition: transform 0.3s ease;
+    }
+
+    &:hover .statistics-cards-toggle__icon {
+      transform: translateY(1px);
+    }
+  }
+}
+
+/* Smooth animation for showing/hiding cards */
+.statistics-cards-container {
+  .statistics-card {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* For additional cards that are hidden initially */
+    &:nth-child(n + 4) {
+      animation: statistics-card-slideDown 0.5s ease-out;
+    }
+  }
+}
+
+@keyframes statistics-card-slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive design for toggle */
+@media (max-width: 768px) {
+  .statistics-cards-toggle {
+    margin: 0.75rem 0;
+
+    .statistics-cards-toggle__button {
+      padding: 0.65rem 1.25rem;
+      font-size: 0.85rem;
+      gap: 0.5rem;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .statistics-cards-toggle {
+    margin: 0.5rem 0;
+
+    .statistics-cards-toggle__button {
+      padding: 0.6rem 1rem;
+      font-size: 0.8rem;
+      gap: 0.4rem;
+    }
+  }
+}
+
+/* Dark theme support for toggle */
+[data-theme="dark"] {
+  .statistics-cards-toggle__button {
+    background: linear-gradient(135deg, #1e40af, #1e3a8a);
+    box-shadow: 0 4px 15px rgba(30, 64, 175, 0.4);
+
+    &:hover {
+      background: linear-gradient(135deg, #1e3a8a, #1e1b4b);
+      box-shadow: 0 6px 20px rgba(30, 64, 175, 0.5);
+    }
+  }
+}
