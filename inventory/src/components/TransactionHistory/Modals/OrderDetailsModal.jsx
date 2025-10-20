@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faTimesCircle,
@@ -20,6 +20,11 @@ import {
   faUserTie,
   faFileAlt,
   faTags,
+  faExclamationTriangle,
+  faUndo,
+  faEye,
+  faEyeSlash,
+  faClock,
 } from "@fortawesome/free-solid-svg-icons";
 import "./ordersDetails.scss";
 
@@ -30,8 +35,13 @@ const OrderDetailsModal = ({
   onMarkAsPaid,
   onCancelOrder,
   printReceipt,
+  onBadOrder,
 }) => {
   if (!order) return null;
+
+  // New state for bad order history
+  const [showBadOrderHistory, setShowBadOrderHistory] = useState(false);
+  const [selectedBadOrder, setSelectedBadOrder] = useState(null);
 
   const isCreditPending =
     order.paymentMethod === "credit" && order.paymentStatus === "pending";
@@ -40,9 +50,10 @@ const OrderDetailsModal = ({
   const isFullyPaid =
     order.paymentMethod === "credit" && order.paymentStatus === "paid";
 
-  // Calculate totals
+  // Calculate totals - use current items or bad order items if viewing history
+  const currentItems = selectedBadOrder ? selectedBadOrder.items : order.items;
   const subtotal =
-    order.items?.reduce((sum, item) => sum + item.price * item.quantity, 0) ||
+    currentItems?.reduce((sum, item) => sum + item.price * item.quantity, 0) ||
     0;
   const discount = order.discount || 0;
   const tax = order.tax || 0;
@@ -51,6 +62,37 @@ const OrderDetailsModal = ({
     order.paymentHistory?.reduce((sum, payment) => sum + payment.amount, 0) ||
     0;
   const balance = grandTotal - totalPaid;
+
+  // Due date calculations
+  const isCreditOrder =
+    order.paymentMethod === "credit" || order.paymentMethod === "pay_later";
+  const hasDueDate = order.dueDate;
+  const isOverdue =
+    isCreditOrder && hasDueDate && new Date(order.dueDate) < new Date();
+
+  // Calculate days overdue or remaining
+  const getDaysOverdue = () => {
+    if (!isCreditOrder || !hasDueDate) return 0;
+    const dueDate = order.dueDate.toDate
+      ? order.dueDate.toDate()
+      : new Date(order.dueDate);
+    const today = new Date();
+    const diffTime = today - dueDate;
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  const getDaysRemaining = () => {
+    if (!isCreditOrder || !hasDueDate || isOverdue) return 0;
+    const dueDate = order.dueDate.toDate
+      ? order.dueDate.toDate()
+      : new Date(order.dueDate);
+    const today = new Date();
+    const diffTime = dueDate - today;
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  const daysOverdue = getDaysOverdue();
+  const daysRemaining = getDaysRemaining();
 
   // Format date
   const formatDate = (date) => {
@@ -70,6 +112,22 @@ const OrderDetailsModal = ({
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+    });
+  };
+
+  const formatDueDate = (date) => {
+    if (!date) return "Not set";
+    if (date.toDate) {
+      return date.toDate().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    }
+    return new Date(date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
@@ -103,18 +161,157 @@ const OrderDetailsModal = ({
     }
   };
 
+  // New helper functions for bad order history
+  const handleViewBadOrder = (badOrder) => {
+    setSelectedBadOrder(badOrder);
+    setShowBadOrderHistory(true);
+  };
+
+  const handleViewCurrentOrder = () => {
+    setSelectedBadOrder(null);
+    setShowBadOrderHistory(false);
+  };
+
+  const getBadOrderActionLabel = (action) => {
+    switch (action) {
+      case "replace":
+        return "Replace Only";
+      case "partial_refund":
+        return "Partial Refund + Replace";
+      case "full_refund":
+        return "Full Refund";
+      default:
+        return action;
+    }
+  };
+
   return (
     <div className="order-details-modal-component modal-overlay">
       <div className="modal-content">
-        <div className="modal-header">
+        <div className={`modal-header ${isOverdue ? "overdue-header" : ""}`}>
           <h3>
-            <FontAwesomeIcon icon={faReceipt} />
-            Order Details - {order.id}
+            <FontAwesomeIcon
+              icon={isOverdue ? faExclamationTriangle : faReceipt}
+            />
+            {selectedBadOrder ? "Bad Order Details" : "Order Details"} -{" "}
+            {order.id}
+            {selectedBadOrder && (
+              <span className="bad-order-indicator-header">
+                (Historical View)
+              </span>
+            )}
+            {isOverdue && (
+              <span className="overdue-indicator-header">(OVERDUE)</span>
+            )}
           </h3>
           <button onClick={onClose}>×</button>
         </div>
 
         <div className="modal-body">
+          {/* New Section: View Toggle */}
+          {order.badOrders && order.badOrders.length > 0 && (
+            <div className="view-toggle-section">
+              <div className="view-toggle-buttons">
+                <button
+                  className={`btn btn-sm ${
+                    !showBadOrderHistory ? "btn-primary" : "btn-secondary"
+                  }`}
+                  onClick={handleViewCurrentOrder}
+                >
+                  <FontAwesomeIcon icon={faEye} />
+                  Current Order
+                </button>
+                <button
+                  className={`btn btn-sm ${
+                    showBadOrderHistory ? "btn-primary" : "btn-secondary"
+                  }`}
+                  onClick={() => setShowBadOrderHistory(true)}
+                >
+                  <FontAwesomeIcon icon={faHistory} />
+                  Bad Order History ({order.badOrders.length})
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* New Section: Bad Order History Panel */}
+          {showBadOrderHistory && (
+            <div className="bad-order-history-section">
+              <h4 className="section-title">
+                <FontAwesomeIcon icon={faExclamationTriangle} />
+                Bad Order History
+              </h4>
+
+              {!selectedBadOrder ? (
+                <div className="bad-order-list">
+                  {order.badOrders?.map((badOrder, index) => (
+                    <div key={badOrder.id || index} className="bad-order-card">
+                      <div className="bad-order-header">
+                        <div className="bad-order-info">
+                          <span className="bad-order-action">
+                            {getBadOrderActionLabel(badOrder.action)}
+                          </span>
+                          <span className="bad-order-reason">
+                            Reason: {badOrder.reason}
+                          </span>
+                          <span className="bad-order-date">
+                            {formatDate(badOrder.processedAt)}
+                          </span>
+                        </div>
+                        <div className="bad-order-amount">
+                          {badOrder.totalRefundAmount > 0 && (
+                            <span className="refund-amount">
+                              Refund: ₱{badOrder.totalRefundAmount.toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="bad-order-footer">
+                        <button
+                          className="btn btn-sm btn-outline"
+                          onClick={() => handleViewBadOrder(badOrder)}
+                        >
+                          <FontAwesomeIcon icon={faEye} />
+                          View Details
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="selected-bad-order">
+                  <div className="bad-order-details-header">
+                    <h5>
+                      Bad Order - {formatDate(selectedBadOrder.processedAt)}
+                      <button
+                        className="btn btn-sm btn-secondary"
+                        onClick={() => setSelectedBadOrder(null)}
+                        style={{ marginLeft: "10px" }}
+                      >
+                        <FontAwesomeIcon icon={faUndo} />
+                        Back to List
+                      </button>
+                    </h5>
+                    <div className="bad-order-meta">
+                      <span className="bad-order-action-badge">
+                        {getBadOrderActionLabel(selectedBadOrder.action)}
+                      </span>
+                      <span className="bad-order-reason">
+                        Reason: {selectedBadOrder.reason}
+                      </span>
+                      {selectedBadOrder.totalRefundAmount > 0 && (
+                        <span className="bad-order-refund">
+                          Refund: ₱
+                          {selectedBadOrder.totalRefundAmount.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Customer & Order Information */}
           <div className="order-details">
             {/* Customer Information */}
@@ -189,6 +386,15 @@ const OrderDetailsModal = ({
                     {order.status}
                   </span>
                 </div>
+                {/* New bad order count row */}
+                {order.hasBadOrder && (
+                  <div className="detail-row">
+                    <span className="detail-label">Bad Orders:</span>
+                    <span className="detail-value bad-order-count">
+                      {order.badOrders?.length || 0} recorded
+                    </span>
+                  </div>
+                )}
                 {order.salesperson && (
                   <div className="detail-row">
                     <span className="detail-label">
@@ -201,7 +407,7 @@ const OrderDetailsModal = ({
               </div>
             </div>
 
-            {/* Payment Information */}
+            {/* Payment Information (Enhanced with Due Date) */}
             <div className="detail-section">
               <h4 className="section-title">
                 <FontAwesomeIcon icon={faCreditCard} />
@@ -238,6 +444,41 @@ const OrderDetailsModal = ({
                         {order.paymentStatus}
                       </span>
                     </div>
+
+                    {/* Due Date Information */}
+                    <div
+                      className={`detail-row ${isOverdue ? "overdue-row" : ""}`}
+                    >
+                      <span className="detail-label">
+                        <FontAwesomeIcon
+                          icon={isOverdue ? faExclamationTriangle : faCalendar}
+                        />
+                        Due Date:
+                      </span>
+                      <span
+                        className={`detail-value due-date-display ${
+                          isOverdue ? "overdue" : ""
+                        }`}
+                      >
+                        {formatDueDate(order.dueDate)}
+                        {isOverdue && (
+                          <span className="overdue-badge">
+                            {daysOverdue} day{daysOverdue !== 1 ? "s" : ""}{" "}
+                            overdue
+                          </span>
+                        )}
+                        {!isOverdue && hasDueDate && daysRemaining > 0 && (
+                          <span className="due-soon-badge">
+                            {daysRemaining} day{daysRemaining !== 1 ? "s" : ""}{" "}
+                            remaining
+                          </span>
+                        )}
+                        {!isOverdue && hasDueDate && daysRemaining === 0 && (
+                          <span className="due-today-badge">Due today</span>
+                        )}
+                      </span>
+                    </div>
+
                     <div className="detail-row">
                       <span className="detail-label">Credit Terms:</span>
                       <span className="detail-value">
@@ -249,10 +490,12 @@ const OrderDetailsModal = ({
               </div>
             </div>
 
-            {/* Payment Status Summary for Credit Orders */}
+            {/* Payment Status Summary (Enhanced with Due Date Info) */}
             {order.paymentMethod === "credit" && (
               <div
-                className={`payment-status-summary payment-${order.paymentStatus}`}
+                className={`payment-status-summary payment-${
+                  order.paymentStatus
+                } ${isOverdue ? "overdue-payment" : ""}`}
               >
                 <div className="payment-summary-row">
                   <span className="summary-label">Total Amount:</span>
@@ -272,6 +515,30 @@ const OrderDetailsModal = ({
                     ₱{balance.toFixed(2)}
                   </span>
                 </div>
+
+                {/* Due Date Summary */}
+                {hasDueDate && (
+                  <div className="payment-summary-row due-date-summary">
+                    <span className="summary-label">
+                      <FontAwesomeIcon
+                        icon={isOverdue ? faExclamationTriangle : faClock}
+                      />
+                      {isOverdue ? "Overdue Since:" : "Due Date:"}
+                    </span>
+                    <span
+                      className={`summary-value ${
+                        isOverdue ? "overdue-value" : ""
+                      }`}
+                    >
+                      {formatDueDate(order.dueDate)}
+                      {isOverdue && (
+                        <span className="overdue-days">
+                          ({daysOverdue} day{daysOverdue !== 1 ? "s" : ""})
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -280,23 +547,26 @@ const OrderDetailsModal = ({
           <div className="items-section">
             <h4 className="section-title">
               <FontAwesomeIcon icon={faList} />
-              Ordered Items ({order.items?.length || 0})
+              {selectedBadOrder ? "Bad Order Items" : "Ordered Items"} (
+              {currentItems?.length || 0})
+              {selectedBadOrder && (
+                <span className="historical-badge">Historical View</span>
+              )}
             </h4>
             <div className="items-list">
-              {order.items?.map((item, index) => (
+              {currentItems?.map((item, index) => (
                 <div
                   key={index}
                   className={`item-row ${
-                    item.isBadOrder ? "bad-order-item" : ""
+                    item.badPieces > 0 ? "bad-order-item" : ""
                   }`}
                 >
                   <div className="item-name">
                     <FontAwesomeIcon icon={faBox} />
-                    {item.productName}
-                    {item.variant && ` - ${item.variant}`}
-                    {item.isBadOrder && (
-                      <span className="bad-order-indicator" title="Bad Order">
-                        🚨
+                    {item.name}
+                    {selectedBadOrder && item.badPieces > 0 && (
+                      <span className="bad-order-quantity" title="Bad Pieces">
+                        🚨 {item.badPieces} bad pieces
                       </span>
                     )}
                   </div>
@@ -361,11 +631,17 @@ const OrderDetailsModal = ({
                 <div
                   className={`total-row balance-row ${
                     balance > 0 ? "has-balance" : "fully-paid"
-                  }`}
+                  } ${isOverdue ? "overdue-balance" : ""}`}
                 >
                   <span className="total-label">Balance Due:</span>
                   <span className="total-value balance-total">
                     ₱{balance.toFixed(2)}
+                    {isOverdue && (
+                      <span className="overdue-indicator">
+                        <FontAwesomeIcon icon={faExclamationTriangle} />
+                        OVERDUE
+                      </span>
+                    )}
                   </span>
                 </div>
               </>
@@ -452,6 +728,7 @@ const OrderDetailsModal = ({
           )}
         </div>
 
+        {/* Modal Footer (Enhanced with overdue indicators) */}
         <div className="modal-footer">
           <button className="btn btn-secondary" onClick={onClose}>
             <FontAwesomeIcon icon={faTimesCircle} />
@@ -461,9 +738,14 @@ const OrderDetailsModal = ({
           {order.status !== "cancelled" &&
             order.paymentMethod === "credit" &&
             (isCreditPending || isPartiallyPaid) && (
-              <button className="btn btn-primary" onClick={onRecordPayment}>
-                <FontAwesomeIcon icon={faMoneyCheck} />
-                Record Payment
+              <button
+                className={`btn ${isOverdue ? "btn-warning" : "btn-primary"}`}
+                onClick={onRecordPayment}
+              >
+                <FontAwesomeIcon
+                  icon={isOverdue ? faExclamationTriangle : faMoneyCheck}
+                />
+                {isOverdue ? "Pay Overdue Amount" : "Record Payment"}
               </button>
             )}
 
@@ -475,6 +757,13 @@ const OrderDetailsModal = ({
                 Mark as Paid
               </button>
             )}
+
+          {order.status !== "cancelled" && (
+            <button className="btn btn-danger" onClick={onBadOrder}>
+              <FontAwesomeIcon icon={faExclamationTriangle} />
+              Record Bad Order
+            </button>
+          )}
 
           {order.status !== "cancelled" && (
             <button className="btn btn-warning" onClick={onCancelOrder}>

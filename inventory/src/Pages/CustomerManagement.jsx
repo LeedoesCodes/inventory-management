@@ -26,9 +26,12 @@ import {
   faShoppingCart,
   faDollarSign,
   faExternalLinkAlt,
-  faEye, // Add eye icon for profile view
+  faEye,
+  faCreditCard, // Add credit card icon
+  faClock, // Add clock icon for pending payments
+  faExclamationTriangle, // Add warning icon for overdue
 } from "@fortawesome/free-solid-svg-icons";
-import CustomerProfileModal from "../components/Customer/CustomerProfileModal"; // Import the new component
+import CustomerProfileModal from "../components/Customer/CustomerProfileModal";
 import "../styles/customerManagement.scss";
 
 export default function CustomerManagement() {
@@ -40,9 +43,9 @@ export default function CustomerManagement() {
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
-  const [selectedCustomer, setSelectedCustomer] = useState(null); // Add state for selected customer
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
 
-  // Form state (only name, phone, address)
+  // Form state
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -87,6 +90,7 @@ export default function CustomerManagement() {
     fetchOrders();
   }, []);
 
+  // Enhanced customer stats to include credit information
   const getCustomerStats = (customerName) => {
     const customerOrders = orders.filter(
       (order) =>
@@ -98,10 +102,42 @@ export default function CustomerManagement() {
       (sum, order) => sum + order.totalAmount,
       0
     );
+
+    // Calculate credit-specific stats
+    const creditOrders = customerOrders.filter(
+      (order) =>
+        order.paymentMethod === "credit" || order.paymentMethod === "pay_later"
+    );
+
+    const totalCreditAmount = creditOrders.reduce(
+      (sum, order) => sum + order.totalAmount,
+      0
+    );
+
+    // Calculate pending credit (unpaid credit orders)
+    const pendingCreditOrders = creditOrders.filter(
+      (order) =>
+        order.paymentStatus !== "paid" && order.paymentStatus !== "completed"
+    );
+
+    const pendingCreditAmount = pendingCreditOrders.reduce(
+      (sum, order) => sum + order.totalAmount,
+      0
+    );
+
     const lastOrder =
       customerOrders.length > 0 ? customerOrders[0].createdAt : null;
 
-    return { totalOrders, totalSpent, lastOrder, customerOrders };
+    return {
+      totalOrders,
+      totalSpent,
+      lastOrder,
+      customerOrders,
+      creditOrders,
+      totalCreditAmount,
+      pendingCreditAmount,
+      pendingCreditCount: pendingCreditOrders.length,
+    };
   };
 
   // Handle customer profile click
@@ -118,7 +154,7 @@ export default function CustomerManagement() {
 
   // Handle order click from profile modal
   const handleOrderClickFromModal = (orderId) => {
-    setSelectedCustomer(null); // Close the modal
+    setSelectedCustomer(null);
     navigate("/transactionHistory", {
       state: {
         highlightedOrder: orderId,
@@ -127,7 +163,6 @@ export default function CustomerManagement() {
     });
   };
 
-  // Fixed navigation function - using the correct route from App.jsx
   const handleOrderClick = (orderId) => {
     navigate("/transactionHistory", {
       state: {
@@ -313,6 +348,35 @@ export default function CustomerManagement() {
                           <span className="stat-label">Total Spent</span>
                         </div>
                       </div>
+
+                      {/* Credit Information */}
+                      {stats.pendingCreditAmount > 0 && (
+                        <div className="stat-item credit-pending">
+                          <FontAwesomeIcon
+                            icon={faClock}
+                            className="credit-icon"
+                          />
+                          <div>
+                            <span className="stat-value warning">
+                              ₱{stats.pendingCreditAmount.toFixed(2)}
+                            </span>
+                            <span className="stat-label">Pending Credit</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {stats.totalCreditAmount > 0 && (
+                        <div className="stat-item">
+                          <FontAwesomeIcon icon={faCreditCard} />
+                          <div>
+                            <span className="stat-value">
+                              ₱{stats.totalCreditAmount.toFixed(2)}
+                            </span>
+                            <span className="stat-label">Total Credit</span>
+                          </div>
+                        </div>
+                      )}
+
                       {stats.lastOrder && (
                         <div className="stat-item">
                           <FontAwesomeIcon icon={faCalendar} />
@@ -325,6 +389,16 @@ export default function CustomerManagement() {
                         </div>
                       )}
                     </div>
+
+                    {/* Credit Status Badge */}
+                    {stats.pendingCreditAmount > 0 && (
+                      <div className="credit-status-badge warning">
+                        <FontAwesomeIcon icon={faExclamationTriangle} />
+                        <span>
+                          {stats.pendingCreditCount} pending credit order(s)
+                        </span>
+                      </div>
+                    )}
 
                     {customer.address && (
                       <div className="customer-address">
@@ -339,7 +413,13 @@ export default function CustomerManagement() {
                           {stats.customerOrders.slice(0, 3).map((order) => (
                             <div
                               key={order.id}
-                              className="order-item clickable-order"
+                              className={`order-item clickable-order ${
+                                (order.paymentMethod === "credit" ||
+                                  order.paymentMethod === "pay_later") &&
+                                order.paymentStatus !== "paid"
+                                  ? "credit-order"
+                                  : ""
+                              }`}
                               onClick={() => handleOrderClick(order.id)}
                               title="Click to view transaction details"
                             >
@@ -348,6 +428,14 @@ export default function CustomerManagement() {
                               </span>
                               <span className="order-amount">
                                 ₱{order.totalAmount.toFixed(2)}
+                                {(order.paymentMethod === "credit" ||
+                                  order.paymentMethod === "pay_later") && (
+                                  <FontAwesomeIcon
+                                    icon={faCreditCard}
+                                    className="payment-method-icon"
+                                    title="Credit/Pay Later Order"
+                                  />
+                                )}
                               </span>
                               <span className="order-items">
                                 {order.totalItems} items

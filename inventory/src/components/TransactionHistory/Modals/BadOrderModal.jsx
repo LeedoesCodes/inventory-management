@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faTimesCircle,
@@ -11,6 +11,8 @@ import {
   faInfoCircle,
   faSearch,
   faCheckCircle,
+  faSyncAlt,
+  faBoxOpen,
 } from "@fortawesome/free-solid-svg-icons";
 
 // Import components
@@ -23,9 +25,12 @@ const BadOrderModal = ({
   setBadOrderDetails,
   onClose,
   onProcessBadOrder,
-  allProducts = [], // You'll need to pass this from parent
+  allProducts = [],
 }) => {
   if (!order) return null;
+
+  // State to track replacement type for each item (piece or bag)
+  const [replacementTypes, setReplacementTypes] = useState({});
 
   // Calculate refund amount based on bad order details
   const calculateRefundAmount = () => {
@@ -34,7 +39,8 @@ const BadOrderModal = ({
     }
 
     if (badOrderDetails.action === "partial_refund") {
-      return order.items.reduce((total, item) => {
+      const itemsToRefund = badOrderDetails.items || order.items;
+      return itemsToRefund.reduce((total, item) => {
         const badPieces = item.badPieces || 0;
         if (badPieces > 0) {
           const product = allProducts.find((p) => p.id === item.id);
@@ -54,23 +60,44 @@ const BadOrderModal = ({
   const refundAmount = calculateRefundAmount();
 
   const handleItemBadPiecesChange = (itemIndex, badPieces) => {
-    const updatedItems = [...order.items];
+    const currentItems = badOrderDetails.items || order.items;
+    const updatedItems = [...currentItems];
     const item = updatedItems[itemIndex];
     const productInfo = allProducts.find((p) => p.id === item.id);
-    const maxPieces =
-      productInfo?.packagingType === "bulk"
-        ? productInfo?.piecesPerPackage || 1
-        : item.quantity;
 
-    if (badPieces > maxPieces) {
-      alert(`Cannot replace more than ${maxPieces} pieces for ${item.name}`);
-      return;
+    // Determine max pieces based on replacement type
+    let maxPieces;
+    if (
+      replacementTypes[itemIndex] === "bag" &&
+      productInfo?.packagingType === "bulk"
+    ) {
+      maxPieces = item.quantity; // Maximum is the number of bags
+    } else {
+      maxPieces =
+        productInfo?.packagingType === "bulk"
+          ? productInfo?.piecesPerPackage || 1
+          : item.quantity;
     }
 
-    updatedItems[itemIndex] = {
-      ...item,
-      badPieces: parseInt(badPieces) || 0,
-    };
+    const newBadPieces = parseInt(badPieces) || 0;
+
+    if (newBadPieces > maxPieces) {
+      alert(
+        `Cannot replace more than ${maxPieces} ${
+          replacementTypes[itemIndex] === "bag" ? "bags" : "pieces"
+        } for ${item.name}`
+      );
+      // Don't update state if invalid, but keep the UI consistent with the max value
+      updatedItems[itemIndex] = {
+        ...item,
+        badPieces: maxPieces,
+      };
+    } else {
+      updatedItems[itemIndex] = {
+        ...item,
+        badPieces: newBadPieces,
+      };
+    }
 
     setBadOrderDetails({
       ...badOrderDetails,
@@ -79,7 +106,8 @@ const BadOrderModal = ({
   };
 
   const handleProductSelect = (itemIndex, productId, productName) => {
-    const updatedItems = [...order.items];
+    const currentItems = badOrderDetails.items || order.items;
+    const updatedItems = [...currentItems];
     updatedItems[itemIndex] = {
       ...updatedItems[itemIndex],
       selectedProductId: productId,
@@ -92,8 +120,76 @@ const BadOrderModal = ({
     });
   };
 
-  const hasValidBadOrderItems = order.items.some(
-    (item) => item.badPieces > 0 && item.selectedProductId
+  // For bulk products, find the individual/single-piece version
+  const findIndividualProductForBulk = (bulkProduct) => {
+    if (!bulkProduct) return null;
+
+    // Strategy 1: Look by parentProductId first (if it exists)
+    if (bulkProduct.parentProductId) {
+      const individualByParent = allProducts.find(
+        (product) => product.id === bulkProduct.parentProductId
+      );
+      if (individualByParent && individualByParent.packagingType === "single") {
+        return individualByParent;
+      }
+    }
+
+    // Strategy 2: Look for products with similar name but single packaging
+    const baseName = bulkProduct.name
+      .toLowerCase()
+      .replace(/\[.*\]/g, "") // Remove anything in brackets
+      .replace(/\s*bag\s*/g, "") // Remove "bag" from name
+      .replace(/\s*pack\s*/g, "") // Remove "pack" from name
+      .replace(/\s*package\s*/g, "") // Remove "package" from name
+      .replace(/\s*bulk\s*/g, "") // Remove "bulk" from name
+      .trim();
+
+    const individualProduct = allProducts.find(
+      (product) =>
+        product.packagingType === "single" &&
+        product.name.toLowerCase().includes(baseName) &&
+        product.id !== bulkProduct.id
+    );
+
+    if (individualProduct) {
+      return individualProduct;
+    }
+
+    // Strategy 3: Look for any single product in the same category as fallback
+    const fallbackIndividual = allProducts.find(
+      (product) =>
+        product.packagingType === "single" &&
+        product.category === bulkProduct.category
+    );
+
+    return fallbackIndividual || null;
+  };
+
+  // Get available products for replacement based on type
+  const getAvailableReplacementProducts = (currentItem, replacementType) => {
+    const currentProduct = allProducts.find((p) => p.id === currentItem.id);
+
+    if (currentProduct?.packagingType === "bulk") {
+      if (replacementType === "piece") {
+        // For piece replacement, show individual/single products
+        return allProducts.filter(
+          (product) => product.packagingType === "single"
+        );
+      } else {
+        // For bag replacement, show ALL bulk products
+        return allProducts.filter(
+          (product) => product.packagingType === "bulk"
+        );
+      }
+    } else {
+      // For single products, they can only be replaced by themselves
+      return allProducts.filter((product) => product.id === currentItem.id);
+    }
+  };
+
+  const itemsForValidation = badOrderDetails.items || order.items;
+  const hasValidBadOrderItems = itemsForValidation.some(
+    (item) => (item.badPieces || 0) > 0 && item.selectedProductId
   );
 
   const formatDate = (date) => {
@@ -114,6 +210,146 @@ const BadOrderModal = ({
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  // Handle replacement type change
+  const handleReplacementTypeChange = (itemIndex, newType) => {
+    setReplacementTypes((prev) => ({
+      ...prev,
+      [itemIndex]: newType,
+    }));
+
+    // Use the state-managed items array
+    const currentItems = badOrderDetails.items || order.items;
+    const item = currentItems[itemIndex];
+    const productInfo = allProducts.find((p) => p.id === item.id);
+
+    if (productInfo?.packagingType === "bulk") {
+      // Simplified logic
+      if (newType === "piece") {
+        // Find the individual product for "piece"
+        const suggestedProduct = findIndividualProductForBulk(productInfo);
+        if (suggestedProduct) {
+          handleProductSelect(
+            itemIndex,
+            suggestedProduct.id,
+            suggestedProduct.name
+          );
+        } else {
+          // Fallback if no individual product is found
+          handleProductSelect(itemIndex, productInfo.id, productInfo.name);
+        }
+      } else {
+        // For "bag", always default to the product itself
+        handleProductSelect(itemIndex, productInfo.id, productInfo.name);
+      }
+    }
+  };
+
+  // Auto-select products when component loads or order changes
+  useEffect(() => {
+    if (order.items && allProducts.length > 0) {
+      const initialReplacementTypes = {};
+
+      // Create a new array based on order.items to avoid mutating the prop
+      const updatedItems = order.items.map((item, index) => {
+        let newItem = { ...item }; // Copy the item
+
+        // First, try to find the product by direct ID match
+        let productInfo = allProducts.find((p) => p.id === item.id);
+
+        // Strategy 1: Check if this is an individual product that belongs to a bulk package
+        if (!productInfo) {
+          const bulkProduct = allProducts.find(
+            (p) => p.packagingType === "bulk" && p.parentProductId === item.id
+          );
+          if (bulkProduct) {
+            productInfo = bulkProduct;
+          }
+        }
+
+        // Strategy 2: Try to find by name as fallback
+        if (!productInfo) {
+          const productByName = allProducts.find((p) => p.name === item.name);
+          if (productByName) {
+            productInfo = productByName;
+          }
+        }
+
+        if (!productInfo) {
+          // Skip auto-selection for this item since we can't find the product
+          initialReplacementTypes[index] = "piece";
+          return newItem; // Return the copied item as-is
+        }
+
+        // Set default replacement type
+        if (productInfo.packagingType === "bulk") {
+          initialReplacementTypes[index] = "piece"; // Default to piece
+          const suggestedProduct = findIndividualProductForBulk(productInfo);
+
+          if (suggestedProduct) {
+            newItem.selectedProductId = suggestedProduct.id;
+            newItem.selectedProductName = suggestedProduct.name;
+          } else {
+            // If no individual product found, select the bulk product itself
+            newItem.selectedProductId = productInfo.id;
+            newItem.selectedProductName = productInfo.name;
+          }
+        } else {
+          // For single products
+          initialReplacementTypes[index] = "piece";
+          if (!item.selectedProductId) {
+            newItem.selectedProductId = item.id;
+            newItem.selectedProductName = item.name;
+          }
+        }
+        return newItem; // Return the modified item
+      });
+
+      setReplacementTypes(initialReplacementTypes);
+      // Set the badOrderDetails state *once* with the fully prepared items array
+      setBadOrderDetails((prev) => ({
+        ...prev,
+        // Reset badPieces to 0 for all items when order changes
+        items: updatedItems.map((item) => ({ ...item, badPieces: 0 })),
+        reason: "", // Also reset reason
+        action: "replace", // Reset action
+      }));
+    }
+  }, [order, allProducts, setBadOrderDetails]); // Added setBadOrderDetails to deps
+
+  // Handle process bad order button click
+  const handleProcessClick = () => {
+    console.log("Process Bad Order Clicked - Current State:");
+    console.log("Bad Order Details:", badOrderDetails);
+    console.log("Has Valid Items:", hasValidBadOrderItems);
+    console.log("Reason:", badOrderDetails.reason);
+
+    // Validate required fields
+    if (!badOrderDetails.reason) {
+      alert("Please select a reason for the bad order");
+      return;
+    }
+
+    if (!hasValidBadOrderItems) {
+      alert(
+        "Please specify at least one item to replace with valid quantities"
+      );
+      return;
+    }
+
+    // Create the complete bad order data to process
+    const badOrderData = {
+      order: order, // original order
+      badOrderDetails: {
+        ...badOrderDetails,
+        refundAmount,
+        processedAt: new Date().toISOString(),
+      },
+    };
+
+    console.log("Sending to parent:", badOrderData);
+    onProcessBadOrder(badOrderData);
   };
 
   return (
@@ -172,18 +408,27 @@ const BadOrderModal = ({
               <div className="instruction-step">
                 <span className="step-number">1</span>
                 <span>
-                  Search and select individual products to deduct pieces from
+                  <strong>Automatic selection:</strong> System auto-selects the
+                  appropriate replacement product
                 </span>
               </div>
               <div className="instruction-step">
                 <span className="step-number">2</span>
-                <span>Enter the number of pieces that need replacement</span>
+                <span>
+                  <strong>Replacement type:</strong> Choose between replacing
+                  individual pieces or entire bags
+                </span>
               </div>
               <div className="instruction-step">
                 <span className="step-number">3</span>
                 <span>
-                  System will automatically handle bulk vs individual items
+                  <strong>Manual override:</strong> Use search to select
+                  different products if needed
                 </span>
+              </div>
+              <div className="instruction-step">
+                <span className="step-number">4</span>
+                <span>Enter quantity to replace and process the bad order</span>
               </div>
             </div>
           </div>
@@ -196,12 +441,63 @@ const BadOrderModal = ({
                 Specify Replacement Details
               </h4>
 
-              {order.items?.map((item, index) => {
-                const productInfo = allProducts.find((p) => p.id === item.id);
-                const isBulkProduct = productInfo?.packagingType === "bulk";
-                const maxPieces = isBulkProduct
-                  ? productInfo?.piecesPerPackage || 1
-                  : item.quantity;
+              {(badOrderDetails.items || order.items)?.map((item, index) => {
+                // Try multiple strategies to find the product
+                let productInfo = allProducts.find((p) => p.id === item.id);
+
+                if (!productInfo) {
+                  // Check if this is an individual product that belongs to a bulk package
+                  productInfo = allProducts.find(
+                    (p) =>
+                      p.packagingType === "bulk" &&
+                      p.parentProductId === item.id
+                  );
+                }
+
+                if (!productInfo) {
+                  // Try name matching as last resort
+                  productInfo = allProducts.find((p) => p.name === item.name);
+                }
+
+                // If product not found, show error message and skip this item
+                if (!productInfo) {
+                  return (
+                    <div
+                      key={index}
+                      className="bad-order-item-card"
+                      style={{ borderColor: "red" }}
+                    >
+                      <div className="item-header">
+                        <div className="item-info">
+                          <span className="item-name" style={{ color: "red" }}>
+                            {item.name}
+                          </span>
+                          <span
+                            className="item-quantity"
+                            style={{ color: "red" }}
+                          >
+                            Product not found in database! (ID: {item.id})
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ color: "red", padding: "10px" }}>
+                        Cannot process this item - product data missing from
+                        inventory.
+                      </div>
+                    </div>
+                  );
+                }
+
+                const isBulkProduct = productInfo.packagingType === "bulk";
+                const replacementType = replacementTypes[index] || "piece";
+
+                // Calculate max quantity based on replacement type
+                const maxQuantity =
+                  replacementType === "bag" && isBulkProduct
+                    ? item.quantity // Max is number of bags
+                    : isBulkProduct
+                    ? productInfo?.piecesPerPackage || 1 // Max pieces per package
+                    : item.quantity; // For single items, max is quantity ordered
 
                 return (
                   <div key={index} className="bad-order-item-card">
@@ -224,26 +520,81 @@ const BadOrderModal = ({
                     </div>
 
                     <div className="replacement-controls">
+                      {/* Replacement Type Toggle - Only show for ACTUAL bulk products */}
+                      {isBulkProduct && (
+                        <div className="form-group replacement-type-toggle">
+                          <label>Replacement Type</label>
+                          <div className="toggle-container">
+                            <span className="toggle-label">
+                              {replacementType === "piece"
+                                ? "By Piece"
+                                : "By Bag"}
+                            </span>
+                            <div
+                              className={`sliding-toggle ${
+                                replacementType === "piece"
+                                  ? "piece-active"
+                                  : "bag-active"
+                              }`}
+                              onClick={() =>
+                                handleReplacementTypeChange(
+                                  index,
+                                  replacementType === "piece" ? "bag" : "piece"
+                                )
+                              }
+                            >
+                              <div className="toggle-slider"></div>
+                              <div className="toggle-options">
+                                <span className="toggle-option piece">
+                                  Piece
+                                </span>
+                                <span className="toggle-option bag">Bag</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="toggle-description">
+                            {replacementType === "piece"
+                              ? "Replace individual pieces from single products"
+                              : "Replace entire bags from bulk inventory"}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Product Selection */}
                       <div className="form-group product-selection">
                         <label>
                           <FontAwesomeIcon icon={faSearch} />
                           {isBulkProduct
-                            ? "Select Individual Product to Deduct From *"
+                            ? `Select ${
+                                replacementType === "piece"
+                                  ? "Individual Product"
+                                  : "Bulk Product"
+                              } to Deduct From *`
                             : "Product to Deduct From *"}
                         </label>
 
                         {isBulkProduct ? (
-                          <ProductSearchSelector
-                            products={allProducts.filter(
-                              (p) => p.packagingType === "single"
-                            )}
-                            selectedProductId={item.selectedProductId}
-                            onProductSelect={(productId, productName) =>
-                              handleProductSelect(index, productId, productName)
-                            }
-                            placeholder="Search for individual products..."
-                          />
+                          <div className="search-with-suggestion">
+                            <ProductSearchSelector
+                              products={getAvailableReplacementProducts(
+                                item,
+                                replacementType
+                              )}
+                              selectedProductId={item.selectedProductId}
+                              onProductSelect={(productId, productName) =>
+                                handleProductSelect(
+                                  index,
+                                  productId,
+                                  productName
+                                )
+                              }
+                              placeholder={`Search for ${
+                                replacementType === "piece"
+                                  ? "individual"
+                                  : "bulk"
+                              } products...`}
+                            />
+                          </div>
                         ) : (
                           <div className="auto-selected-product">
                             <div className="selected-product-card">
@@ -267,20 +618,32 @@ const BadOrderModal = ({
                         {item.selectedProductId && (
                           <div className="selected-product-confirmation">
                             <FontAwesomeIcon icon={faCheckCircle} />
-                            Will deduct pieces from:{" "}
+                            Will deduct from:{" "}
                             <strong>{item.selectedProductName}</strong>
                             {!isBulkProduct && " (this product)"}
+                            {isBulkProduct &&
+                              replacementType === "piece" &&
+                              " (individual product)"}
+                            {isBulkProduct &&
+                              replacementType === "bag" &&
+                              " (bulk product)"}
                           </div>
                         )}
                       </div>
 
-                      {/* Pieces Input */}
+                      {/* Quantity Input */}
                       <div className="form-group pieces-input">
-                        <label>Number of Pieces to Replace *</label>
+                        <label>
+                          {isBulkProduct
+                            ? `Number of ${
+                                replacementType === "piece" ? "Pieces" : "Bags"
+                              } to Replace *`
+                            : "Number of Pieces to Replace *"}
+                        </label>
                         <input
                           type="number"
                           min="0"
-                          max={maxPieces}
+                          max={maxQuantity}
                           value={item.badPieces || ""}
                           onChange={(e) =>
                             handleItemBadPiecesChange(index, e.target.value)
@@ -290,13 +653,17 @@ const BadOrderModal = ({
                         />
                         <div className="input-info">
                           <span className="max-pieces">
-                            Maximum: {maxPieces} pieces
+                            Maximum: {maxQuantity}{" "}
+                            {replacementType === "piece" ? "pieces" : "bags"}
                           </span>
-                          {isBulkProduct && (
-                            <span className="package-info">
-                              {maxPieces} pieces per package
-                            </span>
-                          )}
+                          {isBulkProduct &&
+                            replacementType === "piece" &&
+                            productInfo?.piecesPerPackage && (
+                              <span className="package-info">
+                                {productInfo.piecesPerPackage} pieces per
+                                package
+                              </span>
+                            )}
                         </div>
                       </div>
 
@@ -319,10 +686,16 @@ const BadOrderModal = ({
                               </div>
                               <div className="summary-row">
                                 <span className="summary-label">
-                                  Pieces to replace:
+                                  {replacementType === "piece"
+                                    ? "Pieces"
+                                    : "Bags"}{" "}
+                                  to replace:
                                 </span>
                                 <span className="summary-value pieces-count">
-                                  {item.badPieces} pieces
+                                  {item.badPieces}{" "}
+                                  {replacementType === "piece"
+                                    ? "pieces"
+                                    : "bags"}
                                 </span>
                               </div>
                               <div className="summary-row">
@@ -341,7 +714,9 @@ const BadOrderModal = ({
                                   {allProducts.find(
                                     (p) => p.id === item.selectedProductId
                                   )?.stock || 0}{" "}
-                                  pieces
+                                  {replacementType === "piece"
+                                    ? "pieces"
+                                    : "bags"}
                                 </span>
                               </div>
                               <div className="summary-row new-stock">
@@ -352,7 +727,9 @@ const BadOrderModal = ({
                                   {(allProducts.find(
                                     (p) => p.id === item.selectedProductId
                                   )?.stock || 0) - item.badPieces}{" "}
-                                  pieces
+                                  {replacementType === "piece"
+                                    ? "pieces"
+                                    : "bags"}
                                 </span>
                               </div>
                             </div>
@@ -465,8 +842,9 @@ const BadOrderModal = ({
                         <span className="refund-label">Items Affected:</span>
                         <span className="affected-items">
                           {
-                            order.items.filter((item) => item.badPieces > 0)
-                              .length
+                            (badOrderDetails.items || order.items).filter(
+                              (item) => (item.badPieces || 0) > 0
+                            ).length
                           }{" "}
                           items
                         </span>
@@ -486,7 +864,7 @@ const BadOrderModal = ({
           </button>
           <button
             className="btn btn-warning"
-            onClick={() => onProcessBadOrder(order)}
+            onClick={handleProcessClick}
             disabled={!badOrderDetails.reason || !hasValidBadOrderItems}
           >
             <FontAwesomeIcon icon={faExclamationTriangle} />

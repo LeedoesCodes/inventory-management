@@ -12,6 +12,8 @@ import {
   faUniversity,
   faFileInvoiceDollar,
   faChevronDown,
+  faCalendarAlt,
+  faExclamationTriangle,
 } from "@fortawesome/free-solid-svg-icons";
 import "../../styles/OrderConfirmationDialog.scss";
 
@@ -29,6 +31,7 @@ const OrderConfirmationDialog = ({
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [dueDate, setDueDate] = useState("");
 
   if (!isOpen) return null;
 
@@ -59,7 +62,7 @@ const OrderConfirmationDialog = ({
       id: "credit",
       name: "Credit",
       icon: faCreditCard,
-      description: "Pay later",
+      description: "Pay later with due date",
       color: "#fd7e14",
     },
   ];
@@ -67,6 +70,29 @@ const OrderConfirmationDialog = ({
   const selectedPaymentMethod = paymentMethods.find(
     (method) => method.id === paymentMethod
   );
+
+  // Set default due date when credit is selected - FIXED
+  const handlePaymentMethodChange = (methodId) => {
+    setPaymentMethod(methodId);
+    setIsDropdownOpen(false);
+
+    // Only set default due date if credit is selected AND no due date is set yet
+    if (methodId === "credit" && !dueDate) {
+      const defaultDate = new Date();
+      defaultDate.setDate(defaultDate.getDate() + 30);
+      setDueDate(defaultDate.toISOString().split("T")[0]);
+    }
+
+    // Clear due date if switching away from credit
+    if (methodId !== "credit") {
+      setDueDate("");
+    }
+  };
+
+  // Handle due date change directly
+  const handleDueDateChange = (e) => {
+    setDueDate(e.target.value);
+  };
 
   // Handle quantity changes
   const handleQuantityChange = (itemId, delta) => {
@@ -82,13 +108,47 @@ const OrderConfirmationDialog = ({
     }
   };
 
-  // Handle order confirmation with payment method
+  // Handle order confirmation with payment method - FIXED DEBUG LOGGING
+  // In OrderConfirmationDialog component - ensure this is correct
   const handleConfirmWithPayment = async () => {
     if (isProcessing) return;
 
+    // Validate due date for credit orders
+    if (paymentMethod === "credit" && !dueDate) {
+      alert("Please set a due date for this credit order.");
+      return;
+    }
+
+    // Validate due date is not in the past
+    if (paymentMethod === "credit" && dueDate) {
+      const selectedDate = new Date(dueDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (selectedDate < today) {
+        alert("Due date cannot be in the past. Please select a future date.");
+        return;
+      }
+    }
+
+    // DEBUG: Enhanced logging to see what's being passed
+    console.log("🔍 DEBUG - OrderConfirmationDialog CONFIRMING:");
+    console.log("Payment Method:", paymentMethod);
+    console.log("Due Date Value:", dueDate);
+    console.log("Due Date Type:", typeof dueDate);
+    console.log("Is Credit:", paymentMethod === "credit");
+    console.log(
+      "Should pass dueDate:",
+      paymentMethod === "credit" ? dueDate : null
+    );
+
     setIsProcessing(true);
     try {
-      await onConfirm(paymentMethod);
+      // Pass the actual dueDate value, not just a boolean
+      await onConfirm(
+        paymentMethod,
+        paymentMethod === "credit" ? dueDate : null
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -112,6 +172,12 @@ const OrderConfirmationDialog = ({
 
   const { totalItems: updatedTotalItems, totalAmount: updatedTotalAmount } =
     calculateTotals();
+
+  // Check if due date is required but not set
+  const isDueDateRequired = paymentMethod === "credit" && !dueDate;
+
+  // Check if due date is in the past
+  const isDueDateInPast = dueDate && new Date(dueDate) < new Date();
 
   return (
     <div className="confirmation-dialog-overlay">
@@ -196,7 +262,7 @@ const OrderConfirmationDialog = ({
               )}
             </div>
 
-            {/* Payment Method Section - Updated to Dropdown */}
+            {/* Payment Method Section */}
             <div className="payment-section">
               <h3>Payment Method</h3>
               <div className="payment-dropdown-container">
@@ -235,10 +301,7 @@ const OrderConfirmationDialog = ({
                         className={`payment-dropdown-item ${
                           paymentMethod === method.id ? "selected" : ""
                         }`}
-                        onClick={() => {
-                          setPaymentMethod(method.id);
-                          setIsDropdownOpen(false);
-                        }}
+                        onClick={() => handlePaymentMethodChange(method.id)}
                       >
                         <div className="payment-method-icon">
                           <FontAwesomeIcon
@@ -263,11 +326,64 @@ const OrderConfirmationDialog = ({
                 )}
               </div>
 
+              {/* Due Date Field for Credit Orders */}
+              {paymentMethod === "credit" && (
+                <div className="due-date-section">
+                  <div className="form-group">
+                    <label htmlFor="dueDate">
+                      <FontAwesomeIcon icon={faCalendarAlt} />
+                      Due Date *
+                    </label>
+                    <input
+                      id="dueDate"
+                      type="date"
+                      value={dueDate}
+                      onChange={handleDueDateChange}
+                      min={new Date().toISOString().split("T")[0]}
+                      className={isDueDateInPast ? "error" : ""}
+                      required
+                    />
+                    {isDueDateInPast && (
+                      <div className="error-message">
+                        <FontAwesomeIcon icon={faExclamationTriangle} />
+                        Due date cannot be in the past
+                      </div>
+                    )}
+                    {!dueDate && (
+                      <div className="info-message">
+                        Please set a due date for this credit order
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Due Date Preview */}
+                  {dueDate && !isDueDateInPast && (
+                    <div className="due-date-preview">
+                      <div className="preview-label">
+                        <FontAwesomeIcon icon={faCalendarAlt} />
+                        Payment Due:
+                      </div>
+                      <div className="preview-value">
+                        {new Date(dueDate).toLocaleDateString("en-US", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Payment Method Notes */}
               {paymentMethod === "credit" && (
                 <div className="payment-note credit-note">
                   <FontAwesomeIcon icon={faCreditCard} />
-                  <span>This order will be marked as "To Pay Later"</span>
+                  <span>
+                    This order will be marked as "Credit" with due date
+                    {dueDate && ` on ${new Date(dueDate).toLocaleDateString()}`}
+                  </span>
                 </div>
               )}
               {paymentMethod === "cheque" && (
@@ -290,7 +406,14 @@ const OrderConfirmationDialog = ({
               {paymentMethod === "credit" && (
                 <div className="total-row credit-total">
                   <span>Payment Status:</span>
-                  <span className="credit-status">To Pay Later</span>
+                  <span className="credit-status">
+                    Credit
+                    {dueDate && (
+                      <span className="due-date-badge">
+                        Due: {new Date(dueDate).toLocaleDateString()}
+                      </span>
+                    )}
+                  </span>
                 </div>
               )}
             </div>
@@ -307,9 +430,23 @@ const OrderConfirmationDialog = ({
             Cancel Order
           </button>
           <button
-            className={`confirm-btn ${paymentMethod}`}
+            className={`confirm-btn ${paymentMethod} ${
+              isDueDateRequired || isDueDateInPast ? "disabled" : ""
+            }`}
             onClick={handleConfirmWithPayment}
-            disabled={orderDetails.length === 0 || isProcessing}
+            disabled={
+              orderDetails.length === 0 ||
+              isProcessing ||
+              isDueDateRequired ||
+              isDueDateInPast
+            }
+            title={
+              isDueDateRequired
+                ? "Please set a due date"
+                : isDueDateInPast
+                ? "Due date cannot be in the past"
+                : ""
+            }
           >
             {isProcessing ? (
               <>
@@ -321,7 +458,7 @@ const OrderConfirmationDialog = ({
                 <FontAwesomeIcon icon={faCheckCircle} />
                 Confirm Order
                 {paymentMethod === "credit"
-                  ? " (Pay Later)"
+                  ? ` (Credit - ₱${updatedTotalAmount.toFixed(2)})`
                   : ` (₱${updatedTotalAmount.toFixed(2)})`}
               </>
             )}

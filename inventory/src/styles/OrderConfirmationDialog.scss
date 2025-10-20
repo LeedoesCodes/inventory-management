@@ -949,3 +949,160 @@
   --accent-hover: #4299e1;
   --accent-rgb: 99, 179, 237;
 }
+/* Due Date Section Styles */
+.due-date-section {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(253, 126, 20, 0.05);
+  border-radius: 8px;
+  border-left: 4px solid #fd7e14;
+
+  .form-group {
+    margin-bottom: 0.75rem;
+
+    label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      color: #495057;
+      margin-bottom: 0.5rem;
+
+      svg {
+        color: #fd7e14;
+      }
+    }
+
+    input[type="date"] {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #e9ecef;
+      border-radius: 6px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+
+      &:focus {
+        outline: none;
+        border-color: #fd7e14;
+        box-shadow: 0 0 0 3px rgba(253, 126, 20, 0.1);
+      }
+
+      &.error {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+      }
+    }
+  }
+
+  .error-message {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    font-weight: 500;
+
+    svg {
+      font-size: 0.75rem;
+    }
+  }
+
+  .info-message {
+    color: #6c757d;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    font-style: italic;
+  }
+
+  .due-date-preview {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    margin-top: 0.5rem;
+
+    .preview-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      color: #495057;
+      font-size: 0.9rem;
+
+      svg {
+        color: #fd7e14;
+      }
+    }
+
+    .preview-value {
+      color: #fd7e14;
+      font-weight: 600;
+    }
+  }
+}
+
+/* Enhanced Credit Status Display */
+.credit-total {
+  .credit-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    .due-date-badge {
+      background: #fd7e14;
+      color: white;
+      padding: 0.25rem 0.5rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+  }
+}
+
+/* Updated Payment Note for Credit */
+.payment-note.credit-note {
+  background: rgba(253, 126, 20, 0.1);
+  border-left-color: #fd7e14;
+
+  svg {
+    color: #fd7e14;
+  }
+}
+
+/* Enhanced Confirm Button States */
+.confirm-btn.credit {
+  background: linear-gradient(135deg, #fd7e14, #e55a00);
+
+  &:hover:not(.disabled) {
+    background: linear-gradient(135deg, #e55a00, #cc4a00);
+  }
+
+  &.disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .due-date-section {
+    padding: 0.75rem;
+
+    .due-date-preview {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+  }
+
+  .credit-total .credit-status {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+}

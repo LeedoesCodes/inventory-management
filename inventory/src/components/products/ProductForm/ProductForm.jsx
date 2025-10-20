@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "../../../Firebase/firebase";
+import ProductSearchSelector from "../../UI/ProductSearchSelector";
 import "./productform.scss";
 
 const categories = [
@@ -55,6 +56,7 @@ export default function ProductForm({
   const [packagingType, setPackagingType] = useState("single");
   const [piecesPerPackage, setPiecesPerPackage] = useState("");
   const [parentProductId, setParentProductId] = useState("");
+  const [parentProductName, setParentProductName] = useState("");
 
   // Filter available parent products (single items only)
   const availableParentProducts = allProducts.filter(
@@ -62,7 +64,62 @@ export default function ProductForm({
       product.packagingType === "single" && product.id !== selectedProduct?.id
   );
 
-  // NEW: Auto-fill bulk package details
+  // NEW: Handle product selection from search
+  const handleParentProductSelect = (productId, productName) => {
+    setParentProductId(productId);
+    setParentProductName(productName);
+
+    // Auto-fill logic when product is selected
+    if (productId && piecesPerPackage) {
+      const parentProduct = availableParentProducts.find(
+        (p) => p.id === productId
+      );
+
+      if (parentProduct) {
+        // Auto-generate name if empty or matches default pattern
+        const currentName = name.trim();
+        const shouldAutoName =
+          !currentName ||
+          currentName === `${parentProduct.name} - ${piecesPerPackage} Pack` ||
+          currentName === parentProduct.name;
+
+        if (shouldAutoName) {
+          const suggestedName = `${parentProduct.name} - ${piecesPerPackage} Pack`;
+          setName(suggestedName);
+        }
+
+        // Auto-calculate suggested price (10% discount) if price is empty
+        if (!price && parentProduct.price) {
+          const suggestedPrice = (
+            parentProduct.price *
+            piecesPerPackage *
+            0.9
+          ).toFixed(2);
+          setPrice(suggestedPrice);
+        }
+
+        // Auto-calculate cost price if costPrice is empty and parent has cost
+        if (!costPrice && parentProduct.costPrice) {
+          const suggestedCost = (
+            parentProduct.costPrice * piecesPerPackage
+          ).toFixed(2);
+          setCostPrice(suggestedCost);
+        }
+
+        // Auto-set category if empty
+        if (!category && parentProduct.category) {
+          setCategory(parentProduct.category);
+        }
+
+        // Auto-set unit to "pack" for bulk items if not set
+        if (unit === "piece") {
+          setUnit("pack");
+        }
+      }
+    }
+  };
+
+  // NEW: Auto-fill bulk package details when pieces per package changes
   useEffect(() => {
     if (packagingType === "bulk" && parentProductId && piecesPerPackage) {
       const parentProduct = availableParentProducts.find(
@@ -116,6 +173,11 @@ export default function ProductForm({
     parentProductId,
     piecesPerPackage,
     availableParentProducts,
+    name,
+    price,
+    costPrice,
+    category,
+    unit,
   ]);
 
   // Reset form when packaging type changes
@@ -123,6 +185,7 @@ export default function ProductForm({
     if (packagingType === "single") {
       setPiecesPerPackage("");
       setParentProductId("");
+      setParentProductName("");
       // Keep unit as is, don't reset to piece
     }
   }, [packagingType]);
@@ -189,6 +252,14 @@ export default function ProductForm({
       setPiecesPerPackage(selectedProduct.piecesPerPackage || "");
       setParentProductId(selectedProduct.parentProductId || "");
 
+      // Get parent product name for display
+      if (selectedProduct.parentProductId) {
+        const parent = allProducts.find(
+          (p) => p.id === selectedProduct.parentProductId
+        );
+        setParentProductName(parent?.name || "");
+      }
+
       const hasCustomThreshold =
         selectedProduct.lowStockThreshold !== null &&
         selectedProduct.lowStockThreshold !== undefined;
@@ -212,11 +283,12 @@ export default function ProductForm({
       setPackagingType("single");
       setPiecesPerPackage("");
       setParentProductId("");
+      setParentProductName("");
       setUseCustomThreshold(false);
       setCustomThreshold(defaultThreshold.toString());
       setImageFile(null);
     }
-  }, [selectedProduct, defaultThreshold]);
+  }, [selectedProduct, defaultThreshold, allProducts]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -504,24 +576,17 @@ export default function ProductForm({
             {packagingType === "bulk" && (
               <>
                 <div className="form-group">
-                  <label htmlFor="parent-product">Parent Product *</label>
-                  <select
-                    id="parent-product"
-                    value={parentProductId}
-                    onChange={(e) => setParentProductId(e.target.value)}
-                    required={packagingType === "bulk"}
+                  <label>Parent Product *</label>
+                  <ProductSearchSelector
+                    products={availableParentProducts}
+                    selectedProductId={parentProductId}
+                    onProductSelect={handleParentProductSelect}
+                    placeholder="Search for individual products..."
                     disabled={uploading}
-                  >
-                    <option value="">Select individual product</option>
-                    {availableParentProducts.map((product) => (
-                      <option key={product.id} value={product.id}>
-                        {product.name} (₱{product.price} per{" "}
-                        {product.unit || "piece"})
-                      </option>
-                    ))}
-                  </select>
+                  />
                   <small className="field-description">
-                    Select the individual product that this package contains
+                    Search and select the individual product that this package
+                    contains
                   </small>
                 </div>
 

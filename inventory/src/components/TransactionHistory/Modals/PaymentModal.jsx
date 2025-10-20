@@ -10,6 +10,8 @@ import {
   faUser,
   faWallet,
   faFileAlt,
+  faExclamationTriangle,
+  faClock,
 } from "@fortawesome/free-solid-svg-icons";
 
 // Import utils
@@ -30,9 +32,42 @@ const PaymentModal = ({
   const paymentAmount = parseFloat(paymentDetails.amount) || 0;
   const newBalance = remainingBalance - paymentAmount;
 
+  // Due date handling - This is the ORIGINAL due date from order creation
+  const dueDate = order.dueDate;
+  const isCreditOrder = order.paymentMethod === "credit";
+
+  // Convert due date for display
+  const getDisplayDueDate = () => {
+    if (!dueDate) return null;
+
+    if (dueDate.toDate && typeof dueDate.toDate === "function") {
+      return dueDate.toDate();
+    } else if (dueDate.seconds) {
+      return new Date(dueDate.seconds * 1000);
+    } else if (dueDate instanceof Date) {
+      return dueDate;
+    } else if (typeof dueDate === "string") {
+      return new Date(dueDate);
+    }
+    return null;
+  };
+
+  const displayDueDate = getDisplayDueDate();
+  const isOverdue =
+    isCreditOrder && displayDueDate && new Date(displayDueDate) < new Date();
+
+  // Calculate days overdue
+  const getDaysOverdue = () => {
+    if (!isCreditOrder || !displayDueDate) return 0;
+    const today = new Date();
+    const diffTime = today - displayDueDate;
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  const daysOverdue = getDaysOverdue();
+
   const handleAmountChange = (e) => {
     const value = e.target.value;
-    // Allow empty string or valid numbers
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
       setPaymentDetails({
         ...paymentDetails,
@@ -43,6 +78,12 @@ const PaymentModal = ({
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    if (paymentAmount <= 0 || paymentAmount > remainingBalance) {
+      alert("Please enter a valid payment amount.");
+      return;
+    }
+
     onRecordPayment(order);
   };
 
@@ -64,10 +105,16 @@ const PaymentModal = ({
   return (
     <div className="payment-modal-component modal-overlay">
       <div className="modal-content">
-        <div className="modal-header success-header">
+        <div
+          className={`modal-header ${
+            isOverdue ? "overdue-header" : "success-header"
+          }`}
+        >
           <h3>
-            <FontAwesomeIcon icon={faMoneyCheck} />
-            Record Payment
+            <FontAwesomeIcon
+              icon={isOverdue ? faExclamationTriangle : faMoneyCheck}
+            />
+            {isOverdue ? "Overdue Payment" : "Record Payment"}
           </h3>
           <button onClick={onClose}>×</button>
         </div>
@@ -90,6 +137,24 @@ const PaymentModal = ({
                 </div>
               </div>
               <div className="summary-item">
+                <div className="summary-label">Payment Method</div>
+                <div className="summary-value payment-method">
+                  <span
+                    className="method-badge"
+                    style={{
+                      backgroundColor: getPaymentMethodColor(
+                        order.paymentMethod
+                      ),
+                      color: "white",
+                    }}
+                  >
+                    {order.paymentMethod === "credit"
+                      ? "Credit"
+                      : order.paymentMethod}
+                  </span>
+                </div>
+              </div>
+              <div className="summary-item">
                 <div className="summary-label">Total Amount</div>
                 <div className="summary-value total-amount">
                   ₱{order.totalAmount?.toFixed(2) || "0.00"}
@@ -101,6 +166,37 @@ const PaymentModal = ({
                   ₱{paidSoFar.toFixed(2)}
                 </div>
               </div>
+
+              {/* DUE DATE DISPLAY - READ ONLY TEXT */}
+              {isCreditOrder && displayDueDate && (
+                <div
+                  className={`summary-item ${isOverdue ? "overdue-item" : ""}`}
+                >
+                  <div className="summary-label">
+                    <FontAwesomeIcon
+                      icon={isOverdue ? faExclamationTriangle : faCalendar}
+                    />
+                    Due Date
+                  </div>
+                  <div
+                    className={`summary-value due-date ${
+                      isOverdue ? "overdue" : ""
+                    }`}
+                  >
+                    {displayDueDate.toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                    {isOverdue && (
+                      <span className="overdue-badge">
+                        {daysOverdue} day{daysOverdue !== 1 ? "s" : ""} overdue
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="summary-item highlight">
                 <div className="summary-label">Remaining Balance</div>
                 <div className="summary-value balance-amount">
@@ -154,7 +250,7 @@ const PaymentModal = ({
                 <div className="form-group">
                   <label htmlFor="paymentDate">
                     <FontAwesomeIcon icon={faCalendar} />
-                    Payment Date
+                    Payment Date *
                   </label>
                   <input
                     id="paymentDate"
@@ -166,13 +262,17 @@ const PaymentModal = ({
                         paymentDate: e.target.value,
                       })
                     }
+                    required
                   />
+                  <small className="input-help">
+                    Date when this payment is being recorded
+                  </small>
                 </div>
 
                 <div className="form-group">
                   <label htmlFor="paymentMethod">
                     <FontAwesomeIcon icon={faCreditCard} />
-                    Payment Method
+                    Payment Method *
                   </label>
                   <select
                     id="paymentMethod"
@@ -183,6 +283,7 @@ const PaymentModal = ({
                         paymentMethod: e.target.value,
                       })
                     }
+                    required
                   >
                     {paymentMethods
                       .filter((method) => method.id !== "credit")
@@ -194,6 +295,33 @@ const PaymentModal = ({
                   </select>
                 </div>
               </div>
+
+              {/* DUE DATE INFORMATION - READ ONLY */}
+              {isCreditOrder && displayDueDate && (
+                <div className="form-group">
+                  <label>
+                    <FontAwesomeIcon icon={faClock} />
+                    Original Due Date
+                  </label>
+                  <div className="due-date-display">
+                    {displayDueDate.toLocaleDateString("en-US", {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                    {isOverdue && (
+                      <span className="overdue-indicator">
+                        (Overdue by {daysOverdue} day
+                        {daysOverdue !== 1 ? "s" : ""})
+                      </span>
+                    )}
+                  </div>
+                  <small className="input-help">
+                    This is when the full payment was originally due
+                  </small>
+                </div>
+              )}
 
               <div className="form-group">
                 <label htmlFor="paymentNotes">
@@ -246,6 +374,19 @@ const PaymentModal = ({
                         ₱{newBalance.toFixed(2)}
                       </span>
                     </div>
+
+                    {/* Due Date in Preview - READ ONLY */}
+                    {isCreditOrder && displayDueDate && (
+                      <div className="preview-row due-date-preview">
+                        <span className="preview-label">
+                          Original Due Date:
+                        </span>
+                        <span className="preview-value due-date-value">
+                          {displayDueDate.toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+
                     <div className="preview-row payment-status">
                       <span className="preview-label">Payment Status:</span>
                       <span
@@ -276,17 +417,21 @@ const PaymentModal = ({
             Cancel
           </button>
           <button
-            className="btn btn-success"
+            className={`btn ${isOverdue ? "btn-warning" : "btn-success"}`}
             onClick={handleSubmit}
             disabled={
               !paymentDetails.amount ||
               paymentAmount <= 0 ||
-              paymentAmount > remainingBalance
+              paymentAmount > remainingBalance ||
+              !paymentDetails.paymentDate ||
+              !paymentDetails.paymentMethod
             }
             type="button"
           >
-            <FontAwesomeIcon icon={faMoneyCheck} />
-            Record Payment
+            <FontAwesomeIcon
+              icon={isOverdue ? faExclamationTriangle : faMoneyCheck}
+            />
+            {isOverdue ? "Pay Overdue Amount" : "Record Payment"}
             {paymentAmount > 0 && ` (₱${paymentAmount.toFixed(2)})`}
           </button>
         </div>
