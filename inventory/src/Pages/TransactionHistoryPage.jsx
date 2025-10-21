@@ -67,7 +67,7 @@ export default function TransactionHistory() {
   const [dateFilter, setDateFilter] = useState({
     startDate: "",
     endDate: "",
-    dateRange: "all", // 'all', 'today', 'yesterday', 'thisWeek', 'thisMonth', 'custom'
+    dateRange: "all",
   });
 
   // Modal states
@@ -121,16 +121,57 @@ export default function TransactionHistory() {
     }
   }, [location.state]);
 
+  // Check if order is overdue - FIXED VERSION
+  const isOrderOverdue = (order) => {
+    // Check if it's a credit order
+    const isCreditOrder =
+      order.paymentMethod === "credit" || order.paymentMethod === "card";
+    if (!isCreditOrder) return false;
+
+    if (!order.dueDate) {
+      return false;
+    }
+
+    try {
+      // Convert due date to Date object
+      let dueDate;
+      if (order.dueDate.toDate && typeof order.dueDate.toDate === "function") {
+        dueDate = order.dueDate.toDate();
+      } else if (order.dueDate.seconds) {
+        dueDate = new Date(order.dueDate.seconds * 1000);
+      } else if (order.dueDate._seconds) {
+        dueDate = new Date(order.dueDate._seconds * 1000);
+      } else {
+        dueDate = new Date(order.dueDate);
+      }
+
+      // Check if valid date
+      if (isNaN(dueDate.getTime())) return false;
+
+      const now = new Date();
+
+      // Check balance and status
+      const hasBalance =
+        order.remainingBalance > 0 &&
+        (order.paymentStatus === "pending" ||
+          order.paymentStatus === "partial");
+
+      // Simple comparison - if due date is in the past AND has balance
+      return dueDate < now && hasBalance;
+    } catch (error) {
+      console.error("Error in isOrderOverdue:", error);
+      return false;
+    }
+  };
+
   // Filter orders based on date range
   const filterOrdersByDate = (orders) => {
-    // Only return all orders if explicitly "all"
     if (dateFilter.dateRange === "all") {
       return orders;
     }
 
     const now = new Date();
 
-    // If using predefined ranges
     if (dateFilter.dateRange !== "custom") {
       let startDate, endDate;
 
@@ -182,7 +223,6 @@ export default function TransactionHistory() {
       });
     }
 
-    // If using custom date range
     if (dateFilter.startDate && dateFilter.endDate) {
       const start = new Date(dateFilter.startDate);
       start.setHours(0, 0, 0, 0);
@@ -210,6 +250,130 @@ export default function TransactionHistory() {
 
   // Get filtered orders for display
   const filteredOrders = filterOrdersByDate(orders);
+
+  // Apply all filters to orders - FIXED VERSION
+  const getFilteredOrders = () => {
+    let filtered = filteredOrders;
+
+    // SPECIAL CASE: If filtering for overdue, we need to check ALL orders regardless of date filter
+    if (filterPayment === "overdue") {
+      filtered = orders; // Use all orders instead of date-filtered orders
+    }
+
+    // Apply payment filter
+    if (filterPayment !== "all") {
+      filtered = filtered.filter((order) => {
+        let matches = false;
+
+        switch (filterPayment) {
+          case "cash":
+            matches = order.paymentMethod === "cash";
+            break;
+          case "bank_transfer":
+            matches = order.paymentMethod === "bank_transfer";
+            break;
+          case "cheque":
+            matches = order.paymentMethod === "cheque";
+            break;
+          case "credit":
+            matches =
+              order.paymentMethod === "credit" ||
+              order.paymentMethod === "card";
+            break;
+          case "credit_pending":
+            matches =
+              (order.paymentMethod === "credit" ||
+                order.paymentMethod === "card") &&
+              order.paymentStatus === "pending";
+            break;
+          case "credit_partial":
+            matches =
+              (order.paymentMethod === "credit" ||
+                order.paymentMethod === "card") &&
+              order.paymentStatus === "partial";
+            break;
+          case "overdue":
+            matches = isOrderOverdue(order);
+            break;
+          default:
+            matches = true;
+        }
+
+        return matches;
+      });
+    }
+
+    // Apply status filter
+    if (filterStatus !== "all") {
+      filtered = filtered.filter((order) => {
+        switch (filterStatus) {
+          case "has_bad_order":
+            return order.hasBadOrder === true;
+          default:
+            return order.status === filterStatus;
+        }
+      });
+    }
+
+    // Apply search filter
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (order) =>
+          order.customerName?.toLowerCase().includes(searchLower) ||
+          order.id?.toLowerCase().includes(searchLower) ||
+          order.paymentMethod?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Apply sorting
+    filtered = [...filtered].sort((a, b) => {
+      let aValue, bValue;
+
+      switch (sortBy) {
+        case "date":
+          aValue = a.createdAt?.toDate
+            ? a.createdAt.toDate()
+            : new Date(a.createdAt);
+          bValue = b.createdAt?.toDate
+            ? b.createdAt.toDate()
+            : new Date(b.createdAt);
+          break;
+        case "customer":
+          aValue = a.customerName?.toLowerCase() || "";
+          bValue = b.customerName?.toLowerCase() || "";
+          break;
+        case "totalAmount":
+          aValue = a.totalAmount || 0;
+          bValue = b.totalAmount || 0;
+          break;
+        case "totalItems":
+          aValue = a.totalItems || 0;
+          bValue = b.totalItems || 0;
+          break;
+        case "remainingBalance":
+          aValue = a.remainingBalance || 0;
+          bValue = b.remainingBalance || 0;
+          break;
+        default:
+          return 0;
+      }
+
+      if (sortOrder === "asc") {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      }
+    });
+
+    return filtered;
+  };
+
+  // Final filtered orders
+  const finalFilteredOrders = getFilteredOrders();
+
+  // Calculate overdue count for statistics
+  const overdueCount = orders.filter((order) => isOrderOverdue(order)).length;
 
   // Handle date range changes
   const handleDateRangeChange = (range) => {
@@ -372,8 +536,12 @@ export default function TransactionHistory() {
             </div>
           </div>
 
-          {/* Statistics Cards - Pass filtered orders AND dateFilter */}
-          <StatisticsCards orders={filteredOrders} dateFilter={dateFilter} />
+          {/* Statistics Cards */}
+          <StatisticsCards
+            orders={finalFilteredOrders}
+            dateFilter={dateFilter}
+            overdueCount={overdueCount}
+          />
 
           {/* Controls Bar */}
           <ControlsBar
@@ -389,9 +557,9 @@ export default function TransactionHistory() {
             setSortOrder={setSortOrder}
           />
 
-          {/* Transaction List - Pass filtered orders */}
+          {/* Transaction List - Pass final filtered orders */}
           <TransactionList
-            orders={filteredOrders}
+            orders={finalFilteredOrders}
             loading={loading}
             searchTerm={searchTerm}
             filterStatus={filterStatus}

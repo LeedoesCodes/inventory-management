@@ -57,9 +57,11 @@ const ControlsBar = ({
             <option value="cash">Cash</option>
             <option value="bank_transfer">Bank Transfer</option>
             <option value="cheque">Cheque</option>
-            <option value="credit">Credit (All)</option>
-            <option value="credit_pending">Credit (Pending)</option>
-            <option value="credit_partial">Credit (Partial)</option>
+            {/* Updated labels to reflect both card and credit */}
+            <option value="credit">Card/Credit (All)</option>
+            <option value="credit_pending">Card/Credit (Pending)</option>
+            <option value="credit_partial">Card/Credit (Partial)</option>
+            <option value="overdue">Overdue</option>
           </select>
         </div>
 

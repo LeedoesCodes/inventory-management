@@ -26,6 +26,30 @@ import "./StatisticsCards.scss";
 const StatisticsCards = ({ orders, customers = [], dateFilter }) => {
   const [showAll, setShowAll] = useState(false);
 
+  // Helper function to get order date safely
+  const getOrderDate = (order) => {
+    return order.orderDate?.toDate
+      ? order.orderDate.toDate()
+      : new Date(order.orderDate || order.createdAt || Date.now());
+  };
+
+  // Helper function to check if date is today
+  const isToday = (date) => {
+    const today = new Date();
+    const orderDate = new Date(date);
+    return orderDate.toDateString() === today.toDateString();
+  };
+
+  // Helper function to check if date is in current month
+  const isCurrentMonth = (date) => {
+    const today = new Date();
+    const orderDate = new Date(date);
+    return (
+      orderDate.getMonth() === today.getMonth() &&
+      orderDate.getFullYear() === today.getFullYear()
+    );
+  };
+
   // Calculate all statistics from the FILTERED orders
   const totalRevenue = orders
     .filter(
@@ -108,16 +132,23 @@ const StatisticsCards = ({ orders, customers = [], dateFilter }) => {
   const badOrderRate =
     orders.length > 0 ? (totalBadOrders / orders.length) * 100 : 0;
 
-  // Use ONLY the filtered orders for all calculations
+  // Today's sales - only orders from today
   const todaySales = orders
     .filter(
-      (order) => order.status !== "cancelled" && order.paymentStatus === "paid"
+      (order) =>
+        order.status !== "cancelled" &&
+        order.paymentStatus === "paid" &&
+        isToday(getOrderDate(order))
     )
     .reduce((sum, order) => sum + order.totalAmount, 0);
 
+  // Monthly sales - only orders from current month
   const monthlySales = orders
     .filter(
-      (order) => order.status !== "cancelled" && order.paymentStatus === "paid"
+      (order) =>
+        order.status !== "cancelled" &&
+        order.paymentStatus === "paid" &&
+        isCurrentMonth(getOrderDate(order))
     )
     .reduce((sum, order) => sum + order.totalAmount, 0);
 
@@ -193,8 +224,8 @@ const StatisticsCards = ({ orders, customers = [], dateFilter }) => {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })}`,
-      label: "Filtered Sales",
-      description: `Total sales (${dateContext})`,
+      label: "Monthly Sales",
+      description: `Sales from current month`,
       className: "monthly-sales",
       trend: "up",
       priority: 1,
@@ -205,8 +236,8 @@ const StatisticsCards = ({ orders, customers = [], dateFilter }) => {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })}`,
-      label: "Filtered Revenue",
-      description: `Revenue from ${dateContext}`,
+      label: "Today's Revenue",
+      description: `Revenue from today`,
       className: "today-sales",
       trend: "up",
       priority: 1,

@@ -1,48 +1,44 @@
+// StatisticsCards.scss
 .statistics-cards-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
   margin-bottom: 2rem;
-  animation: fadeInUp 0.5s ease-out;
+  padding: 1rem;
+
+  @media (max-width: 1400px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
     gap: 1rem;
+    padding: 0.5rem;
   }
 }
 
-// Date Filter Indicator
 .date-filter-indicator {
   grid-column: 1 / -1;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1rem;
-  background: linear-gradient(135deg, #dbeafe, #eff6ff);
-  border: 1px solid #dbeafe;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  color: #1e40af;
   font-size: 0.9rem;
-  font-weight: 500;
+  color: #64748b;
 
   svg {
     color: #3b82f6;
   }
 
   strong {
-    font-weight: 700;
-  }
-}
-
-[data-theme="dark"] {
-  .date-filter-indicator {
-    background: linear-gradient(135deg, #1e3a8a, #1e40af);
-    border-color: #3730a3;
-    color: #dbeafe;
-
-    svg {
-      color: #60a5fa;
-    }
+    color: #1e293b;
   }
 }
 
@@ -51,27 +47,25 @@
   background: white;
   border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
   transition: all 0.3s ease;
-  overflow: visible;
-  min-height: 120px;
+  overflow: hidden;
+  min-height: 140px;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-      0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 
   &__content {
-    position: relative;
-    z-index: 2;
-    flex: 1;
     display: flex;
     flex-direction: column;
+    gap: 0.75rem;
+    flex: 1;
   }
 
   &__icon {
@@ -81,163 +75,234 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 1rem;
     font-size: 1.25rem;
-
-    .statistics-card--total-revenue & {
-      background: linear-gradient(135deg, #10b981, #059669);
-      color: white;
-    }
-
-    .statistics-card--collected-revenue & {
-      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-      color: white;
-    }
-
-    .statistics-card--monthly-sales & {
-      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-      color: white;
-    }
-
-    .statistics-card--today-sales & {
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-      color: white;
-    }
-
-    .statistics-card--pending-revenue & {
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-      color: white;
-    }
-
-    .statistics-card--overdue-revenue & {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
-      color: white;
-    }
-
-    .statistics-card--total-credit & {
-      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-      color: white;
-    }
-
-    .statistics-card--total-orders & {
-      background: linear-gradient(135deg, #6b7280, #4b5563);
-      color: white;
-    }
-
-    .statistics-card--average-order & {
-      background: linear-gradient(135deg, #ec4899, #db2777);
-      color: white;
-    }
-
-    .statistics-card--total-items & {
-      background: linear-gradient(135deg, #14b8a6, #0d9488);
-      color: white;
-    }
-
-    .statistics-card--unique-customers & {
-      background: linear-gradient(135deg, #f97316, #ea580c);
-      color: white;
-    }
-
-    .statistics-card--collection-rate & {
-      background: linear-gradient(135deg, #84cc16, #65a30d);
-      color: white;
-    }
-
-    .statistics-card--cancelled-orders & {
-      background: linear-gradient(135deg, #6b7280, #4b5563);
-      color: white;
-    }
-
-    .statistics-card--refunded-orders & {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
-      color: white;
-    }
-
-    .statistics-card--partial-payments & {
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-      color: white;
-    }
-  }
-
-  &__main {
-    position: relative;
-    z-index: 3;
     margin-bottom: 0.5rem;
   }
 
+  &__main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+  }
+
   &__value {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     font-weight: 700;
     line-height: 1.2;
-    margin: 0 0 0.25rem 0;
-    color: #1f2937;
-    word-break: break-word;
-    overflow-wrap: break-word;
-
-    @media (max-width: 768px) {
-      font-size: 1.5rem;
-    }
+    margin: 0;
+    color: #1e293b;
   }
 
   &__label {
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     font-weight: 600;
-    color: #6b7280;
+    color: #64748b;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    display: block;
+    letter-spacing: 0.5px;
   }
 
   &__description {
-    position: static;
-    margin-top: auto;
     font-size: 0.75rem;
-    color: #9ca3af;
-    line-height: 1.2;
-    max-height: none;
-    opacity: 1;
-    pointer-events: none;
-    padding-top: 0.5rem;
-    border-top: 1px solid #f3f4f6;
+    color: #94a3b8;
+    line-height: 1.4;
+    margin-top: auto;
   }
 
   &__trend {
     position: absolute;
     top: 1rem;
     right: 1rem;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     font-size: 0.75rem;
-    font-weight: 700;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
 
     &--up {
+      color: #059669;
       background: #d1fae5;
-      color: #065f46;
     }
 
     &--down {
-      background: #fee2e2;
       color: #dc2626;
+      background: #fecaca;
     }
 
     &--warning {
-      background: #fef3c7;
       color: #d97706;
+      background: #fef3c7;
     }
 
     &--neutral {
-      background: #e5e7eb;
       color: #6b7280;
+      background: #f3f4f6;
+    }
+  }
+
+  // Card type variations
+  &--total-revenue {
+    border-left: 4px solid #059669;
+
+    .statistics-card__icon {
+      background: #d1fae5;
+      color: #059669;
+    }
+  }
+
+  &--collected-revenue {
+    border-left: 4px solid #3b82f6;
+
+    .statistics-card__icon {
+      background: #dbeafe;
+      color: #3b82f6;
+    }
+  }
+
+  &--monthly-sales {
+    border-left: 4px solid #8b5cf6;
+
+    .statistics-card__icon {
+      background: #ede9fe;
+      color: #8b5cf6;
+    }
+  }
+
+  &--today-sales {
+    border-left: 4px solid #06b6d4;
+
+    .statistics-card__icon {
+      background: #cffafe;
+      color: #06b6d4;
+    }
+  }
+
+  &--bad-orders {
+    border-left: 4px solid #d97706;
+
+    .statistics-card__icon {
+      background: #fef3c7;
+      color: #d97706;
+    }
+  }
+
+  &--bad-order-refunds {
+    border-left: 4px solid #dc2626;
+
+    .statistics-card__icon {
+      background: #fecaca;
+      color: #dc2626;
+    }
+  }
+
+  &--pending-revenue {
+    border-left: 4px solid #f59e0b;
+
+    .statistics-card__icon {
+      background: #fef3c7;
+      color: #f59e0b;
+    }
+  }
+
+  &--overdue-revenue {
+    border-left: 4px solid #dc2626;
+
+    .statistics-card__icon {
+      background: #fecaca;
+      color: #dc2626;
+    }
+  }
+
+  &--total-credit {
+    border-left: 4px solid #7c3aed;
+
+    .statistics-card__icon {
+      background: #ede9fe;
+      color: #7c3aed;
+    }
+  }
+
+  &--total-orders {
+    border-left: 4px solid #10b981;
+
+    .statistics-card__icon {
+      background: #d1fae5;
+      color: #10b981;
+    }
+  }
+
+  &--average-order {
+    border-left: 4px solid #f59e0b;
+
+    .statistics-card__icon {
+      background: #fef3c7;
+      color: #f59e0b;
+    }
+  }
+
+  &--total-items {
+    border-left: 4px solid #3b82f6;
+
+    .statistics-card__icon {
+      background: #dbeafe;
+      color: #3b82f6;
+    }
+  }
+
+  &--bad-order-items {
+    border-left: 4px solid #ef4444;
+
+    .statistics-card__icon {
+      background: #fecaca;
+      color: #ef4444;
+    }
+  }
+
+  &--unique-customers {
+    border-left: 4px solid #8b5cf6;
+
+    .statistics-card__icon {
+      background: #ede9fe;
+      color: #8b5cf6;
+    }
+  }
+
+  &--collection-rate {
+    border-left: 4px solid #06b6d4;
+
+    .statistics-card__icon {
+      background: #cffafe;
+      color: #06b6d4;
+    }
+  }
+
+  &--cancelled-orders {
+    border-left: 4px solid #6b7280;
+
+    .statistics-card__icon {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+  }
+
+  &--refunded-orders {
+    border-left: 4px solid #ef4444;
+
+    .statistics-card__icon {
+      background: #fecaca;
+      color: #ef4444;
+    }
+  }
+
+  &--partial-payments {
+    border-left: 4px solid #f59e0b;
+
+    .statistics-card__icon {
+      background: #fef3c7;
+      color: #f59e0b;
     }
   }
 }
 
-// Expandable section styles
 .statistics-cards-toggle {
   grid-column: 1 / -1;
   display: flex;
@@ -245,21 +310,22 @@
   margin-top: 1rem;
 
   &__button {
-    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    color: #64748b;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
 
     &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      color: #475569;
     }
   }
 
@@ -269,12 +335,34 @@
   }
 }
 
-// Dark theme support
+// Dark Theme
 [data-theme="dark"] {
+  .statistics-cards-container {
+    background: transparent;
+  }
+
+  .date-filter-indicator {
+    background: #374151;
+    border-color: #4b5563;
+    color: #d1d5db;
+
+    svg {
+      color: #60a5fa;
+    }
+
+    strong {
+      color: #f9fafb;
+    }
+  }
+
   .statistics-card {
     background: #374151;
     border-color: #4b5563;
-    color: #f9fafb;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+
+    &:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
 
     &__value {
       color: #f9fafb;
@@ -286,34 +374,200 @@
 
     &__description {
       color: #9ca3af;
-      border-top-color: #4b5563;
     }
 
     &__trend {
       &--up {
+        color: #34d399;
         background: #065f46;
-        color: #d1fae5;
       }
 
       &--down {
+        color: #f87171;
         background: #7f1d1d;
-        color: #fecaca;
       }
 
       &--warning {
+        color: #fbbf24;
         background: #78350f;
-        color: #fef3c7;
       }
 
       &--neutral {
-        background: #374151;
-        color: #d1d5db;
+        color: #9ca3af;
+        background: #4b5563;
+      }
+    }
+
+    // Dark mode card variations
+    &--total-revenue .statistics-card__icon {
+      background: #065f46;
+      color: #34d399;
+    }
+
+    &--collected-revenue .statistics-card__icon {
+      background: #1e3a8a;
+      color: #60a5fa;
+    }
+
+    &--monthly-sales .statistics-card__icon {
+      background: #4c1d95;
+      color: #a78bfa;
+    }
+
+    &--today-sales .statistics-card__icon {
+      background: #164e63;
+      color: #22d3ee;
+    }
+
+    &--bad-orders .statistics-card__icon {
+      background: #78350f;
+      color: #fbbf24;
+    }
+
+    &--bad-order-refunds .statistics-card__icon {
+      background: #7f1d1d;
+      color: #f87171;
+    }
+
+    &--pending-revenue .statistics-card__icon {
+      background: #78350f;
+      color: #fbbf24;
+    }
+
+    &--overdue-revenue .statistics-card__icon {
+      background: #7f1d1d;
+      color: #f87171;
+    }
+
+    &--total-credit .statistics-card__icon {
+      background: #4c1d95;
+      color: #a78bfa;
+    }
+
+    &--total-orders .statistics-card__icon {
+      background: #065f46;
+      color: #34d399;
+    }
+
+    &--average-order .statistics-card__icon {
+      background: #78350f;
+      color: #fbbf24;
+    }
+
+    &--total-items .statistics-card__icon {
+      background: #1e3a8a;
+      color: #60a5fa;
+    }
+
+    &--bad-order-items .statistics-card__icon {
+      background: #7f1d1d;
+      color: #f87171;
+    }
+
+    &--unique-customers .statistics-card__icon {
+      background: #4c1d95;
+      color: #a78bfa;
+    }
+
+    &--collection-rate .statistics-card__icon {
+      background: #164e63;
+      color: #22d3ee;
+    }
+
+    &--cancelled-orders .statistics-card__icon {
+      background: #374151;
+      color: #9ca3af;
+    }
+
+    &--refunded-orders .statistics-card__icon {
+      background: #7f1d1d;
+      color: #f87171;
+    }
+
+    &--partial-payments .statistics-card__icon {
+      background: #78350f;
+      color: #fbbf24;
+    }
+  }
+
+  .statistics-cards-toggle {
+    &__button {
+      background: #374151;
+      border-color: #4b5563;
+      color: #d1d5db;
+
+      &:hover {
+        background: #4b5563;
+        border-color: #6b7280;
+        color: #f9fafb;
       }
     }
   }
 }
 
-// Animations
+// Responsive Design
+@media (max-width: 1400px) {
+  .statistics-cards-container {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
+  .statistics-cards-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .statistics-cards-container {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 0.5rem;
+  }
+
+  .statistics-card {
+    padding: 1.25rem;
+    min-height: 120px;
+
+    &__value {
+      font-size: 1.25rem;
+    }
+
+    &__icon {
+      width: 40px;
+      height: 40px;
+      font-size: 1.1rem;
+    }
+  }
+
+  .date-filter-indicator {
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .statistics-cards-container {
+    grid-template-columns: 1fr;
+  }
+
+  .statistics-card {
+    padding: 1rem;
+    min-height: 110px;
+
+    &__value {
+      font-size: 1.1rem;
+    }
+
+    &__icon {
+      width: 36px;
+      height: 36px;
+      font-size: 1rem;
+    }
+  }
+}
+
+// Animation for card appearance
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -325,29 +579,6 @@
   }
 }
 
-// Print styles
-@media print {
-  .statistics-cards-container {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-  }
-
-  .statistics-card {
-    break-inside: avoid;
-    box-shadow: none;
-    border: 1px solid #d1d5db;
-
-    &:hover {
-      transform: none;
-      box-shadow: none;
-    }
-  }
-
-  .statistics-cards-toggle {
-    display: none;
-  }
-
-  .date-filter-indicator {
-    display: none;
-  }
+.statistics-card {
+  animation: fadeInUp 0.5s ease-out;
 }
