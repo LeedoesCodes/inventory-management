@@ -177,7 +177,6 @@ export const useOrders = () => {
     }
   };
 
-  // Rest of your functions remain the same...
   const handleCancelOrder = async (order) => {
     try {
       const batch = writeBatch(db);
@@ -219,6 +218,7 @@ export const useOrders = () => {
     }
   };
 
+  // FIXED: Only update stock for replace actions, not for full refund
   const handleProcessBadOrder = async (badOrderData) => {
     try {
       console.log("Processing bad order:", badOrderData);
@@ -226,6 +226,7 @@ export const useOrders = () => {
       if (!order || !badOrderDetails) {
         throw new Error("Missing order or bad order details");
       }
+
       const badOrderRecord = {
         id: `badorder_${Date.now()}`,
         orderId: order.id,
@@ -239,22 +240,36 @@ export const useOrders = () => {
         items: badOrderDetails.items || [],
         createdAt: new Date(),
       };
+
       console.log("Saving bad order to Firestore:", badOrderRecord);
       const badOrderRef = await addDoc(
         collection(db, "badOrders"),
         badOrderRecord
       );
       console.log("Bad order saved with ID:", badOrderRef.id);
-      await updateProductQuantities(badOrderDetails.items || []);
+
+      // FIXED: Only update product quantities for replace actions
+      if (
+        badOrderDetails.action === "replace" ||
+        badOrderDetails.action === "partial_refund"
+      ) {
+        console.log("Updating product quantities for replacement action");
+        await updateProductQuantities(badOrderDetails.items || []);
+      } else {
+        console.log("Skipping stock update for full refund action");
+      }
+
       const orderRef = doc(db, "orders", order.id);
       const updateData = {
         hasBadOrder: true,
         lastUpdated: new Date(),
         badOrders: arrayUnion(badOrderRecord),
       };
+
       if (badOrderDetails.action === "full_refund") {
         updateData.status = "refunded";
       }
+
       await updateDoc(orderRef, updateData);
       console.log("Bad order processing completed successfully");
       await fetchOrders();

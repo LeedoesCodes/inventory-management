@@ -18,13 +18,15 @@ import {
   faBalanceScale,
   faChevronDown,
   faChevronUp,
+  faBoxOpen,
+  faShieldAlt,
 } from "@fortawesome/free-solid-svg-icons";
 import "./StatisticsCards.scss";
 
-const StatisticsCards = ({ orders, customers = [] }) => {
+const StatisticsCards = ({ orders, customers = [], dateFilter }) => {
   const [showAll, setShowAll] = useState(false);
 
-  // Calculate all statistics (your existing code)
+  // Calculate all statistics from the FILTERED orders
   const totalRevenue = orders
     .filter(
       (order) => order.status !== "cancelled" && order.paymentStatus === "paid"
@@ -78,44 +80,47 @@ const StatisticsCards = ({ orders, customers = [] }) => {
     (order) => order.status === "cancelled"
   ).length;
 
-  const today = new Date();
+  // NEW: Bad Orders Statistics
+  const badOrders = orders.filter(
+    (order) => order.hasBadOrder || order.badOrders?.length > 0
+  );
+  const totalBadOrders = badOrders.length;
+
+  // Calculate total refund amount from bad orders
+  const totalBadOrderRefundAmount = badOrders.reduce((sum, order) => {
+    const badOrderRefunds =
+      order.badOrders?.reduce((badSum, badOrder) => {
+        return badSum + (badOrder.totalRefundAmount || 0);
+      }, 0) || 0;
+    return sum + badOrderRefunds;
+  }, 0);
+
+  // Calculate items affected by bad orders
+  const totalItemsAffectedByBadOrders = badOrders.reduce((sum, order) => {
+    const itemsAffected =
+      order.badOrders?.reduce((itemSum, badOrder) => {
+        return itemSum + (badOrder.items?.length || 0);
+      }, 0) || 0;
+    return sum + itemsAffected;
+  }, 0);
+
+  // Calculate bad order rate
+  const badOrderRate =
+    orders.length > 0 ? (totalBadOrders / orders.length) * 100 : 0;
+
+  // Use ONLY the filtered orders for all calculations
   const todaySales = orders
-    .filter((order) => {
-      const orderDate = order.createdAt?.toDate
-        ? order.createdAt.toDate()
-        : new Date(order.createdAt);
-      return (
-        orderDate.toDateString() === today.toDateString() &&
-        order.status !== "cancelled" &&
-        order.paymentStatus === "paid"
-      );
-    })
+    .filter(
+      (order) => order.status !== "cancelled" && order.paymentStatus === "paid"
+    )
     .reduce((sum, order) => sum + order.totalAmount, 0);
 
   const monthlySales = orders
-    .filter((order) => {
-      const orderDate = order.createdAt?.toDate
-        ? order.createdAt.toDate()
-        : new Date(order.createdAt);
-      return (
-        orderDate.getMonth() === today.getMonth() &&
-        orderDate.getFullYear() === today.getFullYear() &&
-        order.status !== "cancelled" &&
-        order.paymentStatus === "paid"
-      );
-    })
+    .filter(
+      (order) => order.status !== "cancelled" && order.paymentStatus === "paid"
+    )
     .reduce((sum, order) => sum + order.totalAmount, 0);
 
-  const paymentMethodBreakdown = {
-    cash: orders.filter((order) => order.paymentMethod === "cash").length,
-    credit: orders.filter(
-      (order) =>
-        order.paymentMethod === "credit" || order.paymentMethod === "pay_later"
-    ).length,
-    online: orders.filter((order) => order.paymentMethod === "online").length,
-  };
-
-  // New additional stats
   const totalItemsSold = orders
     .filter((order) => order.status !== "cancelled")
     .reduce((sum, order) => sum + (order.totalItems || 0), 0);
@@ -138,6 +143,24 @@ const StatisticsCards = ({ orders, customers = [] }) => {
   const collectionRate =
     totalRevenue > 0 ? (totalPaidAmount / totalRevenue) * 100 : 0;
 
+  // Get date context for descriptions
+  const getDateContext = () => {
+    if (!dateFilter) return "all time";
+
+    if (dateFilter.dateRange === "today") return "today";
+    if (dateFilter.dateRange === "yesterday") return "yesterday";
+    if (dateFilter.dateRange === "thisWeek") return "this week";
+    if (dateFilter.dateRange === "thisMonth") return "this month";
+    if (dateFilter.dateRange === "custom") {
+      if (dateFilter.startDate && dateFilter.endDate) {
+        return "selected period";
+      }
+    }
+    return "all time";
+  };
+
+  const dateContext = getDateContext();
+
   const stats = [
     // Financial Overview - Most important cards first
     {
@@ -147,10 +170,10 @@ const StatisticsCards = ({ orders, customers = [] }) => {
         maximumFractionDigits: 2,
       })}`,
       label: "Total Revenue",
-      description: "Paid and completed orders",
+      description: `Paid and completed orders (${dateContext})`,
       className: "total-revenue",
       trend: "up",
-      priority: 1, // High priority - always show first
+      priority: 1,
     },
     {
       icon: faMoneyCheck,
@@ -159,7 +182,7 @@ const StatisticsCards = ({ orders, customers = [] }) => {
         maximumFractionDigits: 2,
       })}`,
       label: "Total Collected",
-      description: "Actual cash collected",
+      description: `Actual cash collected (${dateContext})`,
       className: "collected-revenue",
       trend: "up",
       priority: 1,
@@ -170,8 +193,8 @@ const StatisticsCards = ({ orders, customers = [] }) => {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })}`,
-      label: "Monthly Sales",
-      description: "Current month revenue",
+      label: "Filtered Sales",
+      description: `Total sales (${dateContext})`,
       className: "monthly-sales",
       trend: "up",
       priority: 1,
@@ -182,10 +205,35 @@ const StatisticsCards = ({ orders, customers = [] }) => {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })}`,
-      label: "Today's Sales",
-      description: "Revenue from today",
+      label: "Filtered Revenue",
+      description: `Revenue from ${dateContext}`,
       className: "today-sales",
       trend: "up",
+      priority: 1,
+    },
+
+    // NEW: Bad Orders Statistics (High Priority - shows issues)
+    {
+      icon: faExclamationTriangle,
+      value: totalBadOrders.toLocaleString(),
+      label: "Bad Orders",
+      description: `${badOrderRate.toFixed(
+        1
+      )}% of total orders (${dateContext})`,
+      className: "bad-orders",
+      trend: totalBadOrders > 0 ? "warning" : "neutral",
+      priority: 2,
+    },
+    {
+      icon: faUndo,
+      value: `₱${totalBadOrderRefundAmount.toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`,
+      label: "Bad Order Refunds",
+      description: `Total refunded from bad orders (${dateContext})`,
+      className: "bad-order-refunds",
+      trend: totalBadOrderRefundAmount > 0 ? "down" : "neutral",
       priority: 2,
     },
 
@@ -197,7 +245,7 @@ const StatisticsCards = ({ orders, customers = [] }) => {
         maximumFractionDigits: 2,
       })}`,
       label: "Pending Payments",
-      description: `${pendingPayments.length} pending order(s)`,
+      description: `${pendingPayments.length} pending order(s) (${dateContext})`,
       className: "pending-revenue",
       trend: pendingPayments.length > 0 ? "warning" : "neutral",
       priority: 2,
@@ -209,7 +257,7 @@ const StatisticsCards = ({ orders, customers = [] }) => {
         maximumFractionDigits: 2,
       })}`,
       label: "Overdue Payments",
-      description: `${overduePayments.length} overdue order(s)`,
+      description: `${overduePayments.length} overdue order(s) (${dateContext})`,
       className: "overdue-revenue",
       trend: overduePayments.length > 0 ? "down" : "neutral",
       priority: 2,
@@ -221,7 +269,7 @@ const StatisticsCards = ({ orders, customers = [] }) => {
         maximumFractionDigits: 2,
       })}`,
       label: "Total Credit Given",
-      description: `${creditOrders.length} credit transaction(s)`,
+      description: `${creditOrders.length} credit transaction(s) (${dateContext})`,
       className: "total-credit",
       trend: "neutral",
       priority: 3,
@@ -232,7 +280,7 @@ const StatisticsCards = ({ orders, customers = [] }) => {
       icon: faReceipt,
       value: orders.length.toLocaleString(),
       label: "Total Transactions",
-      description: "All time orders",
+      description: `All orders (${dateContext})`,
       className: "total-orders",
       trend: "up",
       priority: 2,
@@ -244,7 +292,7 @@ const StatisticsCards = ({ orders, customers = [] }) => {
         maximumFractionDigits: 2,
       })}`,
       label: "Average Order Value",
-      description: "Revenue per order",
+      description: `Revenue per order (${dateContext})`,
       className: "average-order",
       trend: "up",
       priority: 3,
@@ -253,9 +301,20 @@ const StatisticsCards = ({ orders, customers = [] }) => {
       icon: faBalanceScale,
       value: totalItemsSold.toLocaleString(),
       label: "Total Items Sold",
-      description: "All products sold",
+      description: `All products sold (${dateContext})`,
       className: "total-items",
       trend: "up",
+      priority: 3,
+    },
+
+    // NEW: Additional Bad Order Metrics
+    {
+      icon: faBoxOpen,
+      value: totalItemsAffectedByBadOrders.toLocaleString(),
+      label: "Items in Bad Orders",
+      description: `Products affected by quality issues (${dateContext})`,
+      className: "bad-order-items",
+      trend: totalItemsAffectedByBadOrders > 0 ? "warning" : "neutral",
       priority: 3,
     },
 
@@ -264,7 +323,7 @@ const StatisticsCards = ({ orders, customers = [] }) => {
       icon: faUsers,
       value: uniqueCustomers.toLocaleString(),
       label: "Unique Customers",
-      description: "Total customer count",
+      description: `Total customer count (${dateContext})`,
       className: "unique-customers",
       trend: "up",
       priority: 3,
@@ -273,7 +332,7 @@ const StatisticsCards = ({ orders, customers = [] }) => {
       icon: faPercentage,
       value: `${collectionRate.toFixed(1)}%`,
       label: "Collection Rate",
-      description: "Payment collection efficiency",
+      description: `Payment collection efficiency (${dateContext})`,
       className: "collection-rate",
       trend:
         collectionRate > 80 ? "up" : collectionRate > 60 ? "warning" : "down",
@@ -287,7 +346,7 @@ const StatisticsCards = ({ orders, customers = [] }) => {
       label: "Cancelled Orders",
       description: `${((cancelledOrders / orders.length) * 100 || 0).toFixed(
         1
-      )}% cancellation rate`,
+      )}% cancellation rate (${dateContext})`,
       className: "cancelled-orders",
       trend: "down",
       priority: 3,
@@ -296,7 +355,9 @@ const StatisticsCards = ({ orders, customers = [] }) => {
       icon: faUndo,
       value: refundedOrders.toLocaleString(),
       label: "Refunded Orders",
-      description: `₱${totalRefundAmount.toFixed(2)} total refunded`,
+      description: `₱${totalRefundAmount.toFixed(
+        2
+      )} total refunded (${dateContext})`,
       className: "refunded-orders",
       trend: "down",
       priority: 3,
@@ -305,7 +366,7 @@ const StatisticsCards = ({ orders, customers = [] }) => {
       icon: faExchangeAlt,
       value: partialPayments.toLocaleString(),
       label: "Partial Payments",
-      description: "Orders with partial payments",
+      description: `Orders with partial payments (${dateContext})`,
       className: "partial-payments",
       trend: "warning",
       priority: 3,
@@ -315,11 +376,11 @@ const StatisticsCards = ({ orders, customers = [] }) => {
   // Sort by priority (lower number = higher priority)
   const sortedStats = [...stats].sort((a, b) => a.priority - b.priority);
 
-  // First 3 cards (highest priority)
-  const initialCards = sortedStats.slice(0, 3);
+  // First 4 cards (highest priority)
+  const initialCards = sortedStats.slice(0, 4);
 
   // Remaining cards
-  const additionalCards = sortedStats.slice(3);
+  const additionalCards = sortedStats.slice(4);
 
   const toggleShowAll = () => {
     setShowAll(!showAll);
@@ -327,6 +388,24 @@ const StatisticsCards = ({ orders, customers = [] }) => {
 
   return (
     <div className="statistics-cards-container">
+      {/* Date Filter Indicator */}
+      {dateFilter && dateFilter.dateRange !== "all" && (
+        <div className="date-filter-indicator">
+          <FontAwesomeIcon icon={faCalendarAlt} />
+          <span>
+            Showing data for: <strong>{getDateContext()}</strong>
+            {dateFilter.dateRange === "custom" &&
+              dateFilter.startDate &&
+              dateFilter.endDate &&
+              ` (${new Date(
+                dateFilter.startDate
+              ).toLocaleDateString()} - ${new Date(
+                dateFilter.endDate
+              ).toLocaleDateString()})`}
+          </span>
+        </div>
+      )}
+
       {/* Always visible cards */}
       {initialCards.map((stat, index) => (
         <div

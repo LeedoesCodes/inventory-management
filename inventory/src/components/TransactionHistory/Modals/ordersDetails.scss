@@ -12,9 +12,14 @@
       background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
       border-bottom: 1px solid #e2e8f0;
       padding: 1.5rem 2rem;
-      display: flex; // Added for proper alignment
-      justify-content: space-between; // Added for proper alignment
-      align-items: center; // Added for proper alignment
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      &.overdue-header {
+        background: linear-gradient(135deg, #fed7d7 0%, #feb2b2 100%);
+        border-bottom-color: #fc8181;
+      }
 
       h3 {
         margin: 0;
@@ -24,6 +29,25 @@
         display: flex;
         align-items: center;
         gap: 0.75rem;
+
+        .bad-order-indicator-header {
+          background: #f59e0b;
+          color: white;
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+          font-size: 0.8rem;
+          margin-left: 0.5rem;
+        }
+
+        .overdue-indicator-header {
+          background: #ef4444;
+          color: white;
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+          font-size: 0.8rem;
+          margin-left: 0.5rem;
+          font-weight: 600;
+        }
       }
 
       button {
@@ -49,6 +73,203 @@
       max-height: 70vh;
       overflow-y: auto;
       background: #f8fafc;
+
+      // View Toggle Section
+      .view-toggle-section {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e2e8f0;
+
+        .view-toggle-buttons {
+          display: flex;
+          gap: 1rem;
+          flex-wrap: wrap;
+
+          .btn {
+            flex: 1;
+            min-width: 160px;
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+
+            &.btn-primary {
+              background: linear-gradient(135deg, #009feb, #007bff);
+              color: white;
+
+              &:hover {
+                background: linear-gradient(135deg, #007bff, #0056b3);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 159, 235, 0.3);
+              }
+            }
+
+            &.btn-secondary {
+              background: #f1f5f9;
+              color: #64748b;
+              border: 1px solid #e2e8f0;
+
+              &:hover {
+                background: #e2e8f0;
+                color: #374151;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+              }
+            }
+          }
+        }
+      }
+
+      // Bad Order History Section
+      .bad-order-history-section {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e2e8f0;
+
+        .section-title {
+          color: #2d3748;
+          margin: 0 0 1rem 0;
+          font-size: 1.1rem;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding-bottom: 0.5rem;
+          border-bottom: 2px solid #e2e8f0;
+        }
+
+        // Bad Order List
+        .bad-order-list {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .bad-order-card {
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          padding: 1rem;
+          transition: all 0.3s ease;
+          background: #fafafa;
+
+          &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: #cbd5e0;
+          }
+
+          .bad-order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+
+            .bad-order-info {
+              display: flex;
+              flex-direction: column;
+              gap: 0.5rem;
+
+              .bad-order-action {
+                background: #f59e0b;
+                color: white;
+                padding: 0.25rem 0.5rem;
+                border-radius: 4px;
+                font-size: 0.8rem;
+                font-weight: 600;
+                display: inline-block;
+              }
+
+              .bad-order-reason {
+                color: #4a5568;
+                font-size: 0.9rem;
+              }
+
+              .bad-order-date {
+                color: #718096;
+                font-size: 0.8rem;
+              }
+            }
+
+            .bad-order-amount {
+              .refund-amount {
+                background: #ef4444;
+                color: white;
+                padding: 0.5rem 0.75rem;
+                border-radius: 6px;
+                font-size: 0.9rem;
+                font-weight: 600;
+              }
+            }
+          }
+
+          .bad-order-footer {
+            display: flex;
+            justify-content: flex-end;
+          }
+        }
+
+        // Selected Bad Order View
+        .selected-bad-order {
+          .bad-order-details-header {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+
+            h5 {
+              margin: 0 0 0.5rem 0;
+              color: #856404;
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+            }
+
+            .bad-order-meta {
+              display: flex;
+              gap: 1rem;
+              flex-wrap: wrap;
+              align-items: center;
+
+              .bad-order-action-badge {
+                background: #f59e0b;
+                color: white;
+                padding: 0.25rem 0.5rem;
+                border-radius: 4px;
+                font-size: 0.8rem;
+                font-weight: 600;
+              }
+
+              .bad-order-reason {
+                color: #856404;
+                font-size: 0.9rem;
+              }
+
+              .bad-order-refund {
+                background: #ef4444;
+                color: white;
+                padding: 0.25rem 0.5rem;
+                border-radius: 4px;
+                font-size: 0.8rem;
+                font-weight: 600;
+              }
+            }
+          }
+        }
+      }
 
       // Section Titles
       .section-title {
@@ -105,6 +326,20 @@
         border-radius: 8px;
         transition: all 0.3s ease;
 
+        &.overdue-row {
+          background: #fed7d7;
+          border: 1px solid #feb2b2;
+
+          .detail-label {
+            color: #742a2a;
+          }
+
+          .detail-value {
+            color: #c53030;
+            font-weight: 700;
+          }
+        }
+
         &:hover {
           background: #f7fafc;
         }
@@ -125,7 +360,7 @@
         .detail-value {
           color: #2d3748;
           font-weight: 500;
-          text-align: right; // Align values to the right
+          text-align: right;
 
           &.customer-name {
             font-weight: 700;
@@ -142,6 +377,53 @@
             font-weight: 600;
             color: #009feb;
           }
+
+          &.bad-order-count {
+            background: #f59e0b;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+          }
+
+          // Due Date Display
+          &.due-date-display {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+
+            &.overdue {
+              color: #ef4444;
+              font-weight: 700;
+            }
+
+            .overdue-badge,
+            .due-soon-badge,
+            .due-today-badge {
+              padding: 0.2rem 0.5rem;
+              border-radius: 4px;
+              font-size: 0.7rem;
+              font-weight: 600;
+            }
+
+            .overdue-badge {
+              background: #ef4444;
+              color: white;
+            }
+
+            .due-soon-badge {
+              background: #f59e0b;
+              color: white;
+            }
+
+            .due-today-badge {
+              background: #10b981;
+              color: white;
+            }
+          }
         }
 
         // Status & Payment Method Badges
@@ -153,7 +435,7 @@
           font-weight: 600;
           text-transform: uppercase;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-          color: white; // Common property
+          color: white;
         }
       }
 
@@ -175,11 +457,22 @@
           border-color: #bae6fd;
         }
 
+        &.overdue-payment {
+          background: linear-gradient(135deg, #fed7d7, #f7fafc);
+          border-color: #feb2b2;
+        }
+
         .payment-summary-row {
           display: flex;
           justify-content: space-between;
           align-items: center;
           margin-bottom: 0.5rem;
+
+          &.due-date-summary {
+            border-top: 1px solid #e2e8f0;
+            padding-top: 0.75rem;
+            margin-top: 0.75rem;
+          }
 
           &:last-child {
             margin-bottom: 0;
@@ -188,6 +481,9 @@
           .summary-label {
             font-weight: 600;
             color: #4a5568;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
           }
 
           .summary-value {
@@ -207,11 +503,40 @@
               color: #ef4444;
               font-size: 1.05rem;
             }
+
+            &.overdue-value {
+              color: #ef4444;
+              display: flex;
+              align-items: center;
+              gap: 0.5rem;
+
+              .overdue-days {
+                background: #ef4444;
+                color: white;
+                padding: 0.2rem 0.5rem;
+                border-radius: 4px;
+                font-size: 0.7rem;
+              }
+            }
           }
         }
       }
 
       // Items List
+      .items-section {
+        .section-title {
+          .historical-badge {
+            background: #f59e0b;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            margin-left: 0.5rem;
+            font-weight: 600;
+          }
+        }
+      }
+
       .items-list {
         .item-row {
           display: grid;
@@ -238,8 +563,14 @@
             align-items: center;
             gap: 0.5rem;
 
-            .bad-order-indicator {
+            .bad-order-quantity {
+              background: #ef4444;
+              color: white;
+              padding: 0.2rem 0.5rem;
+              border-radius: 4px;
+              font-size: 0.7rem;
               margin-left: 0.5rem;
+              font-weight: 600;
             }
           }
 
@@ -322,6 +653,21 @@
             &.balance-total {
               color: #f59e0b;
               font-weight: 700;
+              display: flex;
+              align-items: center;
+              gap: 0.5rem;
+
+              .overdue-indicator {
+                background: #ef4444;
+                color: white;
+                padding: 0.2rem 0.5rem;
+                border-radius: 4px;
+                font-size: 0.7rem;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+              }
             }
 
             &.refund-total {
@@ -351,6 +697,15 @@
 
               .balance-total {
                 color: #10b981;
+              }
+            }
+
+            &.overdue-balance {
+              background: linear-gradient(135deg, #fed7d7, transparent);
+              border: 1px solid #feb2b2;
+
+              .balance-total {
+                color: #ef4444;
               }
             }
           }
@@ -556,6 +911,19 @@
           }
         }
 
+        &.btn-outline {
+          background: transparent;
+          border: 1px solid #e2e8f0;
+          color: #64748b;
+
+          &:hover {
+            background: #f1f5f9;
+            border-color: #cbd5e0;
+            color: #374151;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          }
+        }
+
         &:disabled {
           opacity: 0.6;
           cursor: not-allowed;
@@ -579,8 +947,21 @@
         background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
         border-bottom-color: #4a5568;
 
+        &.overdue-header {
+          background: linear-gradient(135deg, #742a2a 0%, #9b2c2c 100%);
+          border-bottom-color: #e53e3e;
+        }
+
         h3 {
           color: #f7fafc;
+
+          .bad-order-indicator-header {
+            background: #d97706;
+          }
+
+          .overdue-indicator-header {
+            background: #e53e3e;
+          }
         }
 
         button {
@@ -595,6 +976,83 @@
 
       .modal-body {
         background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+
+        .view-toggle-section {
+          background: #2d3748;
+          border-color: #4a5568;
+
+          .btn {
+            &.btn-primary {
+              background: linear-gradient(135deg, #63b3ed, #4299e1);
+            }
+
+            &.btn-secondary {
+              background: #4a5568;
+              color: #cbd5e0;
+              border-color: #718096;
+
+              &:hover {
+                background: #718096;
+                color: #f7fafc;
+              }
+            }
+          }
+        }
+
+        .bad-order-history-section {
+          background: #2d3748;
+          border-color: #4a5568;
+
+          .bad-order-card {
+            background: #4a5568;
+            border-color: #718096;
+
+            &:hover {
+              border-color: #a0aec0;
+            }
+
+            .bad-order-info {
+              .bad-order-action {
+                background: #d97706;
+              }
+
+              .bad-order-reason {
+                color: #cbd5e0;
+              }
+
+              .bad-order-date {
+                color: #a0aec0;
+              }
+            }
+
+            .bad-order-amount .refund-amount {
+              background: #e53e3e;
+            }
+          }
+
+          .selected-bad-order .bad-order-details-header {
+            background: #744210;
+            border-color: #d97706;
+
+            h5 {
+              color: #fef3c7;
+            }
+
+            .bad-order-meta {
+              .bad-order-action-badge {
+                background: #d97706;
+              }
+
+              .bad-order-reason {
+                color: #fef3c7;
+              }
+
+              .bad-order-refund {
+                background: #e53e3e;
+              }
+            }
+          }
+        }
 
         .section-title {
           color: #f7fafc;
@@ -634,6 +1092,41 @@
             &.order-id {
               color: #63b3ed;
             }
+
+            &.bad-order-count {
+              background: #d97706;
+            }
+
+            &.due-date-display {
+              &.overdue {
+                color: #fc8181;
+              }
+
+              .overdue-badge {
+                background: #e53e3e;
+              }
+
+              .due-soon-badge {
+                background: #d97706;
+              }
+
+              .due-today-badge {
+                background: #48bb78;
+              }
+            }
+          }
+
+          &.overdue-row {
+            background: #742a2a;
+            border-color: #9b2c2c;
+
+            .detail-label {
+              color: #fed7d7;
+            }
+
+            .detail-value {
+              color: #fc8181;
+            }
           }
 
           &:hover {
@@ -655,6 +1148,11 @@
             border-color: #3b82f6;
           }
 
+          &.overdue-payment {
+            background: linear-gradient(135deg, #742a2a, #2d3748);
+            border-color: #e53e3e;
+          }
+
           .payment-summary-row {
             .summary-label {
               color: #cbd5e0;
@@ -670,8 +1168,20 @@
               &.balance-amount {
                 color: #fc8181;
               }
+
+              &.overdue-value {
+                color: #fc8181;
+
+                .overdue-days {
+                  background: #e53e3e;
+                }
+              }
             }
           }
+        }
+
+        .items-section .section-title .historical-badge {
+          background: #d97706;
         }
 
         .items-list .item-row {
@@ -683,6 +1193,10 @@
 
           .item-name {
             color: #f7fafc;
+
+            .bad-order-quantity {
+              background: #e53e3e;
+            }
           }
 
           .item-quantity,
@@ -695,10 +1209,10 @@
           }
 
           &.bad-order-item {
-            background: #665600;
-            border-color: #856404;
+            background: #744210;
+            border-color: #d97706;
             .item-name {
-              color: #ffc107;
+              color: #fef3c7;
             }
           }
         }
@@ -730,6 +1244,10 @@
             }
             &.balance-total {
               color: #f6ad55;
+
+              .overdue-indicator {
+                background: #e53e3e;
+              }
             }
             &.refund-total {
               color: #fc8181;
@@ -749,6 +1267,10 @@
             &.fully-paid {
               background: linear-gradient(135deg, #22543d, transparent);
               border-color: #68d391;
+            }
+            &.overdue-balance {
+              background: linear-gradient(135deg, #742a2a, transparent);
+              border-color: #e53e3e;
             }
           }
 
@@ -819,6 +1341,23 @@
       .modal-body {
         padding: 1rem;
 
+        .view-toggle-section .view-toggle-buttons {
+          flex-direction: column;
+        }
+
+        .bad-order-history-section {
+          .bad-order-card .bad-order-header {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: flex-start;
+          }
+
+          .selected-bad-order .bad-order-details-header .bad-order-meta {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+        }
+
         .detail-grid {
           grid-template-columns: 1fr;
         }
@@ -853,6 +1392,10 @@
           flex-direction: column;
           align-items: center;
         }
+      }
+
+      .detail-row .detail-value.due-date-display {
+        justify-content: flex-start;
       }
     }
   }
