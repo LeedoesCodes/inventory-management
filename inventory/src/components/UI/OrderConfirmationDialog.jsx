@@ -14,6 +14,8 @@ import {
   faChevronDown,
   faCalendarAlt,
   faExclamationTriangle,
+  faPercent,
+  faTag,
 } from "@fortawesome/free-solid-svg-icons";
 import "../../styles/OrderConfirmationDialog.scss";
 
@@ -27,6 +29,7 @@ const OrderConfirmationDialog = ({
   totalAmount,
   onQuantityChange,
   onRemoveItem,
+  totalSavings = 0,
 }) => {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -71,19 +74,19 @@ const OrderConfirmationDialog = ({
     (method) => method.id === paymentMethod
   );
 
-  // Set default due date when credit is selected - FIXED
+  const hasDiscounts = totalSavings > 0;
+
+  // Set default due date when credit is selected
   const handlePaymentMethodChange = (methodId) => {
     setPaymentMethod(methodId);
     setIsDropdownOpen(false);
 
-    // Only set default due date if credit is selected AND no due date is set yet
     if (methodId === "credit" && !dueDate) {
       const defaultDate = new Date();
       defaultDate.setDate(defaultDate.getDate() + 30);
       setDueDate(defaultDate.toISOString().split("T")[0]);
     }
 
-    // Clear due date if switching away from credit
     if (methodId !== "credit") {
       setDueDate("");
     }
@@ -108,18 +111,15 @@ const OrderConfirmationDialog = ({
     }
   };
 
-  // Handle order confirmation with payment method - FIXED DEBUG LOGGING
-  // In OrderConfirmationDialog component - ensure this is correct
+  // Handle order confirmation with payment method
   const handleConfirmWithPayment = async () => {
     if (isProcessing) return;
 
-    // Validate due date for credit orders
     if (paymentMethod === "credit" && !dueDate) {
       alert("Please set a due date for this credit order.");
       return;
     }
 
-    // Validate due date is not in the past
     if (paymentMethod === "credit" && dueDate) {
       const selectedDate = new Date(dueDate);
       const today = new Date();
@@ -131,20 +131,8 @@ const OrderConfirmationDialog = ({
       }
     }
 
-    // DEBUG: Enhanced logging to see what's being passed
-    console.log("🔍 DEBUG - OrderConfirmationDialog CONFIRMING:");
-    console.log("Payment Method:", paymentMethod);
-    console.log("Due Date Value:", dueDate);
-    console.log("Due Date Type:", typeof dueDate);
-    console.log("Is Credit:", paymentMethod === "credit");
-    console.log(
-      "Should pass dueDate:",
-      paymentMethod === "credit" ? dueDate : null
-    );
-
     setIsProcessing(true);
     try {
-      // Pass the actual dueDate value, not just a boolean
       await onConfirm(
         paymentMethod,
         paymentMethod === "credit" ? dueDate : null
@@ -153,25 +141,6 @@ const OrderConfirmationDialog = ({
       setIsProcessing(false);
     }
   };
-
-  // Calculate updated totals
-  const calculateTotals = () => {
-    let itemsTotal = 0;
-    let itemsCount = 0;
-
-    orderDetails.forEach((item) => {
-      itemsTotal += item.price * item.quantity;
-      itemsCount += item.quantity;
-    });
-
-    return {
-      totalItems: itemsCount,
-      totalAmount: itemsTotal,
-    };
-  };
-
-  const { totalItems: updatedTotalItems, totalAmount: updatedTotalAmount } =
-    calculateTotals();
 
   // Check if due date is required but not set
   const isDueDateRequired = paymentMethod === "credit" && !dueDate;
@@ -204,55 +173,69 @@ const OrderConfirmationDialog = ({
             </div>
 
             <div className="items-section">
-              <h3>Order Items ({updatedTotalItems})</h3>
+              <h3>Order Items ({totalItems})</h3>
               <div className="items-list">
-                {orderDetails.map((item, index) => (
-                  <div key={item.id || index} className="order-item">
-                    <div className="item-main-info">
-                      <span className="product-name">{item.name}</span>
-                      <span className="price">₱{item.price.toFixed(2)}</span>
-                    </div>
+                {orderDetails.map((item, index) => {
+                  console.log("🔍 OrderConfirmationDialog Item:", {
+                    name: item.name,
+                    originalPrice: item.price,
+                    discountedPrice: item.discountedPrice,
+                    quantity: item.quantity,
+                    subtotal: item.discountedPrice * item.quantity,
+                  });
 
-                    <div className="item-controls">
-                      <div className="quantity-controls">
-                        <button
-                          className="quantity-btn minus"
-                          onClick={() => handleQuantityChange(item.id, -1)}
-                          disabled={item.quantity <= 1}
-                          title="Decrease quantity"
-                        >
-                          <FontAwesomeIcon icon={faMinus} />
-                        </button>
-
-                        <span className="quantity-display">
-                          x{item.quantity}
-                        </span>
-
-                        <button
-                          className="quantity-btn plus"
-                          onClick={() => handleQuantityChange(item.id, 1)}
-                          title="Increase quantity"
-                        >
-                          <FontAwesomeIcon icon={faPlus} />
-                        </button>
+                  return (
+                    <div key={item.id || index} className="order-item">
+                      <div className="item-main-info">
+                        <span className="product-name">{item.name}</span>
+                        <div className="price-info">
+                          <span className="price">
+                            ₱{item.discountedPrice.toFixed(2)}
+                          </span>
+                        </div>
                       </div>
 
-                      <div className="item-totals">
-                        <span className="subtotal">
-                          ₱{(item.price * item.quantity).toFixed(2)}
-                        </span>
-                      </div>
+                      <div className="item-controls">
+                        <div className="quantity-controls">
+                          <button
+                            className="quantity-btn minus"
+                            onClick={() => handleQuantityChange(item.id, -1)}
+                            disabled={item.quantity <= 1}
+                            title="Decrease quantity"
+                          >
+                            <FontAwesomeIcon icon={faMinus} />
+                          </button>
 
-                      <button
-                        className="remove-btn"
-                        onClick={() => handleRemoveItem(item.id)}
-                        title="Remove item from order"
-                      >
-                        <FontAwesomeIcon icon={faTrash} />
-                      </button>
+                          <span className="quantity-display">
+                            x{item.quantity}
+                          </span>
+
+                          <button
+                            className="quantity-btn plus"
+                            onClick={() => handleQuantityChange(item.id, 1)}
+                            title="Increase quantity"
+                          >
+                            <FontAwesomeIcon icon={faPlus} />
+                          </button>
+                        </div>
+
+                        <div className="item-totals">
+                          <span className="subtotal">
+                            ₱{(item.discountedPrice * item.quantity).toFixed(2)}
+                          </span>
+                        </div>
+
+                        <button
+                          className="remove-btn"
+                          onClick={() => handleRemoveItem(item.id)}
+                          title="Remove item from order"
+                        >
+                          <FontAwesomeIcon icon={faTrash} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {orderDetails.length === 0 && (
@@ -395,14 +378,11 @@ const OrderConfirmationDialog = ({
             </div>
 
             <div className="totals-section">
-              <div className="total-row">
-                <span>Subtotal:</span>
-                <span>₱{updatedTotalAmount.toFixed(2)}</span>
-              </div>
               <div className="total-row grand-total">
                 <span>Total Amount:</span>
-                <span>₱{updatedTotalAmount.toFixed(2)}</span>
+                <span>₱{totalAmount.toFixed(2)}</span>
               </div>
+
               {paymentMethod === "credit" && (
                 <div className="total-row credit-total">
                   <span>Payment Status:</span>
@@ -458,8 +438,8 @@ const OrderConfirmationDialog = ({
                 <FontAwesomeIcon icon={faCheckCircle} />
                 Confirm Order
                 {paymentMethod === "credit"
-                  ? ` (Credit - ₱${updatedTotalAmount.toFixed(2)})`
-                  : ` (₱${updatedTotalAmount.toFixed(2)})`}
+                  ? ` (Credit - ₱${totalAmount.toFixed(2)})`
+                  : ` (₱${totalAmount.toFixed(2)})`}
               </>
             )}
           </button>

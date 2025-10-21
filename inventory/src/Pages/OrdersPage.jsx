@@ -27,6 +27,23 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import "../styles/orders.scss";
 
+// Normalize customer name for case-insensitive operations
+const normalizeCustomerName = (name) => {
+  return name ? name.trim().toLowerCase() : "";
+};
+
+// Properly capitalize customer name (First Letter Of Each Word)
+const capitalizeCustomerName = (name) => {
+  if (!name || name.trim() === "") return name;
+
+  return name
+    .trim()
+    .toLowerCase()
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
 export default function OrdersPage() {
   const { isCollapsed } = useSidebar();
   const [products, setProducts] = useState([]);
@@ -42,6 +59,7 @@ export default function OrdersPage() {
   const [pendingOrder, setPendingOrder] = useState(null);
   const [debounceTimer, setDebounceTimer] = useState(null);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const [customerDiscounts, setCustomerDiscounts] = useState([]);
 
   // Fetch products
   const fetchProducts = async () => {
@@ -60,7 +78,7 @@ export default function OrdersPage() {
     }
   };
 
-  // Fetch recent customers
+  // Fetch recent customers with case-insensitive handling
   const fetchRecentCustomers = async () => {
     try {
       const oneWeekAgo = new Date();
@@ -71,18 +89,95 @@ export default function OrdersPage() {
         where("createdAt", ">=", oneWeekAgo)
       );
       const snapshot = await getDocs(ordersQuery);
-      const customers = snapshot.docs
-        .map((doc) => doc.data().customerName)
-        .filter((name) => name && name.trim() !== "")
-        .filter((name, index, array) => array.indexOf(name) === index)
-        .slice(0, 5);
 
-      setRecentCustomers(customers);
+      // Use Set with normalized names for case-insensitive uniqueness
+      const uniqueCustomers = new Set();
+      const customers = [];
+
+      snapshot.docs.forEach((doc) => {
+        const orderData = doc.data();
+        if (orderData.customerName && orderData.customerName.trim() !== "") {
+          const normalizedName = normalizeCustomerName(orderData.customerName);
+          if (!uniqueCustomers.has(normalizedName)) {
+            uniqueCustomers.add(normalizedName);
+            // Store properly capitalized name
+            customers.push(capitalizeCustomerName(orderData.customerName));
+          }
+        }
+      });
+
+      setRecentCustomers(customers.slice(0, 5));
     } catch (error) {
       console.error("Error fetching recent customers:", error);
     }
   };
 
+  // Fetch customer discounts when customer name changes
+  useEffect(() => {
+    if (customerName && customerName !== "Walk-in Customer") {
+      fetchCustomerDiscounts(customerName);
+    } else {
+      setCustomerDiscounts([]);
+    }
+  }, [customerName]);
+
+  const fetchCustomerDiscounts = async (customerName) => {
+    try {
+      const normalizedName = normalizeCustomerName(customerName);
+      const discountsQuery = query(
+        collection(db, "customerDiscounts"),
+        where("customerNameLower", "==", normalizedName)
+      );
+      const snapshot = await getDocs(discountsQuery);
+
+      if (!snapshot.empty) {
+        setCustomerDiscounts(snapshot.docs[0].data().discounts || []);
+      } else {
+        setCustomerDiscounts([]);
+      }
+    } catch (error) {
+      console.error("Error fetching customer discounts:", error);
+      setCustomerDiscounts([]);
+    }
+  };
+
+  // Calculate discounted price for a product
+  // Calculate discounted price for a product
+  // Calculate discounted price for a product
+  // Calculate discounted price for a product
+  const getDiscountedPrice = (product) => {
+    if (!customerDiscounts.length) return product.price;
+
+    const activeDiscounts = customerDiscounts.filter((d) => d.active);
+    const categoryDiscount = activeDiscounts.find(
+      (d) => d.category === product.category
+    );
+
+    if (!categoryDiscount) return product.price;
+
+    let discountedPrice;
+    if (categoryDiscount.discountType === "percentage") {
+      discountedPrice =
+        product.price * (1 - categoryDiscount.discountValue / 100);
+    } else {
+      // For LARGE category, handle bulk vs individual pricing
+      if (product.category === "LARGE") {
+        if (product.price >= 100) {
+          // This is a bulk item - apply discount and keep as bulk price
+          discountedPrice = product.price - categoryDiscount.discountValue;
+        } else {
+          // This is an individual piece - apply smaller discount
+          discountedPrice =
+            product.price - categoryDiscount.discountValue / 100;
+        }
+      } else {
+        // Other categories - apply normal discount
+        discountedPrice = product.price - categoryDiscount.discountValue;
+      }
+    }
+
+    return Math.max(0, discountedPrice);
+  };
   // Simple barcode scanning
   const handleBarcodeScanned = (barcode) => {
     if (!barcode || barcode.trim() === "") return false;
@@ -124,7 +219,7 @@ export default function OrdersPage() {
     }
   };
 
-  // Customer management functions
+  // Customer management functions with case-insensitive handling and proper capitalization
   const saveCustomerToManagement = async (customerName) => {
     if (
       !customerName ||
@@ -134,15 +229,23 @@ export default function OrdersPage() {
       return;
 
     try {
-      const customersQuery = query(
-        collection(db, "customers"),
-        where("name", "==", customerName.trim())
-      );
-      const snapshot = await getDocs(customersQuery);
+      const normalizedName = normalizeCustomerName(customerName);
+      const capitalizedName = capitalizeCustomerName(customerName);
 
-      if (snapshot.empty) {
+      // Check if customer exists (case-insensitive)
+      const customersSnapshot = await getDocs(collection(db, "customers"));
+      const existingCustomer = customersSnapshot.docs.find((doc) => {
+        const customerData = doc.data();
+        const existingNormalizedName =
+          customerData.nameLower || normalizeCustomerName(customerData.name);
+        return existingNormalizedName === normalizedName;
+      });
+
+      if (!existingCustomer) {
+        // Create new customer with normalized and capitalized fields
         await addDoc(collection(db, "customers"), {
-          name: customerName.trim(),
+          name: capitalizedName, // Store properly capitalized name
+          nameLower: normalizedName, // Store lowercase for searching
           phone: "",
           address: "",
           createdAt: new Date(),
@@ -150,9 +253,23 @@ export default function OrdersPage() {
           totalSpent: 0,
           lastOrderDate: null,
         });
-        console.log("✅ New customer created:", customerName);
+        console.log(
+          "✅ New customer created with proper capitalization:",
+          capitalizedName
+        );
       } else {
-        console.log("ℹ️ Customer already exists:", customerName);
+        const existingName = existingCustomer.data().name;
+        console.log("ℹ️ Customer already exists:", existingName);
+
+        // Update customer name to proper capitalization if different
+        if (existingName !== capitalizedName) {
+          await updateDoc(doc(db, "customers", existingCustomer.id), {
+            name: capitalizedName,
+          });
+          console.log(
+            `🔄 Updated customer name from "${existingName}" to "${capitalizedName}"`
+          );
+        }
       }
     } catch (error) {
       console.error("❌ Error saving customer data:", error);
@@ -169,22 +286,24 @@ export default function OrdersPage() {
       return;
 
     try {
-      const customersQuery = query(
-        collection(db, "customers"),
-        where("name", "==", customerName.trim())
-      );
-      const snapshot = await getDocs(customersQuery);
+      const normalizedName = normalizeCustomerName(customerName);
+      const customersSnapshot = await getDocs(collection(db, "customers"));
+      const existingCustomer = customersSnapshot.docs.find((doc) => {
+        const customerData = doc.data();
+        const existingNormalizedName =
+          customerData.nameLower || normalizeCustomerName(customerData.name);
+        return existingNormalizedName === normalizedName;
+      });
 
-      if (!snapshot.empty) {
-        const customerDoc = snapshot.docs[0];
-        const customerData = customerDoc.data();
+      if (existingCustomer) {
+        const customerData = existingCustomer.data();
 
-        await updateDoc(doc(db, "customers", customerDoc.id), {
+        await updateDoc(doc(db, "customers", existingCustomer.id), {
           totalOrders: (customerData.totalOrders || 0) + 1,
           totalSpent: (customerData.totalSpent || 0) + orderAmount,
           lastOrderDate: new Date(),
         });
-        console.log("✅ Customer stats updated for:", customerName);
+        console.log("✅ Customer stats updated for:", customerData.name);
       } else {
         console.warn("⚠️ Customer not found for stats update:", customerName);
       }
@@ -194,8 +313,9 @@ export default function OrdersPage() {
     }
   };
 
-  // Customer name change handler
+  // Customer name change handler - FIXED: Allow free typing with spaces
   const handleCustomerNameChange = (name) => {
+    // Allow free typing - don't auto-capitalize while typing
     setCustomerName(name);
 
     if (debounceTimer) {
@@ -204,7 +324,9 @@ export default function OrdersPage() {
 
     if (name && name.trim() !== "" && name !== "Walk-in Customer") {
       const timer = setTimeout(() => {
-        saveCustomerToManagement(name);
+        // Only capitalize when saving to database (after debounce)
+        const capitalizedName = capitalizeCustomerName(name);
+        saveCustomerToManagement(capitalizedName);
       }, 2000);
       setDebounceTimer(timer);
     }
@@ -281,17 +403,22 @@ export default function OrdersPage() {
     setSelectedCategory(category);
   };
 
-  // Simple totals calculation
+  // Simple totals calculation with discounts
   const getTotals = () => {
     let totalItems = 0;
     let totalAmount = 0;
+
     products.forEach((p) => {
       const item = cart[p.id];
       if (item?.checked) {
-        totalItems += item.quantity;
-        totalAmount += p.price * item.quantity;
+        const discountedPrice = getDiscountedPrice(p);
+        const quantity = item.quantity;
+
+        totalItems += quantity;
+        totalAmount += discountedPrice * quantity;
       }
     });
+
     return { totalItems, totalAmount };
   };
 
@@ -304,9 +431,11 @@ export default function OrdersPage() {
       id: p.id,
       name: p.name,
       price: p.price,
+      discountedPrice: getDiscountedPrice(p),
       quantity: cart[p.id].quantity,
-      subtotal: p.price * cart[p.id].quantity,
+      subtotal: getDiscountedPrice(p) * cart[p.id].quantity,
       productId: p.id,
+      category: p.category,
     }));
 
   // Checkout functions
@@ -319,14 +448,23 @@ export default function OrdersPage() {
     const orderItems = cartItems.map((item) => ({
       id: item.productId,
       name: item.name,
-      price: item.price,
+      price: item.discountedPrice, // Use discounted price instead of original
+      discountedPrice: item.discountedPrice,
       quantity: item.quantity,
       subtotal: item.subtotal,
+      category: item.category,
     }));
+
+    // Use properly capitalized customer name for the order
+    const finalCustomerName = customerName || "Walk-in Customer";
+    const capitalizedCustomerName =
+      finalCustomerName === "Walk-in Customer"
+        ? finalCustomerName
+        : capitalizeCustomerName(finalCustomerName);
 
     setPendingOrder({
       items: orderItems,
-      customerName: customerName || "Walk-in Customer",
+      customerName: capitalizedCustomerName,
       totalItems,
       totalAmount,
     });
@@ -334,8 +472,7 @@ export default function OrdersPage() {
     setShowConfirmation(true);
   };
 
-  // Order confirmation with success animation - FIXED DUE DATE HANDLING
-  // Order confirmation with success animation - FIXED DUE DATE SAVING
+  // Order confirmation with success animation
   const handleConfirmOrder = async (paymentMethod = "cash", dueDate = null) => {
     if (!pendingOrder) return;
 
@@ -343,8 +480,6 @@ export default function OrdersPage() {
       console.log("🔄 Starting order confirmation process...");
       console.log(`💰 Payment Method: ${paymentMethod}`);
       console.log(`📅 Due Date: ${dueDate || "Not applicable"}`);
-      console.log(`📅 Due Date Type: ${typeof dueDate}`);
-      console.log(`📅 Due Date Value: ${dueDate}`);
 
       const batch = writeBatch(db);
 
@@ -420,12 +555,13 @@ export default function OrdersPage() {
       await batch.commit();
       console.log("✅ Batch write committed successfully");
 
-      // CRITICAL FIX: Create order record with proper due date handling
+      // Create order record with case-insensitive customer name
       console.log("📝 Creating order record...");
 
       // Prepare the order data
       const orderData = {
         customerName: pendingOrder.customerName,
+        customerNameLower: normalizeCustomerName(pendingOrder.customerName),
         items: pendingOrder.items,
         totalItems: pendingOrder.totalItems,
         totalAmount: pendingOrder.totalAmount,
@@ -433,22 +569,18 @@ export default function OrdersPage() {
         paymentStatus: paymentMethod === "credit" ? "pending" : "paid",
         createdAt: new Date(),
         status: "completed",
-        // Initialize payment tracking fields
         paidAmount: paymentMethod === "credit" ? 0 : pendingOrder.totalAmount,
         remainingBalance:
           paymentMethod === "credit" ? pendingOrder.totalAmount : 0,
+        discountsApplied: customerDiscounts.length > 0,
       };
 
-      // CRITICAL: Handle due date properly - only add if it exists and is valid
+      // Handle due date properly
       if (paymentMethod === "credit" && dueDate) {
         console.log("💾 Saving due date to order:", dueDate);
-
-        // Convert dueDate string to a Date object for consistent storage
         const dueDateObj = new Date(dueDate);
         orderData.dueDate = dueDateObj;
-
         console.log("💾 Due date saved as:", dueDateObj);
-        console.log("💾 Due date ISO string:", dueDateObj.toISOString());
       } else {
         console.log(
           "💾 No due date to save (not credit order or no due date provided)"
@@ -472,12 +604,10 @@ export default function OrdersPage() {
       }
 
       console.log("📦 Final order data:", orderData);
-      console.log("📅 Due date in final data:", orderData.dueDate);
-
       const orderRef = await addDoc(collection(db, "orders"), orderData);
       console.log("✅ Order record created with ID:", orderRef.id);
 
-      // Update customer stats
+      // Update customer stats with case-insensitive matching
       if (
         pendingOrder.customerName &&
         pendingOrder.customerName !== "Walk-in Customer"
@@ -532,6 +662,7 @@ export default function OrdersPage() {
   const handleSuccessAnimationComplete = () => {
     setCart({});
     setCustomerName("");
+    setCustomerDiscounts([]);
     setPendingOrder(null);
     setShowSuccessAnimation(false);
     fetchProducts();
@@ -552,6 +683,7 @@ export default function OrdersPage() {
     ) {
       setCart({});
       setCustomerName("");
+      setCustomerDiscounts([]);
       console.log("Order cancelled");
     }
   };
@@ -571,6 +703,7 @@ export default function OrdersPage() {
   }, [debounceTimer]);
 
   // Update pending order when cart changes AND dialog is open
+  // Update pending order when cart changes AND dialog is open
   useEffect(() => {
     if (showConfirmation) {
       const orderItems = products
@@ -578,19 +711,22 @@ export default function OrdersPage() {
         .map((p) => ({
           id: p.id,
           name: p.name,
-          price: p.price,
+          price: getDiscountedPrice(p), // Use discounted price
+          discountedPrice: getDiscountedPrice(p),
           quantity: cart[p.id].quantity,
-          subtotal: p.price * cart[p.id].quantity,
+          subtotal: getDiscountedPrice(p) * cart[p.id].quantity,
+          category: p.category,
         }));
 
+      const totals = getTotals();
       setPendingOrder((prev) => ({
         ...prev,
         items: orderItems,
-        totalItems: getTotals().totalItems,
-        totalAmount: getTotals().totalAmount,
+        totalItems: totals.totalItems,
+        totalAmount: totals.totalAmount,
       }));
     }
-  }, [cart, showConfirmation, products]);
+  }, [cart, showConfirmation, products, customerDiscounts]);
 
   // Get unique categories from products
   const categories = [
@@ -709,7 +845,7 @@ export default function OrdersPage() {
                   <button
                     key={index}
                     className="customer-tag"
-                    onClick={() => handleCustomerNameChange(customer)}
+                    onClick={() => setCustomerName(customer)} // Just set the name, don't auto-capitalize while typing
                   >
                     {customer}
                   </button>
@@ -746,13 +882,17 @@ export default function OrdersPage() {
                   const item = cart[p.id] || {};
                   const isOutOfStock = p.stock === 0;
                   const isSelected = item.checked;
+                  const discountedPrice = getDiscountedPrice(p);
+                  const hasDiscount = discountedPrice < p.price;
 
                   return (
                     <div
                       key={p.id}
                       className={`product-card ${
                         isSelected ? "selected" : ""
-                      } ${isOutOfStock ? "out-of-stock" : ""}`}
+                      } ${isOutOfStock ? "out-of-stock" : ""} ${
+                        hasDiscount ? "has-discount" : ""
+                      }`}
                       onClick={() => !isOutOfStock && toggleProduct(p.id)}
                       style={{ cursor: isOutOfStock ? "default" : "pointer" }}
                     >
@@ -771,19 +911,22 @@ export default function OrdersPage() {
                           {p.unit && (
                             <span className="unit-badge">{p.unit}</span>
                           )}
+                          {p.category && (
+                            <span className="category-badge">{p.category}</span>
+                          )}
                         </div>
 
                         <div className="product-meta">
-                          <span className="product-price">
-                            ₱{p.price.toFixed(2)}
-                          </span>
-                          <span
-                            className={`stock-badge ${
-                              p.stock < 5 ? "low-stock" : ""
-                            }`}
-                          >
-                            {p.stock} in stock
-                          </span>
+                          <div className="product-price">
+                            <span>₱{discountedPrice.toFixed(2)}</span>
+                            <span
+                              className={`stock-badge ${
+                                p.stock < 5 ? "low-stock" : ""
+                              }`}
+                            >
+                              {p.stock} in stock
+                            </span>
+                          </div>
                         </div>
                       </div>
 
@@ -822,7 +965,10 @@ export default function OrdersPage() {
                           </div>
                           <div className="quantity-summary">
                             <span className="subtotal">
-                              ₱{(p.price * (item.quantity || 1)).toFixed(2)}
+                              ₱
+                              {(discountedPrice * (item.quantity || 1)).toFixed(
+                                2
+                              )}
                             </span>
                           </div>
                         </div>
@@ -856,12 +1002,13 @@ export default function OrdersPage() {
 
         <OrderConfirmationDialog
           isOpen={showConfirmation}
-          onConfirm={handleConfirmOrder} // This now accepts (paymentMethod, dueDate)
+          onConfirm={handleConfirmOrder}
           onCancel={handleCancelOrderDialog}
           orderDetails={pendingOrder?.items || []}
           customerName={pendingOrder?.customerName}
           totalItems={pendingOrder?.totalItems || 0}
           totalAmount={pendingOrder?.totalAmount || 0}
+          customerDiscounts={customerDiscounts}
           onQuantityChange={handleDialogQuantityChange}
           onRemoveItem={handleDialogRemoveItem}
         />

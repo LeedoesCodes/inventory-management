@@ -2,8 +2,6 @@ import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faReceipt } from "@fortawesome/free-solid-svg-icons";
 
-// Import utils
-import { applyFiltersAndSorting } from "../utils/filters";
 import TransactionCard from "./TransactionCard";
 import "./TransactionList.scss";
 
@@ -23,14 +21,8 @@ const TransactionList = ({
   onCancelOrder,
   onDeleteOrder,
 }) => {
-  // Apply filters and sorting
-  const filteredOrders = applyFiltersAndSorting(orders, {
-    searchTerm,
-    filterStatus,
-    filterPayment,
-    sortBy,
-    sortOrder,
-  });
+  // Use the orders as-is - filtering is already done in parent component
+  const filteredOrders = orders;
 
   // Loading state
   if (loading) {
@@ -61,7 +53,8 @@ const TransactionList = ({
     <div className="transaction-list">
       <div className="transaction-list-header">
         <span className="results-count">
-          Showing {filteredOrders.length} of {orders.length} transactions
+          Showing {filteredOrders.length} transaction
+          {filteredOrders.length !== 1 ? "s" : ""}
         </span>
         {(searchTerm || filterStatus !== "all" || filterPayment !== "all") && (
           <span className="filter-indicator">• Filtered results</span>

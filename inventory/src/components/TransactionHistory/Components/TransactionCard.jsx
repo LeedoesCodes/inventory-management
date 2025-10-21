@@ -11,6 +11,7 @@ import {
   faTimesCircle,
   faCheckCircle,
   faMoneyCheck,
+  faClock,
 } from "@fortawesome/free-solid-svg-icons";
 
 // Import utils
@@ -68,6 +69,73 @@ const TransactionCard = ({
     order.paymentMethod === "credit" && order.paymentStatus === "partial";
   const paymentProgress = getPaymentProgress(order);
 
+  // UNIFIED DATE HANDLING - Same as OrderDetailsModal
+  const isCreditOrder = order.paymentMethod === "credit";
+  const hasDueDate = order.dueDate;
+
+  // Convert due date properly
+  const getDueDate = () => {
+    if (!order.dueDate) return null;
+
+    try {
+      if (order.dueDate.toDate && typeof order.dueDate.toDate === "function") {
+        return order.dueDate.toDate();
+      } else if (order.dueDate.seconds) {
+        return new Date(order.dueDate.seconds * 1000);
+      } else if (order.dueDate._seconds) {
+        return new Date(order.dueDate._seconds * 1000);
+      } else if (order.dueDate instanceof Date) {
+        return order.dueDate;
+      } else if (typeof order.dueDate === "string") {
+        return new Date(order.dueDate);
+      }
+      return null;
+    } catch (error) {
+      console.error("Error converting due date:", error);
+      return null;
+    }
+  };
+
+  const dueDate = getDueDate();
+
+  // Check if order is overdue - SAME LOGIC AS OrderDetailsModal
+  const isOverdue = () => {
+    if (!isCreditOrder || !hasDueDate) return false;
+    if (!dueDate) return false;
+
+    const today = new Date();
+    const hasBalance =
+      order.remainingBalance > 0 || order.paymentStatus !== "paid";
+
+    return dueDate < today && hasBalance;
+  };
+
+  const overdue = isOverdue();
+
+  // Calculate days overdue - SAME LOGIC AS OrderDetailsModal
+  const getDaysOverdue = () => {
+    if (!overdue) return 0;
+    if (!dueDate) return 0;
+
+    const today = new Date();
+    const diffTime = today - dueDate;
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  const daysOverdue = getDaysOverdue();
+
+  // Get overdue severity class based on days overdue
+  const getOverdueSeverity = () => {
+    if (!overdue) return "";
+
+    if (daysOverdue <= 7) return "overdue-1-7";
+    if (daysOverdue <= 30) return "overdue-8-30";
+    if (daysOverdue <= 90) return "overdue-31-90";
+    return "overdue-91-plus";
+  };
+
+  const overdueSeverity = getOverdueSeverity();
+
   // Determine card classes based on status
   const getCardClasses = () => {
     const classes = ["transaction-card"];
@@ -77,6 +145,10 @@ const TransactionCard = ({
     if (order.hasBadOrder) classes.push("has-bad-order");
     if (isCreditPending) classes.push("credit-pending");
     if (isPartiallyPaid) classes.push("credit-partial");
+    if (overdue) {
+      classes.push("overdue-order");
+      classes.push(overdueSeverity);
+    }
 
     return classes.join(" ");
   };
@@ -84,6 +156,43 @@ const TransactionCard = ({
   const handlePrintReceipt = (e) => {
     e.stopPropagation();
     printReceipt(order);
+  };
+
+  // Format due date for display - SAME AS OrderDetailsModal
+  const formatDueDate = () => {
+    if (!dueDate) return null;
+
+    return dueDate.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const displayDueDate = formatDueDate();
+
+  // Get overdue badge text based on severity
+  const getOverdueBadgeText = () => {
+    if (!overdue) return "";
+
+    if (daysOverdue <= 7) return "OVERDUE";
+    if (daysOverdue <= 30) return "OVERDUE";
+    if (daysOverdue <= 90) return "OVERDUE";
+    return "OVERDUE";
+  };
+
+  // Get payment method display text
+  const getPaymentMethodDisplay = () => {
+    if (overdue) {
+      return `${paymentMethod.name} (Overdue)`;
+    }
+    if (isCreditPending) {
+      return `${paymentMethod.name} (Pending)`;
+    }
+    if (isPartiallyPaid) {
+      return `${paymentMethod.name} (Partial)`;
+    }
+    return paymentMethod.name;
   };
 
   return (
@@ -103,17 +212,28 @@ const TransactionCard = ({
             )}
             {order.hasBadOrder && (
               <span className="bad-order-badge">
-                BAD ORDER PROCESSED ({order.badOrders?.length || 0})
+                BAD ORDER ({order.badOrders?.length || 0})
               </span>
             )}
-            {isCreditPending && (
-              <span className="credit-pending-badge">PENDING PAYMENT</span>
+            {isCreditPending && !overdue && (
+              <span className="credit-pending-badge">PENDING</span>
             )}
-            {isPartiallyPaid && (
-              <span className="credit-partial-badge">PARTIALLY PAID</span>
+            {isPartiallyPaid && !overdue && (
+              <span className="credit-partial-badge">PARTIAL</span>
+            )}
+            {/* SIMPLE OVERDUE BADGE */}
+            {overdue && (
+              <span className={`overdue-badge ${overdueSeverity}`}>
+                <FontAwesomeIcon icon={faClock} />
+                OVERDUE
+              </span>
             )}
           </span>
-          <span className={`status-badge ${order.status || "completed"}`}>
+          <span
+            className={`status-badge ${order.status || "completed"} ${
+              overdue ? "overdue" : ""
+            }`}
+          >
             {order.status || "completed"}
           </span>
         </div>
@@ -122,16 +242,24 @@ const TransactionCard = ({
           {/* Payment Actions for Credit Orders */}
           {order.status !== "cancelled" && order.paymentMethod === "credit" && (
             <>
-              {(isCreditPending || isPartiallyPaid) && (
+              {(isCreditPending || isPartiallyPaid || overdue) && (
                 <button
-                  className="action-btn payment-btn"
+                  className={`action-btn payment-btn ${
+                    overdue ? `overdue-btn ${overdueSeverity}` : ""
+                  }`}
                   onClick={() => onRecordPayment(order)}
-                  title="Record Payment"
+                  title={
+                    overdue
+                      ? `Pay Overdue Amount (${daysOverdue} days overdue)`
+                      : "Record Payment"
+                  }
                 >
-                  <FontAwesomeIcon icon={faMoneyCheck} />
+                  <FontAwesomeIcon
+                    icon={overdue ? faExclamationTriangle : faMoneyCheck}
+                  />
                 </button>
               )}
-              {isCreditPending && (
+              {(isCreditPending || overdue) && (
                 <button
                   className="action-btn mark-paid-btn"
                   onClick={() => onMarkAsPaid(order)}
@@ -199,16 +327,29 @@ const TransactionCard = ({
             <FontAwesomeIcon icon={faCalendar} />
             <span>{order.createdAt.toLocaleString()}</span>
           </div>
+
+          {/* Due Date Display - Clean and simple */}
+          {isCreditOrder && displayDueDate && (
+            <div
+              className={`detail-item ${
+                overdue ? `overdue-detail ${overdueSeverity}` : ""
+              }`}
+            >
+              <FontAwesomeIcon icon={faClock} />
+              <span className={overdue ? "overdue-text" : ""}>
+                Due: {displayDueDate}
+                {overdue &&
+                  ` (${daysOverdue} day${daysOverdue !== 1 ? "s" : ""})`}
+              </span>
+            </div>
+          )}
+
           <div className="detail-item payment-method">
             <FontAwesomeIcon
               icon={paymentMethod.icon}
               style={{ color: paymentMethod.color }}
             />
-            <span>
-              {paymentMethod.name}
-              {isCreditPending && " (Pending)"}
-              {isPartiallyPaid && " (Partial)"}
-            </span>
+            <span>{getPaymentMethodDisplay()}</span>
           </div>
           <div className="detail-item">
             <FontAwesomeIcon icon={faBox} />
@@ -228,11 +369,11 @@ const TransactionCard = ({
           </div>
         </div>
 
-        {/* Payment Progress for Credit Orders */}
-        {(isCreditPending || isPartiallyPaid) && (
+        {/* Payment Progress for Credit Orders - Clean and simple */}
+        {(isCreditPending || isPartiallyPaid || overdue) && (
           <div className="payment-progress-section">
             <div className="payment-progress-header">
-              <span>Payment Progress</span>
+              <span>{overdue ? "Payment Overdue" : "Payment Progress"}</span>
               <span className="payment-amounts">
                 ₱{(order.paidAmount || 0).toFixed(2)} of ₱
                 {order.totalAmount.toFixed(2)}
@@ -240,15 +381,23 @@ const TransactionCard = ({
             </div>
             <div className="payment-progress-bar">
               <div
-                className="payment-progress-fill"
+                className={`payment-progress-fill ${
+                  overdue ? `overdue-progress ${overdueSeverity}` : ""
+                }`}
                 style={{ width: `${paymentProgress}%` }}
               >
                 <span className="progress-text">{paymentProgress}%</span>
               </div>
             </div>
-            <div className="payment-balance">
-              Remaining: ₱
+            <div
+              className={`payment-balance ${
+                overdue ? `overdue-balance ${overdueSeverity}` : ""
+              }`}
+            >
+              Balance: ₱
               {(order.remainingBalance || order.totalAmount).toFixed(2)}
+              {overdue &&
+                ` • ${daysOverdue} day${daysOverdue !== 1 ? "s" : ""} overdue`}
             </div>
           </div>
         )}

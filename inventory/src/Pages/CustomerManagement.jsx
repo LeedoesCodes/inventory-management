@@ -27,23 +27,35 @@ import {
   faDollarSign,
   faExternalLinkAlt,
   faEye,
-  faCreditCard, // Add credit card icon
-  faClock, // Add clock icon for pending payments
-  faExclamationTriangle, // Add warning icon for overdue
+  faCreditCard,
+  faClock,
+  faExclamationTriangle,
+  faPercent,
+  faTags,
 } from "@fortawesome/free-solid-svg-icons";
 import CustomerProfileModal from "../components/Customer/CustomerProfileModal";
+import CustomerDiscountManager from "../components/Customer/CustomerDiscountManager";
 import "../styles/customerManagement.scss";
+
+// Normalize customer name for case-insensitive operations
+const normalizeCustomerName = (name) => {
+  return name ? name.trim().toLowerCase() : "";
+};
 
 export default function CustomerManagement() {
   const { isCollapsed } = useSidebar();
   const navigate = useNavigate();
   const [customers, setCustomers] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [customerDiscounts, setCustomerDiscounts] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [showDiscountManager, setShowDiscountManager] = useState(false);
+  const [selectedCustomerForDiscount, setSelectedCustomerForDiscount] =
+    useState(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -85,16 +97,31 @@ export default function CustomerManagement() {
     }
   };
 
+  const fetchCustomerDiscounts = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, "customerDiscounts"));
+      const discountsData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setCustomerDiscounts(discountsData);
+    } catch (error) {
+      console.error("Error fetching customer discounts:", error);
+    }
+  };
+
   useEffect(() => {
     fetchCustomers();
     fetchOrders();
+    fetchCustomerDiscounts();
   }, []);
 
-  // Enhanced customer stats to include credit information
+  // Enhanced customer stats with case-insensitive matching
   const getCustomerStats = (customerName) => {
+    const normalizedCustomerName = normalizeCustomerName(customerName);
     const customerOrders = orders.filter(
       (order) =>
-        order.customerName?.toLowerCase() === customerName.toLowerCase()
+        normalizeCustomerName(order.customerName) === normalizedCustomerName
     );
 
     const totalOrders = customerOrders.length;
@@ -128,6 +155,12 @@ export default function CustomerManagement() {
     const lastOrder =
       customerOrders.length > 0 ? customerOrders[0].createdAt : null;
 
+    // Get customer discounts
+    const customerDiscountData = customerDiscounts.find(
+      (discount) =>
+        normalizeCustomerName(discount.customerName) === normalizedCustomerName
+    );
+
     return {
       totalOrders,
       totalSpent,
@@ -137,14 +170,22 @@ export default function CustomerManagement() {
       totalCreditAmount,
       pendingCreditAmount,
       pendingCreditCount: pendingCreditOrders.length,
+      hasDiscounts:
+        customerDiscountData &&
+        customerDiscountData.discounts &&
+        customerDiscountData.discounts.length > 0,
+      activeDiscounts: customerDiscountData
+        ? customerDiscountData.discounts.filter((d) => d.active).length
+        : 0,
     };
   };
 
   // Handle customer profile click
   const handleCustomerProfileClick = (customer) => {
+    const normalizedCustomerName = normalizeCustomerName(customer.name);
     const customerOrders = orders.filter(
       (order) =>
-        order.customerName?.toLowerCase() === customer.name.toLowerCase()
+        normalizeCustomerName(order.customerName) === normalizedCustomerName
     );
     setSelectedCustomer({
       ...customer,
@@ -182,11 +223,28 @@ export default function CustomerManagement() {
 
     try {
       if (editingCustomer) {
-        await updateDoc(doc(db, "customers", editingCustomer.id), formData);
+        await updateDoc(doc(db, "customers", editingCustomer.id), {
+          ...formData,
+          nameLower: normalizeCustomerName(formData.name),
+        });
         alert("Customer updated successfully!");
       } else {
+        // Check if customer already exists (case-insensitive)
+        const normalizedName = normalizeCustomerName(formData.name);
+        const existingCustomer = customers.find(
+          (customer) => normalizeCustomerName(customer.name) === normalizedName
+        );
+
+        if (existingCustomer) {
+          alert(
+            "A customer with this name already exists (case-insensitive matching)"
+          );
+          return;
+        }
+
         await addDoc(collection(db, "customers"), {
           ...formData,
+          nameLower: normalizedName,
           createdAt: new Date(),
           totalOrders: 0,
           totalSpent: 0,
@@ -231,10 +289,12 @@ export default function CustomerManagement() {
     }
   };
 
+  // Case-insensitive search
   const filteredCustomers = customers.filter(
     (customer) =>
       customer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.phone?.includes(searchTerm)
+      customer.phone?.includes(searchTerm) ||
+      customer.nameLower?.includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -313,6 +373,16 @@ export default function CustomerManagement() {
                       </div>
                       <div className="customer-actions">
                         <button
+                          className="action-btn discount-btn"
+                          onClick={() => {
+                            setSelectedCustomerForDiscount(customer);
+                            setShowDiscountManager(true);
+                          }}
+                          title="Manage Discounts"
+                        >
+                          <FontAwesomeIcon icon={faPercent} />
+                        </button>
+                        <button
                           className="action-btn edit-btn"
                           onClick={() => handleEdit(customer)}
                           title="Edit Customer"
@@ -348,6 +418,19 @@ export default function CustomerManagement() {
                           <span className="stat-label">Total Spent</span>
                         </div>
                       </div>
+
+                      {/* Discount Information */}
+                      {stats.hasDiscounts && (
+                        <div className="stat-item discount-info">
+                          <FontAwesomeIcon icon={faTags} />
+                          <div>
+                            <span className="stat-value highlight">
+                              {stats.activeDiscounts}
+                            </span>
+                            <span className="stat-label">Active Discounts</span>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Credit Information */}
                       {stats.pendingCreditAmount > 0 && (
@@ -389,6 +472,16 @@ export default function CustomerManagement() {
                         </div>
                       )}
                     </div>
+
+                    {/* Discount Status Badge */}
+                    {stats.hasDiscounts && (
+                      <div className="discount-status-badge">
+                        <FontAwesomeIcon icon={faPercent} />
+                        <span>
+                          {stats.activeDiscounts} active discount(s) configured
+                        </span>
+                      </div>
+                    )}
 
                     {/* Credit Status Badge */}
                     {stats.pendingCreditAmount > 0 && (
@@ -434,6 +527,13 @@ export default function CustomerManagement() {
                                     icon={faCreditCard}
                                     className="payment-method-icon"
                                     title="Credit/Pay Later Order"
+                                  />
+                                )}
+                                {order.discountsApplied && (
+                                  <FontAwesomeIcon
+                                    icon={faPercent}
+                                    className="discount-applied-icon"
+                                    title="Discounts Applied"
                                   />
                                 )}
                               </span>
@@ -541,6 +641,18 @@ export default function CustomerManagement() {
             customerOrders={selectedCustomer.orders}
             onClose={() => setSelectedCustomer(null)}
             onOrderClick={handleOrderClickFromModal}
+          />
+        )}
+
+        {/* Customer Discount Manager Modal */}
+        {showDiscountManager && (
+          <CustomerDiscountManager
+            customer={selectedCustomerForDiscount}
+            onClose={() => {
+              setShowDiscountManager(false);
+              setSelectedCustomerForDiscount(null);
+              fetchCustomerDiscounts(); // Refresh discounts data
+            }}
           />
         )}
       </div>

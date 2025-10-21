@@ -1,322 +1,212 @@
 /* ============================== */
-/* TRANSACTION CARD CSS */
+/* TRANSACTION CARD CSS - CLEAN */
 /* ============================== */
 
 .transaction-card {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   transition: all 0.3s ease;
-  animation: fadeInUp 0.5s ease-out;
-  animation-fill-mode: both;
+  border: 1px solid #e2e8f0;
   position: relative;
-  border: 2px solid transparent;
-
-  @for $i from 1 through 20 {
-    &:nth-child(#{$i}) {
-      animation-delay: #{$i * 0.1}s;
-    }
-  }
-
-  &::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background: #009feb;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
 
   &:hover {
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-    transform: translateY(-3px);
-
-    &::before {
-      opacity: 1;
-    }
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 
   &.highlighted-order {
     border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-    background-color: rgba(0, 123, 255, 0.05);
-    animation: pulse-highlight 2s ease-in-out;
+    background-color: #f8f9fa;
   }
 
   // Payment status styles
   &.credit-pending {
-    border-left: 4px solid #fd7e14;
-    background: linear-gradient(135deg, #fffaf0, transparent);
+    border-left: 3px solid #fd7e14;
   }
 
   &.credit-partial {
-    border-left: 4px solid #ffc107;
-    background: linear-gradient(135deg, #fffbf0, transparent);
+    border-left: 3px solid #ffc107;
   }
 
   &.cancelled-order {
-    border-left: 4px solid #dc3545;
-    background: linear-gradient(135deg, #f8f9fa, transparent);
-    opacity: 0.8;
+    border-left: 3px solid #dc3545;
+    background-color: #f8f9fa;
+    opacity: 0.7;
   }
 
   &.has-bad-order {
-    border-left: 4px solid #ffc107;
+    border-left: 3px solid #ffc107;
   }
 
-  &.fully-paid {
-    border-left: 4px solid #28a745;
-  }
+  // REMOVED: Container background color changes for overdue
 }
 
-/* Enhanced Transaction Header */
+/* Transaction Header */
 .transaction-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem;
-  background: #f7fafc;
+  padding: 1rem 1.25rem;
+  background: #f8f9fa;
   border-bottom: 1px solid #e2e8f0;
-  transition: all 0.3s ease;
 
   .order-info {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
     flex-wrap: wrap;
 
     .order-id {
       font-weight: 600;
       color: #2d3748;
-      transition: color 0.3s ease;
       display: flex;
       align-items: center;
       gap: 0.5rem;
       flex-wrap: wrap;
     }
 
-    // Payment status badges
-    .credit-pending-badge {
-      background: #fd7e14;
-      color: white;
-      padding: 4px 8px;
-      border-radius: 12px;
+    // Status badges
+    .credit-pending-badge,
+    .credit-partial-badge,
+    .cancelled-badge,
+    .bad-order-badge,
+    .overdue-badge {
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
       font-size: 0.7rem;
       font-weight: 600;
       text-transform: uppercase;
+    }
+
+    .credit-pending-badge {
+      background: #fd7e14;
+      color: white;
     }
 
     .credit-partial-badge {
       background: #ffc107;
       color: #212529;
-      padding: 4px 8px;
-      border-radius: 12px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
     }
 
     .cancelled-badge {
       background: #dc3545;
       color: white;
-      padding: 4px 8px;
-      border-radius: 12px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
     }
 
     .bad-order-badge {
       background: #fff3cd;
       color: #856404;
-      padding: 4px 8px;
-      border-radius: 12px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
       border: 1px solid #ffeaa7;
     }
 
-    .fully-paid-badge {
-      background: #28a745;
+    // Overdue badges - TEXT ONLY with red background
+    .overdue-badge {
+      background: #dc2626; // Red background
       color: white;
-      padding: 4px 8px;
-      border-radius: 12px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
+
+      // All severity levels use the same red color
+      &.overdue-1-7,
+      &.overdue-8-30,
+      &.overdue-31-90,
+      &.overdue-91-plus {
+        background: #dc2626;
+        color: white;
+      }
     }
 
     .status-badge {
-      padding: 0.5rem 1rem;
-      border-radius: 20px;
-      font-size: 0.8rem;
+      padding: 0.4rem 0.8rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
       font-weight: 600;
       text-transform: uppercase;
-      transition: all 0.3s ease;
-      position: relative;
-      overflow: hidden;
-
-      &::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(
-          90deg,
-          transparent,
-          rgba(255, 255, 255, 0.3),
-          transparent
-        );
-        transition: left 0.5s;
-      }
-
-      &:hover::before {
-        left: 100%;
-      }
+      color: white;
 
       &.completed {
-        background: linear-gradient(135deg, #10b981, #059669);
-        color: white;
-        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        background: #28a745;
       }
       &.pending {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
-        color: white;
-        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+        background: #fd7e14;
       }
       &.cancelled {
-        background: linear-gradient(135deg, #ef4444, #dc2626);
-        color: white;
-        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+        background: #dc3545;
       }
       &.processing {
-        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-        color: white;
-        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+        background: #17a2b8;
+      }
+      &.overdue {
+        background: #dc2626;
       }
     }
   }
 
   .order-actions {
     display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
+    gap: 0.25rem;
 
     .action-btn {
-      padding: 0.75rem;
+      padding: 0.5rem;
       border: none;
-      border-radius: 8px;
+      border-radius: 4px;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: all 0.2s ease;
       color: #64748b;
-      background: rgba(0, 0, 0, 0.05);
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-
-      &::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(
-          90deg,
-          transparent,
-          rgba(255, 255, 255, 0.3),
-          transparent
-        );
-        transition: left 0.5s;
-      }
+      background: transparent;
 
       &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        background: rgba(0, 0, 0, 0.05);
+        color: #374151;
+      }
 
-        &::before {
-          left: 100%;
+      // Overdue button styles - Simple red
+      &.overdue-btn {
+        background: #dc2626;
+        color: white;
+
+        &:hover {
+          background: #b91c1c;
         }
-      }
-
-      &.payment-btn:hover {
-        color: #28a745;
-        background: rgba(40, 167, 69, 0.1);
-      }
-      &.mark-paid-btn:hover {
-        color: #28a745;
-        background: rgba(40, 167, 69, 0.1);
-      }
-      &.bad-order-btn:hover {
-        color: #ffc107;
-        background: rgba(255, 193, 7, 0.1);
-      }
-      &.cancel-btn:hover {
-        color: #dc3545;
-        background: rgba(220, 53, 69, 0.1);
-      }
-      &.print-btn:hover {
-        color: #3b82f6;
-        background: rgba(59, 130, 246, 0.1);
-      }
-      &.view-btn:hover {
-        color: #10b981;
-        background: rgba(16, 185, 129, 0.1);
-      }
-      &.delete-btn:hover {
-        color: #ef4444;
-        background: rgba(239, 68, 68, 0.1);
-      }
-      &.restore-btn:hover {
-        color: #f59e0b;
-        background: rgba(245, 158, 11, 0.1);
-      }
-      &.refund-btn:hover {
-        color: #6f42c1;
-        background: rgba(111, 66, 193, 0.1);
       }
     }
   }
 }
 
-/* Enhanced Transaction Body */
+/* Transaction Body */
 .transaction-body {
-  padding: 1.5rem;
-  transition: all 0.3s ease;
+  padding: 1.25rem;
 
   .transaction-details {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
+    gap: 0.75rem;
     margin-bottom: 1rem;
 
     .detail-item {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.5rem;
       color: #4a5568;
-      transition: color 0.3s ease;
+      font-size: 0.9rem;
 
       svg {
         color: #718096;
-        width: 18px;
-        transition: color 0.3s ease;
+        width: 14px;
       }
 
-      &.payment-method {
-        font-weight: 500;
+      // Overdue detail styling - Red text only
+      &.overdue-detail {
+        .overdue-text {
+          color: #dc2626;
+          font-weight: 600;
+          background: #fef2f2;
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+          border: 1px solid #fecaca;
+        }
 
         svg {
-          width: 20px;
+          color: #dc2626;
         }
       }
 
@@ -328,7 +218,6 @@
       .refund-amount {
         color: #dc3545;
         font-weight: 600;
-        margin-left: 0.5rem;
       }
 
       .paid-amount {
@@ -346,16 +235,17 @@
   // Payment Progress Section
   .payment-progress-section {
     background: #f8f9fa;
-    border-radius: 8px;
-    padding: 1rem;
+    border-radius: 6px;
+    padding: 0.75rem;
     margin: 1rem 0;
-    border: 1px solid #e1e8ed;
+    border: 1px solid #e9ecef;
 
     .payment-progress-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 0.5rem;
+      font-size: 0.9rem;
 
       span {
         font-weight: 600;
@@ -363,42 +253,94 @@
       }
 
       .payment-amounts {
-        font-size: 0.9rem;
-        color: #5a6c7d;
+        color: #6c757d;
       }
     }
 
     .payment-progress-bar {
       background: #e9ecef;
-      border-radius: 10px;
-      height: 20px;
+      border-radius: 4px;
+      height: 8px;
       overflow: hidden;
       margin-bottom: 0.5rem;
-      position: relative;
     }
 
     .payment-progress-fill {
-      background: linear-gradient(90deg, #28a745, #20c997);
       height: 100%;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      border-radius: 4px;
+      background: #28a745;
       transition: width 0.3s ease;
-      min-width: 20px;
 
-      .progress-text {
-        color: white;
-        font-size: 0.75rem;
-        font-weight: 600;
+      // Overdue progress colors - Simple red
+      &.overdue-progress {
+        background: #dc2626;
       }
     }
 
     .payment-balance {
       text-align: center;
-      font-size: 0.9rem;
-      color: #dc3545;
+      font-size: 0.85rem;
+      color: #6c757d;
       font-weight: 600;
+
+      // Overdue balance styling - Red text with light background
+      &.overdue-balance {
+        color: #dc2626;
+        background: #fef2f2;
+        padding: 0.5rem;
+        border-radius: 4px;
+        border: 1px solid #fecaca;
+        margin-top: 0.5rem;
+      }
+    }
+  }
+
+  /* Bad Orders Summary */
+  .bad-orders-summary {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+
+    .bad-orders-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      color: #856404;
+      font-weight: 600;
+      font-size: 0.9rem;
+
+      svg {
+        color: #d97706;
+      }
+    }
+
+    .bad-orders-details {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+
+      .bad-order-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem;
+        background: #fef3c7;
+        border-radius: 4px;
+        font-size: 0.85rem;
+
+        .bad-order-reason {
+          color: #92400e;
+          font-weight: 500;
+        }
+
+        .bad-order-refund {
+          color: #dc2626;
+          font-weight: 600;
+        }
+      }
     }
   }
 
@@ -409,216 +351,54 @@
       gap: 0.5rem;
 
       .item-tag {
-        background: #f1f5f9;
-        padding: 0.5rem 1rem;
-        border-radius: 12px;
+        background: #f8f9fa;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
         font-size: 0.8rem;
-        color: #475569;
-        transition: all 0.3s ease;
-        border: 1px solid transparent;
-
-        &:hover {
-          background: #e2e8f0;
-          transform: translateY(-1px);
-        }
-
-        &.bad-order-item {
-          background: #fff3cd;
-          color: #856404;
-          border-color: #ffeaa7;
-        }
+        color: #495057;
+        border: 1px solid #dee2e6;
       }
 
       .more-items {
-        color: #718096;
+        color: #6c757d;
         font-style: italic;
-        transition: color 0.3s ease;
+        font-size: 0.8rem;
       }
     }
   }
 }
 
-/* Bad Orders Summary */
-.bad-orders-summary {
-  background: #fffbeb;
-  border: 1px solid #fef3c7;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-  transition: all 0.3s ease;
-
-  &:hover {
-    border-color: #f59e0b;
-    transform: translateY(-1px);
-  }
-
-  .bad-orders-header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
-    color: #92400e;
-    font-weight: 600;
-
-    svg {
-      color: #d97706;
-    }
-  }
-
-  .bad-orders-details {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-
-    .bad-order-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      padding: 0.75rem;
-      background: #fef3c7;
-      border-radius: 6px;
-      transition: all 0.3s ease;
-      border-left: 3px solid #f59e0b;
-
-      &:hover {
-        background: #fde68a;
-        transform: translateX(2px);
-      }
-
-      .bad-order-content {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-
-        .bad-order-reason {
-          color: #92400e;
-          font-weight: 600;
-          font-size: 0.9rem;
-          line-height: 1.4;
-          display: flex;
-          align-items: flex-start;
-          gap: 0.5rem;
-
-          &::before {
-            content: "•";
-            color: #d97706;
-            font-weight: bold;
-            flex-shrink: 0;
-          }
-        }
-
-        .bad-order-items {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.5rem;
-          margin-left: 1.5rem;
-
-          .bad-order-item-tag {
-            background: #f59e0b;
-            color: #7c2d12;
-            padding: 0.25rem 0.5rem;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            border: 1px solid #d97706;
-          }
-        }
-
-        .bad-order-action {
-          margin-left: 1.5rem;
-          font-size: 0.8rem;
-          color: #854d0e;
-          font-style: italic;
-          display: flex;
-          align-items: center;
-          gap: 0.25rem;
-
-          &::before {
-            content: "🔄";
-            font-size: 0.7rem;
-          }
-
-          &.refund-action::before {
-            content: "💸";
-          }
-
-          &.replace-action::before {
-            content: "🔄";
-          }
-        }
-      }
-
-      .bad-order-refund {
-        color: #dc2626;
-        font-weight: 700;
-        margin-left: 1rem;
-        background: #fee2e2;
-        padding: 0.5rem 0.75rem;
-        border-radius: 6px;
-        font-size: 0.85rem;
-        white-space: nowrap;
-        border: 1px solid #fecaca;
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
-
-        &::before {
-          content: "➖";
-          font-size: 0.8rem;
-        }
-      }
-    }
-
-    /* Single bad order item layout */
-    &.single-bad-order {
-      .bad-order-item {
-        align-items: center;
-
-        .bad-order-content {
-          gap: 0.25rem;
-        }
-      }
-    }
-  }
-
-  /* Multiple bad orders summary */
-  &.multiple-bad-orders {
-    .bad-orders-header {
-      background: #fef3c7;
-      padding: 0.75rem;
-      border-radius: 6px;
-      margin: -0.5rem -0.5rem 1rem -0.5rem;
-    }
-  }
-}
-
-/* Enhanced Dark Theme for Transaction Card */
+/* Dark Theme */
 [data-theme="dark"] {
   .transaction-card {
     background: #2d3748;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    border-color: #4a5568;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 
     &:hover {
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
     }
 
-    &::before {
-      background: #63b3ed;
+    &.highlighted-order {
+      border-color: #63b3ed;
+      background-color: #4a5568;
     }
 
     &.credit-pending {
-      background: linear-gradient(135deg, #2d3748, #4a5568);
       border-left-color: #fd7e14;
     }
 
     &.credit-partial {
-      background: linear-gradient(135deg, #2d3748, #4a5568);
       border-left-color: #ffc107;
     }
 
-    &.fully-paid {
-      border-left-color: #68d391;
+    &.cancelled-order {
+      border-left-color: #fc8181;
+      background-color: #4a5568;
+    }
+
+    &.has-bad-order {
+      border-left-color: #ffc107;
     }
   }
 
@@ -631,93 +411,66 @@
         color: #f7fafc;
       }
 
-      .credit-pending-badge {
-        background: #fd7e14;
-        color: white;
-      }
-
-      .credit-partial-badge {
-        background: #ffc107;
-        color: #1a202c;
-      }
-
       .bad-order-badge {
         background: #665600;
         color: #ffc107;
         border-color: #856404;
       }
 
-      .fully-paid-badge {
-        background: #22543d;
-        color: #68d391;
+      // Dark theme overdue badge
+      .overdue-badge {
+        background: #e53e3e;
+        color: white;
       }
     }
 
-    .order-actions {
-      .action-btn {
-        background: rgba(255, 255, 255, 0.1);
-        color: #cbd5e0;
+    .order-actions .action-btn {
+      color: #a0aec0;
 
-        &.payment-btn:hover {
-          color: #68d391;
-          background: rgba(104, 211, 145, 0.2);
-        }
-        &.mark-paid-btn:hover {
-          color: #68d391;
-          background: rgba(104, 211, 145, 0.2);
-        }
-        &.bad-order-btn:hover {
-          color: #f6e05e;
-          background: rgba(246, 224, 94, 0.2);
-        }
-        &.cancel-btn:hover {
-          color: #fc8181;
-          background: rgba(252, 129, 129, 0.2);
-        }
-        &.print-btn:hover {
-          color: #63b3ed;
-          background: rgba(99, 179, 237, 0.2);
-        }
-        &.view-btn:hover {
-          color: #68d391;
-          background: rgba(104, 211, 145, 0.2);
-        }
-        &.delete-btn:hover {
-          color: #fc8181;
-          background: rgba(252, 129, 129, 0.2);
-        }
-        &.restore-btn:hover {
-          color: #f6ad55;
-          background: rgba(246, 173, 85, 0.2);
-        }
-        &.refund-btn:hover {
-          color: #b794f4;
-          background: rgba(183, 148, 244, 0.2);
+      &:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #f7fafc;
+      }
+
+      &.overdue-btn {
+        background: #e53e3e;
+
+        &:hover {
+          background: #c53030;
         }
       }
     }
   }
 
   .transaction-body {
-    .transaction-details {
-      .detail-item {
-        color: #cbd5e0;
+    .transaction-details .detail-item {
+      color: #cbd5e0;
+
+      svg {
+        color: #a0aec0;
+      }
+
+      // Dark theme overdue details
+      &.overdue-detail {
+        .overdue-text {
+          color: #fca5a5;
+          background: #742a2a;
+          border-color: #9b2c2c;
+        }
 
         svg {
-          color: #a0aec0;
+          color: #fca5a5;
         }
+      }
 
-        .refund-amount {
-          color: #fc8181;
-        }
-
-        .paid-amount {
-          color: #68d391;
-        }
-
-        .balance-amount {
-          color: #f6ad55;
-        }
+      .refund-amount {
+        color: #fc8181;
+      }
+      .paid-amount {
+        color: #68d391;
+      }
+      .balance-amount {
+        color: #f6ad55;
       }
     }
 
@@ -729,7 +482,6 @@
         span {
           color: #f7fafc;
         }
-
         .payment-amounts {
           color: #a0aec0;
         }
@@ -739,192 +491,87 @@
         background: #2d3748;
       }
 
-      .payment-balance {
-        color: #fc8181;
+      .payment-progress-fill.overdue-progress {
+        background: #e53e3e;
+      }
+
+      .payment-balance.overdue-balance {
+        color: #fca5a5;
+        background: #742a2a;
+        border-color: #9b2c2c;
       }
     }
 
-    .transaction-items {
-      .items-preview {
-        .item-tag {
-          background: #4a5568;
-          color: #cbd5e0;
+    .bad-orders-summary {
+      background: #744210;
+      border-color: #d69e2e;
 
-          &:hover {
-            background: #63b3ed;
-            color: #1a202c;
-          }
-
-          &.bad-order-item {
-            background: #665600;
-            color: #ffc107;
-            border-color: #856404;
-          }
-        }
-
-        .more-items {
-          color: #a0aec0;
-        }
-      }
-    }
-  }
-
-  .bad-orders-summary {
-    background: #744210;
-    border-color: #d69e2e;
-
-    .bad-orders-header {
-      color: #f6e05e;
-
-      svg {
-        color: #ecc94b;
-      }
-    }
-
-    .bad-orders-details {
-      .bad-order-item {
-        background: #d69e2e;
-        border-left-color: #ecc94b;
-
-        &:hover {
-          background: #ecc94b;
-        }
-
-        .bad-order-content {
-          .bad-order-reason {
-            color: #7c2d12;
-
-            &::before {
-              color: #b45309;
-            }
-          }
-
-          .bad-order-items {
-            .bad-order-item-tag {
-              background: #b45309;
-              color: #fef3c7;
-              border-color: #92400e;
-            }
-          }
-
-          .bad-order-action {
-            color: #fef3c7;
-          }
-        }
-
-        .bad-order-refund {
-          color: #fecaca;
-          background: #7f1d1d;
-          border-color: #991b1b;
-        }
-      }
-    }
-
-    &.multiple-bad-orders {
       .bad-orders-header {
-        background: #b45309;
         color: #fef3c7;
+        svg {
+          color: #ecc94b;
+        }
       }
+
+      .bad-orders-details .bad-order-item {
+        background: #d69e2e;
+        .bad-order-reason {
+          color: #7c2d12;
+        }
+      }
+    }
+
+    .transaction-items .items-preview .item-tag {
+      background: #4a5568;
+      color: #cbd5e0;
+      border-color: #718096;
     }
   }
 }
 
-/* Animations */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes pulse-highlight {
-  0% {
-    box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(0, 123, 255, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(0, 123, 255, 0);
-  }
-}
-
-/* Responsive Design for Transaction Card */
+/* Responsive Design */
 @media (max-width: 768px) {
   .transaction-card {
     .transaction-header {
       flex-direction: column;
-      gap: 1rem;
+      gap: 0.75rem;
       align-items: flex-start;
 
       .order-info {
         flex-direction: column;
         align-items: flex-start;
-        gap: 0.75rem;
+        gap: 0.5rem;
         width: 100%;
       }
 
       .order-actions {
         width: 100%;
         justify-content: space-between;
-        gap: 0.25rem;
       }
     }
 
     .transaction-body {
-      padding: 1.25rem;
+      padding: 1rem;
 
       .transaction-details {
         grid-template-columns: 1fr;
-        gap: 0.75rem;
+        gap: 0.5rem;
       }
 
       .payment-progress-section {
         .payment-progress-header {
           flex-direction: column;
           align-items: flex-start;
-          gap: 0.5rem;
+          gap: 0.25rem;
         }
       }
 
       .bad-orders-summary {
-        .bad-orders-details {
-          .bad-order-item {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 0.75rem;
-
-            .bad-order-content {
-              margin-left: 0;
-
-              .bad-order-reason {
-                margin-left: 0;
-              }
-
-              .bad-order-items {
-                margin-left: 0.5rem;
-              }
-
-              .bad-order-action {
-                margin-left: 0.5rem;
-              }
-            }
-
-            .bad-order-refund {
-              margin-left: 0;
-              align-self: flex-start;
-            }
-          }
-        }
-      }
-
-      .transaction-items {
-        .items-preview {
-          justify-content: center;
+        .bad-orders-details .bad-order-item {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 0.5rem;
+          text-align: center;
         }
       }
     }
@@ -934,43 +581,17 @@
 @media (max-width: 480px) {
   .transaction-card {
     .transaction-header {
-      padding: 1rem;
+      padding: 0.75rem;
 
       .order-actions {
-        flex-wrap: wrap;
-        gap: 0.25rem;
-
         .action-btn {
-          padding: 0.5rem;
-          font-size: 0.9rem;
-          flex: 1;
-          min-width: 40px;
+          padding: 0.4rem;
         }
       }
     }
 
     .transaction-body {
-      padding: 1rem;
-
-      .bad-orders-summary {
-        padding: 0.75rem;
-
-        .bad-orders-details {
-          .bad-order-item {
-            .bad-order-content {
-              .bad-order-items {
-                flex-direction: column;
-                align-items: flex-start;
-              }
-            }
-
-            .bad-order-refund {
-              font-size: 0.8rem;
-              padding: 0.375rem 0.5rem;
-            }
-          }
-        }
-      }
+      padding: 0.75rem;
     }
   }
 }
