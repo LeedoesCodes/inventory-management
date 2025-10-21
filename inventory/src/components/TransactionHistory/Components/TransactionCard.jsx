@@ -19,6 +19,7 @@ import {
   getPaymentProgress,
 } from "../utils/paymentUtils";
 import { printReceipt } from "../utils/receiptUtils";
+import "./TransactionCard.scss";
 
 const TransactionCard = ({
   order,
@@ -31,6 +32,17 @@ const TransactionCard = ({
   onDeleteOrder,
 }) => {
   const cardRef = useRef(null);
+
+  // Calculate total refund amount from all bad orders
+  const calculateTotalRefundAmount = () => {
+    if (!order.badOrders || order.badOrders.length === 0) return 0;
+
+    return order.badOrders.reduce((total, badOrder) => {
+      return total + (badOrder.totalRefundAmount || 0);
+    }, 0);
+  };
+
+  const totalRefundAmount = calculateTotalRefundAmount();
 
   // Scroll to and highlight the card if it's highlighted
   useEffect(() => {
@@ -90,7 +102,9 @@ const TransactionCard = ({
               <span className="cancelled-badge">CANCELLED</span>
             )}
             {order.hasBadOrder && (
-              <span className="bad-order-badge">BAD ORDER PROCESSED</span>
+              <span className="bad-order-badge">
+                BAD ORDER PROCESSED ({order.badOrders?.length || 0})
+              </span>
             )}
             {isCreditPending && (
               <span className="credit-pending-badge">PENDING PAYMENT</span>
@@ -206,9 +220,9 @@ const TransactionCard = ({
             >
               ₱{order.totalAmount.toFixed(2)}
             </span>
-            {order.hasBadOrder && (
+            {order.hasBadOrder && totalRefundAmount > 0 && (
               <span className="refund-amount">
-                -₱{(order.badOrderRefundAmount || 0).toFixed(2)} refunded
+                -₱{totalRefundAmount.toFixed(2)} refunded
               </span>
             )}
           </div>
@@ -235,6 +249,28 @@ const TransactionCard = ({
             <div className="payment-balance">
               Remaining: ₱
               {(order.remainingBalance || order.totalAmount).toFixed(2)}
+            </div>
+          </div>
+        )}
+
+        {/* Bad Orders Summary */}
+        {order.hasBadOrder && order.badOrders && order.badOrders.length > 0 && (
+          <div className="bad-orders-summary">
+            <div className="bad-orders-header">
+              <FontAwesomeIcon icon={faExclamationTriangle} />
+              <span>Bad Orders: {order.badOrders.length} issue(s)</span>
+            </div>
+            <div className="bad-orders-details">
+              {order.badOrders.map((badOrder, index) => (
+                <div key={index} className="bad-order-item">
+                  <span className="bad-order-reason">{badOrder.reason}</span>
+                  <span className="bad-order-refund">
+                    {badOrder.totalRefundAmount > 0 && (
+                      <>₱{badOrder.totalRefundAmount.toFixed(2)} refunded</>
+                    )}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         )}

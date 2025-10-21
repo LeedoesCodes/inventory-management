@@ -772,11 +772,11 @@ const BadOrderModal = ({
                   </select>
                   <div className="action-description">
                     {badOrderDetails.action === "replace" &&
-                      "Replace damaged pieces at no cost"}
+                      "Replace damaged pieces at no cost - stock will be deducted from inventory"}
                     {badOrderDetails.action === "partial_refund" &&
-                      "Refund value of damaged pieces + replace them"}
+                      "Refund value of damaged pieces + replace them - stock will be deducted from inventory"}
                     {badOrderDetails.action === "full_refund" &&
-                      "Full refund + return all items to stock"}
+                      "Full refund + customer keeps all items - NO stock deduction from inventory"}
                   </div>
                 </div>
 

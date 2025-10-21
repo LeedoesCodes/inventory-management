@@ -26,7 +26,7 @@ import { printReceipt } from "../components/TransactionHistory/utils/receiptUtil
 
 // Import Firestore
 import { collection, getDocs } from "firebase/firestore";
-import { db } from "../Firebase/firebase"; // Adjust path as needed
+import { db } from "../Firebase/firebase";
 
 import "../styles/transaction.scss";
 
@@ -62,6 +62,13 @@ export default function TransactionHistory() {
   const [sortBy, setSortBy] = useState("date");
   const [sortOrder, setSortOrder] = useState("desc");
   const [highlightedOrderId, setHighlightedOrderId] = useState(null);
+
+  // Add date filter state
+  const [dateFilter, setDateFilter] = useState({
+    startDate: "",
+    endDate: "",
+    dateRange: "all", // 'all', 'today', 'yesterday', 'thisWeek', 'thisMonth', 'custom'
+  });
 
   // Modal states
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -99,7 +106,6 @@ export default function TransactionHistory() {
       });
 
       setProducts(productsData);
-      console.log("Fetched products:", productsData.length);
     } catch (error) {
       console.error("Error fetching products:", error);
     } finally {
@@ -115,15 +121,130 @@ export default function TransactionHistory() {
     }
   }, [location.state]);
 
+  // Filter orders based on date range
+  const filterOrdersByDate = (orders) => {
+    // Only return all orders if explicitly "all"
+    if (dateFilter.dateRange === "all") {
+      return orders;
+    }
+
+    const now = new Date();
+
+    // If using predefined ranges
+    if (dateFilter.dateRange !== "custom") {
+      let startDate, endDate;
+
+      switch (dateFilter.dateRange) {
+        case "today":
+          startDate = new Date(now);
+          startDate.setHours(0, 0, 0, 0);
+          endDate = new Date(now);
+          endDate.setHours(23, 59, 59, 999);
+          break;
+        case "yesterday":
+          startDate = new Date(now);
+          startDate.setDate(now.getDate() - 1);
+          startDate.setHours(0, 0, 0, 0);
+          endDate = new Date(startDate);
+          endDate.setHours(23, 59, 59, 999);
+          break;
+        case "thisWeek":
+          startDate = new Date(now);
+          startDate.setDate(now.getDate() - now.getDay());
+          startDate.setHours(0, 0, 0, 0);
+          endDate = new Date(startDate);
+          endDate.setDate(startDate.getDate() + 6);
+          endDate.setHours(23, 59, 59, 999);
+          break;
+        case "thisMonth":
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          startDate.setHours(0, 0, 0, 0);
+          endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+          endDate.setHours(23, 59, 59, 999);
+          break;
+        default:
+          return orders;
+      }
+
+      return orders.filter((order) => {
+        let orderDate;
+        if (order.createdAt && order.createdAt.toDate) {
+          orderDate = order.createdAt.toDate();
+        } else if (order.createdAt instanceof Date) {
+          orderDate = order.createdAt;
+        } else if (order.createdAt) {
+          orderDate = new Date(order.createdAt);
+        } else {
+          return false;
+        }
+
+        return orderDate >= startDate && orderDate <= endDate;
+      });
+    }
+
+    // If using custom date range
+    if (dateFilter.startDate && dateFilter.endDate) {
+      const start = new Date(dateFilter.startDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(dateFilter.endDate);
+      end.setHours(23, 59, 59, 999);
+
+      return orders.filter((order) => {
+        let orderDate;
+        if (order.createdAt && order.createdAt.toDate) {
+          orderDate = order.createdAt.toDate();
+        } else if (order.createdAt instanceof Date) {
+          orderDate = order.createdAt;
+        } else if (order.createdAt) {
+          orderDate = new Date(order.createdAt);
+        } else {
+          return false;
+        }
+
+        return orderDate >= start && orderDate <= end;
+      });
+    }
+
+    return orders;
+  };
+
+  // Get filtered orders for display
+  const filteredOrders = filterOrdersByDate(orders);
+
+  // Handle date range changes
+  const handleDateRangeChange = (range) => {
+    setDateFilter((prev) => ({
+      ...prev,
+      dateRange: range,
+      startDate: "",
+      endDate: "",
+    }));
+  };
+
+  // Handle custom date changes
+  const handleCustomDateChange = (type, value) => {
+    setDateFilter((prev) => ({
+      ...prev,
+      [type]: value,
+      dateRange: "custom",
+    }));
+  };
+
+  // Clear date filters
+  const clearDateFilters = () => {
+    setDateFilter({
+      startDate: "",
+      endDate: "",
+      dateRange: "all",
+    });
+  };
+
   // Handle successful operations
   const handleSuccess = (message) => {
-    // You can add toast notifications here later
-    console.log(message);
-    alert(message); // Temporary alert for feedback
+    alert(message);
   };
 
   const handleError = (error) => {
-    // You can add error handling/toasts here later
     console.error(error);
     alert(error.message || "An error occurred");
   };
@@ -171,9 +292,6 @@ export default function TransactionHistory() {
 
   const handleProcessBadOrderWithErrorHandling = async (badOrderData) => {
     try {
-      console.log("Processing bad order with data:", badOrderData);
-
-      // Call the hook function with the complete data object
       await handleProcessBadOrder(badOrderData);
       handleSuccess("Bad order processed successfully");
       setBadOrderModal(null);
@@ -197,10 +315,65 @@ export default function TransactionHistory() {
           <div className="page-header">
             <h1>Transaction History</h1>
             <p>Manage and review all customer orders</p>
+
+            {/* Date Filter Controls */}
+            <div className="date-filter-controls">
+              <div className="date-filter-group">
+                <label>Date Range:</label>
+                <select
+                  value={dateFilter.dateRange}
+                  onChange={(e) => handleDateRangeChange(e.target.value)}
+                  className="date-range-select"
+                >
+                  <option value="all">All Time</option>
+                  <option value="today">Today</option>
+                  <option value="yesterday">Yesterday</option>
+                  <option value="thisWeek">This Week</option>
+                  <option value="thisMonth">This Month</option>
+                  <option value="custom">Custom Range</option>
+                </select>
+              </div>
+
+              {dateFilter.dateRange === "custom" && (
+                <div className="custom-date-filters">
+                  <div className="date-input-group">
+                    <label>From:</label>
+                    <input
+                      type="date"
+                      value={dateFilter.startDate}
+                      onChange={(e) =>
+                        handleCustomDateChange("startDate", e.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="date-input-group">
+                    <label>To:</label>
+                    <input
+                      type="date"
+                      value={dateFilter.endDate}
+                      onChange={(e) =>
+                        handleCustomDateChange("endDate", e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+              )}
+
+              {(dateFilter.dateRange !== "all" ||
+                dateFilter.startDate ||
+                dateFilter.endDate) && (
+                <button
+                  className="clear-date-filter"
+                  onClick={clearDateFilters}
+                >
+                  Clear Filter
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Statistics Cards */}
-          <StatisticsCards orders={orders} />
+          {/* Statistics Cards - Pass filtered orders AND dateFilter */}
+          <StatisticsCards orders={filteredOrders} dateFilter={dateFilter} />
 
           {/* Controls Bar */}
           <ControlsBar
@@ -216,9 +389,9 @@ export default function TransactionHistory() {
             setSortOrder={setSortOrder}
           />
 
-          {/* Transaction List */}
+          {/* Transaction List - Pass filtered orders */}
           <TransactionList
-            orders={orders}
+            orders={filteredOrders}
             loading={loading}
             searchTerm={searchTerm}
             filterStatus={filterStatus}
@@ -251,12 +424,10 @@ export default function TransactionHistory() {
               setSelectedOrder(null);
             }}
             onPrintReceipt={printReceipt}
-            // --- THIS IS THE ADDED PROP ---
             onBadOrder={() => {
-              setBadOrderModal(selectedOrder); // Open BadOrderModal with the order
-              setSelectedOrder(null); // Close OrderDetailsModal
+              setBadOrderModal(selectedOrder);
+              setSelectedOrder(null);
             }}
-            // --- END OF ADDITION ---
           />
 
           <PaymentModal
