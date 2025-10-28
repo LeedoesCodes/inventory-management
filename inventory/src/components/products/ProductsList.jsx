@@ -197,27 +197,6 @@ export default function ProductList({
                 {/* Enhanced Action Buttons */}
                 <div className="product-actions enhanced-actions">
                   {/* Quick Packaging Actions */}
-                  <div className="quick-actions">
-                    {p.packagingType === "single" && (
-                      <button
-                        onClick={() => onQuickCreateBulk(p)}
-                        className="btn-quick-action bulk"
-                        title="Create Bulk Package"
-                      >
-                        <FontAwesomeIcon icon={faBox} />
-                        Create Bulk
-                      </button>
-                    )}
-
-                    <button
-                      onClick={() => onViewRelated(p)}
-                      className="btn-quick-action related"
-                      title="View Related Products"
-                    >
-                      <FontAwesomeIcon icon={faLink} />
-                      View Related
-                    </button>
-                  </div>
 
                   {/* Standard Actions */}
                   <div className="standard-actions">

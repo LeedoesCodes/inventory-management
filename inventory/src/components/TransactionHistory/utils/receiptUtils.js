@@ -6,6 +6,7 @@ import { getPaymentMethodInfo, getPaymentProgress } from "./paymentUtils";
  */
 export const printReceipt = (order) => {
   const printWindow = window.open("", "_blank");
+
   const paymentMethod = getPaymentMethodInfo(order.paymentMethod);
   const paymentProgress = getPaymentProgress(order);
 
@@ -17,7 +18,12 @@ export const printReceipt = (order) => {
 
   printWindow.document.write(receiptContent);
   printWindow.document.close();
-  printWindow.print();
+
+  // Use setTimeout to ensure content is rendered before printing
+  setTimeout(() => {
+    printWindow.focus();
+    printWindow.print();
+  }, 500);
 };
 
 /**
@@ -341,6 +347,12 @@ const generateReceiptHTML = (order, paymentMethod, paymentProgress) => {
           )}
           ${generateFooter()}
         </div>
+        <script>
+          // Auto print after a short delay to ensure content is rendered
+          setTimeout(function() {
+            window.print();
+          }, 100);
+        </script>
       </body>
     </html>
   `;
@@ -350,19 +362,35 @@ const generateReceiptHTML = (order, paymentMethod, paymentProgress) => {
  * Generate receipt header
  */
 const generateReceiptHeader = (order) => {
+  // Safely handle date
+  let orderDate;
+  try {
+    if (order.createdAt && order.createdAt.toDate) {
+      orderDate = order.createdAt.toDate();
+    } else if (order.createdAt instanceof Date) {
+      orderDate = order.createdAt;
+    } else if (order.createdAt) {
+      orderDate = new Date(order.createdAt);
+    } else {
+      orderDate = new Date();
+    }
+  } catch (error) {
+    orderDate = new Date();
+  }
+
   return `
     <div class="header">
       <h1>ORDER RECEIPT</h1>
-      <div class="store-info">Your Store Name</div>
+      <div class="store-info">Freddie Food Wholesaling</div>
       <div class="store-info">Contact: +1234567890</div>
       <div class="order-info">
         <div class="info-row">
           <span class="info-label">Receipt No:</span>
-          <span>${order.id.slice(-8)}</span>
+          <span>${order.id ? order.id.slice(-8) : "N/A"}</span>
         </div>
         <div class="info-row">
           <span class="info-label">Date:</span>
-          <span>${order.createdAt.toLocaleString()}</span>
+          <span>${orderDate.toLocaleString()}</span>
         </div>
         <div class="info-row">
           <span class="info-label">Status:</span>
@@ -379,6 +407,25 @@ const generateReceiptHeader = (order) => {
  * Generate order information
  */
 const generateOrderInfo = (order) => {
+  // Safely handle cancelled date
+  let cancelledDate = "";
+  if (order.status === "cancelled" && order.cancelledAt) {
+    try {
+      if (
+        order.cancelledAt.toDate &&
+        typeof order.cancelledAt.toDate === "function"
+      ) {
+        cancelledDate = order.cancelledAt.toDate().toLocaleString();
+      } else if (order.cancelledAt instanceof Date) {
+        cancelledDate = order.cancelledAt.toLocaleString();
+      } else {
+        cancelledDate = new Date(order.cancelledAt).toLocaleString();
+      }
+    } catch (error) {
+      cancelledDate = new Date().toLocaleString();
+    }
+  }
+
   return `
     <div class="order-info">
       <div class="info-row">
@@ -386,13 +433,11 @@ const generateOrderInfo = (order) => {
         <span>${order.customerName || "Walk-in Customer"}</span>
       </div>
       ${
-        order.status === "cancelled" && order.cancelledAt
+        order.status === "cancelled" && cancelledDate
           ? `
         <div class="info-row">
           <span class="info-label">Cancelled:</span>
-          <span>${
-            order.cancelledAt.toLocaleString?.() || new Date().toLocaleString()
-          }</span>
+          <span>${cancelledDate}</span>
         </div>
       `
           : ""
@@ -433,11 +478,27 @@ const generatePaymentInfo = (
   const remainingBalance =
     order.remainingBalance || (isCreditPending ? order.totalAmount : 0);
 
+  // Safely handle paidAt date
+  let paidAtDate = "";
+  if (order.paidAt) {
+    try {
+      if (order.paidAt.toDate && typeof order.paidAt.toDate === "function") {
+        paidAtDate = order.paidAt.toDate().toLocaleString();
+      } else if (order.paidAt instanceof Date) {
+        paidAtDate = order.paidAt.toLocaleString();
+      } else {
+        paidAtDate = new Date(order.paidAt).toLocaleString();
+      }
+    } catch (error) {
+      paidAtDate = "";
+    }
+  }
+
   return `
     <div class="payment-info">
       <div class="info-row">
         <span class="info-label">Payment Method:</span>
-        <span>${paymentMethod.name}</span>
+        <span>${paymentMethod?.name || "Cash"}</span>
       </div>
       <div class="info-row">
         <span class="info-label">Payment Status:</span>
@@ -469,11 +530,11 @@ const generatePaymentInfo = (
       }
       
       ${
-        order.paidAt
+        paidAtDate
           ? `
         <div class="info-row">
           <span class="info-label">Paid At:</span>
-          <span>${order.paidAt.toLocaleString?.() || ""}</span>
+          <span>${paidAtDate}</span>
         </div>
       `
           : ""
@@ -486,6 +547,10 @@ const generatePaymentInfo = (
  * Generate items table
  */
 const generateItemsTable = (order) => {
+  if (!order.items || !Array.isArray(order.items)) {
+    return "<div>No items found</div>";
+  }
+
   return `
     <table class="items-table">
       <thead>
@@ -499,14 +564,14 @@ const generateItemsTable = (order) => {
       <tbody>
         ${order.items
           .map(
-            (item) => `
-          <tr>
-            <td>${item.name}</td>
-            <td class="quantity">${item.quantity}</td>
-            <td class="price">₱${item.price.toFixed(2)}</td>
-            <td class="subtotal">₱${item.subtotal.toFixed(2)}</td>
-          </tr>
-        `
+            (item, index) => `
+            <tr>
+              <td>${item.name || `Item ${index + 1}`}</td>
+              <td class="quantity">${item.quantity || 0}</td>
+              <td class="price">₱${(item.price || 0).toFixed(2)}</td>
+              <td class="subtotal">₱${(item.subtotal || 0).toFixed(2)}</td>
+            </tr>
+          `
           )
           .join("")}
       </tbody>
@@ -525,7 +590,7 @@ const generateTotals = (order, isPartiallyPaid) => {
     <div class="totals">
       <div class="total-row">
         <span>Subtotal:</span>
-        <span>₱${order.totalAmount.toFixed(2)}</span>
+        <span>₱${(order.totalAmount || 0).toFixed(2)}</span>
       </div>
       
       ${
@@ -556,7 +621,7 @@ const generateTotals = (order, isPartiallyPaid) => {
       
       <div class="total-row grand-total">
         <span>${isPartiallyPaid ? "Original Total:" : "Total Amount:"}</span>
-        <span>₱${order.totalAmount.toFixed(2)}</span>
+        <span>₱${(order.totalAmount || 0).toFixed(2)}</span>
       </div>
     </div>
   `;
@@ -566,7 +631,11 @@ const generateTotals = (order, isPartiallyPaid) => {
  * Generate payment history
  */
 const generatePaymentHistory = (order) => {
-  if (!order.paymentHistory || order.paymentHistory.length === 0) {
+  if (
+    !order.paymentHistory ||
+    !Array.isArray(order.paymentHistory) ||
+    order.paymentHistory.length === 0
+  ) {
     return "";
   }
 
@@ -574,19 +643,49 @@ const generatePaymentHistory = (order) => {
     <div class="payment-history">
       <div style="font-weight: bold; margin-bottom: 5px; text-align: center;">PAYMENT HISTORY</div>
       ${order.paymentHistory
-        .sort((a, b) => new Date(b.date) - new Date(a.date))
-        .map(
-          (payment) => `
+        .filter((payment) => payment && payment.amount) // Filter out invalid payments
+        .sort((a, b) => {
+          try {
+            const dateA = a.date ? new Date(a.date) : new Date(0);
+            const dateB = b.date ? new Date(b.date) : new Date(0);
+            return dateB - dateA;
+          } catch (error) {
+            return 0;
+          }
+        })
+        .map((payment) => {
+          // Safely handle payment date
+          let paymentDate = "";
+          try {
+            if (
+              payment.date &&
+              payment.date.toDate &&
+              typeof payment.date.toDate === "function"
+            ) {
+              paymentDate = payment.date.toDate().toLocaleDateString();
+            } else if (payment.date instanceof Date) {
+              paymentDate = payment.date.toLocaleDateString();
+            } else if (payment.date) {
+              paymentDate = new Date(payment.date).toLocaleDateString();
+            } else {
+              paymentDate = "Unknown date";
+            }
+          } catch (error) {
+            paymentDate = "Invalid date";
+          }
+
+          return `
           <div class="payment-record">
-            <span class="payment-amount">₱${payment.amount.toFixed(2)}</span>
-            <span class="payment-date">${
-              payment.date.toDate?.().toLocaleDateString() ||
-              new Date(payment.date).toLocaleDateString()
+            <span class="payment-amount">₱${(payment.amount || 0).toFixed(
+              2
+            )}</span>
+            <span class="payment-date">${paymentDate}</span>
+            <span class="payment-method">${
+              payment.paymentMethod || "Unknown"
             }</span>
-            <span class="payment-method">${payment.paymentMethod}</span>
           </div>
-        `
-        )
+        `;
+        })
         .join("")}
     </div>
   `;
@@ -692,25 +791,29 @@ export const printQuickReceipt = (order) => {
       <body>
         <div class="header">
           <strong>QUICK RECEIPT</strong><br>
-          Order: ${order.id.slice(-8)}<br>
-          ${order.createdAt.toLocaleDateString()}
+          Order: ${order.id ? order.id.slice(-8) : "N/A"}<br>
+          ${
+            order.createdAt
+              ? order.createdAt.toLocaleDateString()
+              : new Date().toLocaleDateString()
+          }
         </div>
         <table class="items">
-          ${order.items
+          ${(order.items || [])
             .map(
               (item) => `
             <tr>
-              <td>${item.name}</td>
-              <td>×${item.quantity}</td>
-              <td>₱${item.subtotal.toFixed(2)}</td>
+              <td>${item.name || "Item"}</td>
+              <td>×${item.quantity || 0}</td>
+              <td>₱${(item.subtotal || 0).toFixed(2)}</td>
             </tr>
           `
             )
             .join("")}
         </table>
         <div class="total">
-          Total: ₱${order.totalAmount.toFixed(2)}<br>
-          Payment: ${paymentMethod.name}<br>
+          Total: ₱${(order.totalAmount || 0).toFixed(2)}<br>
+          Payment: ${paymentMethod?.name || "Cash"}<br>
           ${order.paymentStatus === "pending" ? "Status: PENDING PAYMENT" : ""}
           ${
             order.paymentStatus === "partial"
@@ -718,13 +821,22 @@ export const printQuickReceipt = (order) => {
               : ""
           }
         </div>
+        <script>
+          setTimeout(function() {
+            window.print();
+          }, 100);
+        </script>
       </body>
     </html>
   `;
 
   printWindow.document.write(quickReceiptContent);
   printWindow.document.close();
-  printWindow.print();
+
+  setTimeout(() => {
+    printWindow.focus();
+    printWindow.print();
+  }, 500);
 };
 
 export default {
