@@ -44,7 +44,6 @@ export default function ProductsPage() {
   // Enhanced filtering states
   const [sortBy, setSortBy] = useState("name");
   const [sortOrder, setSortOrder] = useState("asc");
-  const [packagingFilter, setPackagingFilter] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
 
   // Packaging statistics
@@ -66,7 +65,6 @@ export default function ProductsPage() {
       setSearchTerm("");
       setSelectedCategory("");
       setSelectedUnit("");
-      setPackagingFilter("all");
       setStockFilter("all");
 
       // Clear the URL parameter after 5 seconds
@@ -163,7 +161,6 @@ export default function ProductsPage() {
     console.log("🟡 SEARCH TERM:", searchTerm);
     console.log("🟡 SELECTED CATEGORY:", selectedCategory);
     console.log("🟡 SELECTED UNIT:", selectedUnit);
-    console.log("🟡 PACKAGING FILTER:", packagingFilter);
     console.log("🟡 STOCK FILTER:", stockFilter);
     console.log("🟡 SORT BY:", sortBy, "ORDER:", sortOrder);
 
@@ -173,18 +170,6 @@ export default function ProductsPage() {
       const matchesCategory =
         !selectedCategory || p.category === selectedCategory;
       const matchesUnit = !selectedUnit || (p.unit || "piece") === selectedUnit;
-
-      // Enhanced: Packaging type filter
-      const matchesPackaging =
-        packagingFilter === "all" ||
-        (packagingFilter === "single" && p.packagingType === "single") ||
-        (packagingFilter === "bulk" && p.packagingType === "bulk") ||
-        (packagingFilter === "withBulk" &&
-          p.packagingType === "single" &&
-          productsArray.some((bp) => bp.parentProductId === p.id)) ||
-        (packagingFilter === "withoutBulk" &&
-          p.packagingType === "single" &&
-          !productsArray.some((bp) => bp.parentProductId === p.id));
 
       // Enhanced: Stock filter
       const currentStock = p.stock || 0;
@@ -211,7 +196,6 @@ export default function ProductsPage() {
         matchesSearch &&
         matchesCategory &&
         matchesUnit &&
-        matchesPackaging &&
         matchesStock &&
         matchesStockVisibility;
 
@@ -304,7 +288,6 @@ export default function ProductsPage() {
     setSearchTerm("");
     setSelectedCategory("");
     setSelectedUnit("");
-    setPackagingFilter("all");
     setStockFilter("all");
   };
 
@@ -317,7 +300,6 @@ export default function ProductsPage() {
     searchTerm,
     selectedCategory,
     selectedUnit,
-    packagingFilter,
     stockFilter,
     sortBy,
     sortOrder,
@@ -518,21 +500,6 @@ export default function ProductsPage() {
               {/* Enhanced Filter Groups */}
               <div className="filter-groups-row">
                 <div className="filter-group">
-                  <label>Packaging Type:</label>
-                  <select
-                    value={packagingFilter}
-                    onChange={(e) => setPackagingFilter(e.target.value)}
-                    className="control-select"
-                  >
-                    <option value="all">All Types</option>
-                    <option value="single">Single Items</option>
-                    <option value="bulk">Bulk Packages</option>
-                    <option value="withBulk">Single with Bulk</option>
-                    <option value="withoutBulk">Single without Bulk</option>
-                  </select>
-                </div>
-
-                <div className="filter-group">
                   <label>Stock Status:</label>
                   <select
                     value={stockFilter}
@@ -549,7 +516,6 @@ export default function ProductsPage() {
                 {(searchTerm ||
                   selectedCategory ||
                   selectedUnit ||
-                  packagingFilter !== "all" ||
                   stockFilter !== "all") && (
                   <button
                     className="clear-filters-btn"
@@ -598,12 +564,10 @@ export default function ProductsPage() {
                 <span>{filteredProducts.length} products</span>
                 {(selectedCategory ||
                   selectedUnit ||
-                  packagingFilter !== "all" ||
                   stockFilter !== "all") && (
                   <span className="filter-info">
                     {selectedCategory && ` • ${selectedCategory}`}
                     {selectedUnit && ` • ${selectedUnit}`}
-                    {packagingFilter !== "all" && ` • ${packagingFilter}`}
                     {stockFilter !== "all" && ` • ${stockFilter}`}
                   </span>
                 )}

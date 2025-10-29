@@ -9,17 +9,27 @@
 
   .modal-content {
     max-width: 700px;
-    animation: modalShakeIn 0.5s ease-out;
+    animation: modalSlideIn 0.3s ease-out;
+
+    /* --- FIX: Make modal a flex column & constrain its height --- */
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh; /* Prevents modal from being taller than viewport */
+    /* --- END FIX --- */
 
     &.delete-modal {
       background: white;
       border-radius: 16px;
       box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
-      overflow: hidden;
+      overflow: hidden; /* This is correct, keep it */
     }
   }
 
   .modal-header {
+    /* --- FIX: Prevent header from shrinking --- */
+    flex-shrink: 0;
+    /* --- END FIX --- */
+
     &.danger-header {
       background: linear-gradient(135deg, #f8d7da, #f5c6cb);
       border-bottom: 2px solid #f1b0b7;
@@ -54,8 +64,13 @@
 
   .modal-body {
     padding: 2rem;
-    max-height: 70vh;
-    overflow-y: auto;
+
+    /* --- FIX: Make body fill space and scroll, removing fixed max-height --- */
+    flex: 1; /* Tells the body to fill all available vertical space */
+    /* max-height: 70vh; <-- REMOVED */
+    /* --- END FIX --- */
+
+    overflow-y: auto; /* This makes ONLY the body scrollable */
     background: #f8fafc;
 
     /* Critical Warning */
@@ -64,15 +79,15 @@
       align-items: flex-start;
       gap: 1.5rem;
       padding: 1.5rem;
-      background: linear-gradient(135deg, #f8d7da, #f5c6cb);
-      border: 2px solid #dc3545;
+      background: linear-gradient(135deg, #fed7d7, #feb2b2);
+      border: 2px solid #fc8181;
       border-radius: 12px;
       margin-bottom: 2rem;
-      animation: pulseDanger 2s ease-in-out infinite;
+      animation: shakeWarning 0.5s ease-in-out;
 
       .critical-icon {
         font-size: 2.5rem;
-        color: #721c24;
+        color: #c53030;
         flex-shrink: 0;
       }
 
@@ -81,14 +96,14 @@
 
         h4 {
           margin: 0 0 0.5rem 0;
-          color: #721c24;
+          color: #c53030;
           font-size: 1.2rem;
           font-weight: 700;
         }
 
         p {
           margin: 0;
-          color: #721c24;
+          color: #c53030;
           opacity: 0.9;
           font-size: 1rem;
           line-height: 1.5;
@@ -109,12 +124,6 @@
         padding: 1.5rem;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
         border: 1px solid #e2e8f0;
-        transition: all 0.3s ease;
-
-        &:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
-        }
 
         h5 {
           margin: 0 0 1.25rem 0;
@@ -138,17 +147,9 @@
             align-items: center;
             padding: 0.75rem 0;
             border-bottom: 1px solid #f7fafc;
-            transition: all 0.3s ease;
 
             &:last-child {
               border-bottom: none;
-            }
-
-            &:hover {
-              background: #f8fafc;
-              padding-left: 0.75rem;
-              padding-right: 0.75rem;
-              border-radius: 6px;
             }
 
             span:first-child {
@@ -173,42 +174,9 @@
                 font-size: 1.1rem;
               }
 
-              &.paid-amount {
-                color: #28a745;
-                font-weight: 600;
-              }
-
               &.payment-method {
                 color: #7c3aed;
                 font-weight: 600;
-              }
-
-              &.status-badge {
-                padding: 0.35rem 0.85rem;
-                border-radius: 20px;
-                font-size: 0.8rem;
-                font-weight: 600;
-                text-transform: uppercase;
-
-                &.completed {
-                  background: linear-gradient(135deg, #10b981, #059669);
-                  color: white;
-                }
-
-                &.pending {
-                  background: linear-gradient(135deg, #f59e0b, #d97706);
-                  color: white;
-                }
-
-                &.cancelled {
-                  background: linear-gradient(135deg, #6c757d, #495057);
-                  color: white;
-                }
-
-                &.processing {
-                  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-                  color: white;
-                }
               }
 
               &.payment-status {
@@ -228,8 +196,31 @@
                   color: white;
                 }
 
-                &.partial {
-                  background: linear-gradient(135deg, #fd7e14, #e8590c);
+                &.cancelled {
+                  background: linear-gradient(135deg, #ef4444, #dc2626);
+                  color: white;
+                }
+              }
+
+              &.status-badge {
+                padding: 0.35rem 0.85rem;
+                border-radius: 20px;
+                font-size: 0.8rem;
+                font-weight: 600;
+                text-transform: uppercase;
+
+                &.completed {
+                  background: linear-gradient(135deg, #10b981, #059669);
+                  color: white;
+                }
+
+                &.cancelled {
+                  background: linear-gradient(135deg, #ef4444, #dc2626);
+                  color: white;
+                }
+
+                &.pending {
+                  background: linear-gradient(135deg, #f59e0b, #d97706);
                   color: white;
                 }
               }
@@ -243,43 +234,33 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.75rem 1rem;
+            padding: 1rem;
             border: 1px solid #e2e8f0;
             border-radius: 8px;
-            margin-bottom: 0.5rem;
-            background: #f8f9fa;
-            transition: all 0.3s ease;
-
-            &:hover {
-              transform: translateX(5px);
-              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            }
+            margin-bottom: 0.75rem;
+            background: #fafafa;
 
             .item-name {
+              flex: 2;
               font-weight: 500;
               color: #2d3748;
             }
 
             .item-quantity {
-              color: #6c757d;
+              flex: 1;
+              text-align: center;
+              color: #4a5568;
               font-weight: 600;
             }
           }
 
           .more-items {
             text-align: center;
-            padding: 0.75rem;
-            color: #6c757d;
+            padding: 0.5rem;
+            color: #718096;
             font-style: italic;
-            background: #f8f9fa;
+            background: #f1f5f9;
             border-radius: 6px;
-            border: 1px dashed #dee2e6;
-            transition: all 0.3s ease;
-
-            &:hover {
-              background: #e9ecef;
-              color: #495057;
-            }
           }
         }
       }
@@ -289,7 +270,7 @@
     .special-warnings {
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      gap: 0.75rem;
       margin-bottom: 2rem;
 
       .warning-item {
@@ -298,68 +279,30 @@
         gap: 1rem;
         padding: 1rem;
         border-radius: 8px;
-        border-left: 4px solid;
-        transition: all 0.3s ease;
-
-        &:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        svg {
-          margin-top: 0.25rem;
-          flex-shrink: 0;
-          width: 16px;
-        }
-
-        div {
-          flex: 1;
-          line-height: 1.5;
-
-          strong {
-            display: block;
-            margin-bottom: 0.25rem;
-          }
-        }
+        font-size: 0.9rem;
 
         &.bad-order-warning {
-          background: linear-gradient(135deg, #fff3cd, #ffeaa7);
-          border-left-color: #ffc107;
-          color: #856404;
-
-          svg {
-            color: #ffc107;
-          }
+          background: linear-gradient(135deg, #fffaf0, #feebc8);
+          border: 1px solid #ed8936;
+          color: #c05621;
         }
 
         &.payment-warning {
-          background: linear-gradient(135deg, #d1ecf1, #bee5eb);
-          border-left-color: #17a2b8;
-          color: #0c5460;
-
-          svg {
-            color: #17a2b8;
-          }
+          background: linear-gradient(135deg, #f0fff4, #c6f6d5);
+          border: 1px solid #48bb78;
+          color: #22543d;
         }
 
         &.stock-warning {
-          background: linear-gradient(135deg, #f8d7da, #f5c6cb);
-          border-left-color: #dc3545;
-          color: #721c24;
-
-          svg {
-            color: #dc3545;
-          }
+          background: linear-gradient(135deg, #fed7d7, #feb2b2);
+          border: 1px solid #fc8181;
+          color: #c53030;
         }
 
         &.cancelled-warning {
-          background: linear-gradient(135deg, #e2e3e5, #d6d8db);
-          border-left-color: #6c757d;
-          color: #495057;
-
-          svg {
-            color: #6c757d;
-          }
+          background: linear-gradient(135deg, #e9d8fd, #d6bcfa);
+          border: 1px solid #9f7aea;
+          color: #553c9a;
         }
       }
     }
@@ -370,102 +313,36 @@
       border-radius: 12px;
       padding: 1.5rem;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-      border: 2px solid #dc3545;
+      border: 1px solid #e2e8f0;
 
       .confirmation-check {
         display: flex;
         align-items: flex-start;
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-        padding: 1rem;
-        background: #f8f9fa;
-        border-radius: 8px;
-        border: 1px solid #e9ecef;
+        gap: 0.75rem;
 
         input[type="checkbox"] {
-          margin-top: 0.25rem;
           width: 18px;
           height: 18px;
           cursor: pointer;
-          accent-color: #dc3545;
+          margin-top: 0.25rem;
         }
 
         label {
-          flex: 1;
-          color: #495057;
-          font-weight: 600;
-          line-height: 1.5;
+          color: #4a5568;
+          font-size: 0.95rem;
           cursor: pointer;
-          transition: color 0.3s ease;
-
-          &:hover {
-            color: #dc3545;
-          }
-        }
-      }
-
-      .type-to-confirm {
-        text-align: center;
-
-        label {
-          display: block;
-          margin-bottom: 0.75rem;
-          color: #495057;
-          font-weight: 600;
-
-          strong {
-            color: #dc3545;
-            background: #f8d7da;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-family: "Courier New", monospace;
-          }
-        }
-
-        .confirmation-input {
-          width: 150px;
-          padding: 0.5rem 0.75rem;
-          border: 2px solid #dc3545;
-          border-radius: 8px;
-          font-size: 0.9rem;
-          font-weight: 600;
-          text-align: center;
-          text-transform: uppercase;
-          font-family: "Courier New", monospace;
-          transition: all 0.3s ease;
-          background: white;
-          margin: 0 auto;
-          display: block;
-
-          &:focus {
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
-            transform: scale(1.02);
-          }
-
-          &::placeholder {
-            color: #adb5bd;
-            font-weight: normal;
-            font-size: 0.85rem;
-          }
-
-          &.valid {
-            border-color: #28a745;
-            background: #f0fff4;
-            color: #155724;
-          }
-
-          &.invalid {
-            border-color: #dc3545;
-            background: #f8d7da;
-            color: #721c24;
-          }
+          font-weight: 500;
+          line-height: 1.4;
         }
       }
     }
   }
 
   .modal-footer {
+    /* --- FIX: Prevent footer from shrinking --- */
+    flex-shrink: 0;
+    /* --- END FIX --- */
+
     display: flex;
     gap: 1rem;
     padding: 1.5rem 2rem;
@@ -508,23 +385,16 @@
         left: 100%;
       }
 
-      &:hover:not(:disabled) {
+      &:hover {
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-      }
-
-      &:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-        transform: none !important;
-        box-shadow: none !important;
       }
 
       &.btn-secondary {
         background: linear-gradient(135deg, #94a3b8, #64748b);
         color: white;
 
-        &:hover:not(:disabled) {
+        &:hover {
           background: linear-gradient(135deg, #64748b, #475569);
         }
       }
@@ -533,12 +403,19 @@
         background: linear-gradient(135deg, #dc3545, #c82333);
         color: white;
 
-        &:hover:not(:disabled) {
+        &:hover {
           background: linear-gradient(135deg, #c82333, #a71e2a);
         }
 
         &:disabled {
-          background: linear-gradient(135deg, #6c757d, #495057);
+          background: #6c757d;
+          cursor: not-allowed;
+
+          &:hover {
+            background: #6c757d;
+            transform: none;
+            box-shadow: none;
+          }
         }
       }
     }
@@ -574,7 +451,7 @@
 
       .critical-warning {
         background: linear-gradient(135deg, #742a2a, #5c2121);
-        border-color: #e53e3e;
+        border-color: #fc8181;
 
         .critical-icon {
           color: #feb2b2;
@@ -600,10 +477,6 @@
         .detail-grid .detail-item {
           border-bottom-color: #4a5568;
 
-          &:hover {
-            background: #4a5568;
-          }
-
           span:first-child {
             color: #cbd5e0;
           }
@@ -619,134 +492,58 @@
               color: #68d391;
             }
 
-            &.paid-amount {
-              color: #68d391;
-            }
-
             &.payment-method {
               color: #b794f4;
             }
           }
         }
 
-        .items-preview {
-          .preview-item {
-            background: #4a5568;
-            border-color: #4a5568;
+        .items-preview .preview-item {
+          background: #4a5568;
+          border-color: #4a5568;
 
-            .item-name {
-              color: #f7fafc;
-            }
-
-            .item-quantity {
-              color: #a0aec0;
-            }
+          .item-name {
+            color: #f7fafc;
           }
 
-          .more-items {
-            background: #4a5568;
-            border-color: #4a5568;
-            color: #a0aec0;
-
-            &:hover {
-              background: #2d3748;
-              color: #cbd5e0;
-            }
+          .item-quantity {
+            color: #cbd5e0;
           }
         }
       }
 
       .special-warnings .warning-item {
         &.bad-order-warning {
-          background: linear-gradient(135deg, #665600, #554700);
-          border-left-color: #d69e2e;
-          color: #f6e05e;
-
-          svg {
-            color: #f6e05e;
-          }
+          background: linear-gradient(135deg, #5c3700, #4a2c00);
+          border-color: #ed8936;
+          color: #fbd38d;
         }
 
         &.payment-warning {
-          background: linear-gradient(135deg, #1a3c4a, #164252);
-          border-left-color: #4299e1;
-          color: #90cdf4;
-
-          svg {
-            color: #90cdf4;
-          }
+          background: linear-gradient(135deg, #22543d, #1a4530);
+          border-color: #48bb78;
+          color: #9ae6b4;
         }
 
         &.stock-warning {
           background: linear-gradient(135deg, #742a2a, #5c2121);
-          border-left-color: #fc8181;
+          border-color: #fc8181;
           color: #feb2b2;
-
-          svg {
-            color: #feb2b2;
-          }
         }
 
         &.cancelled-warning {
-          background: linear-gradient(135deg, #4a5568, #2d3748);
-          border-left-color: #a0aec0;
-          color: #cbd5e0;
-
-          svg {
-            color: #a0aec0;
-          }
+          background: linear-gradient(135deg, #44337a, #322659);
+          border-color: #9f7aea;
+          color: #d6bcfa;
         }
       }
 
       .final-confirmation {
         background: #2d3748;
-        border-color: #e53e3e;
+        border-color: #4a5568;
 
-        .confirmation-check {
-          background: #4a5568;
-          border-color: #4a5568;
-
-          label {
-            color: #cbd5e0;
-
-            &:hover {
-              color: #fc8181;
-            }
-          }
-        }
-
-        .type-to-confirm {
-          label {
-            color: #cbd5e0;
-
-            strong {
-              color: #fc8181;
-              background: #742a2a;
-            }
-          }
-
-          .confirmation-input {
-            width: 150px;
-            background: #4a5568;
-            border-color: #e53e3e;
-            color: #f7fafc;
-
-            &:focus {
-              box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.2);
-            }
-
-            &.valid {
-              border-color: #68d391;
-              background: #22543d;
-              color: #9ae6b4;
-            }
-
-            &.invalid {
-              border-color: #fc8181;
-              background: #742a2a;
-              color: #feb2b2;
-            }
-          }
+        .confirmation-check label {
+          color: #cbd5e0;
         }
       }
     }
@@ -759,36 +556,27 @@
 }
 
 /* Animations */
-@keyframes modalShakeIn {
-  0% {
-    opacity: 0;
-    transform: translateY(-50px) scale(0.9);
-  }
-  60% {
-    transform: translateY(0) scale(1);
-  }
-  70% {
-    transform: translateX(-5px);
-  }
-  80% {
-    transform: translateX(5px);
-  }
-  90% {
-    transform: translateX(-5px);
-  }
+@keyframes shakeWarning {
+  0%,
   100% {
-    opacity: 1;
     transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
   }
 }
 
-@keyframes pulseDanger {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50px) scale(0.9);
   }
-  50% {
-    box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -816,29 +604,6 @@
         align-items: flex-start;
         gap: 0.25rem;
       }
-
-      .items-preview .preview-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-      }
-    }
-
-    .special-warnings .warning-item {
-      flex-direction: column;
-      gap: 0.75rem;
-      text-align: center;
-    }
-
-    .final-confirmation {
-      .confirmation-check {
-        flex-direction: column;
-        gap: 0.75rem;
-      }
-
-      .type-to-confirm .confirmation-input {
-        width: 140px;
-      }
     }
 
     .modal-footer {
@@ -852,12 +617,6 @@
   .delete-order-modal {
     .modal-body {
       padding: 1rem;
-    }
-
-    .final-confirmation .type-to-confirm .confirmation-input {
-      width: 120px;
-      padding: 0.4rem 0.5rem;
-      font-size: 0.85rem;
     }
 
     .modal-footer button {

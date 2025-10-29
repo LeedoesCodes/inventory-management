@@ -14,21 +14,20 @@ import "./DeleteOrderModal.scss";
 
 const DeleteOrderModal = ({ order, onClose, onConfirm }) => {
   const [isConfirmed, setIsConfirmed] = useState(false);
-  const [confirmationText, setConfirmationText] = useState("");
 
-  // Update confirmation state when inputs change
+  // Update confirmation state when checkbox changes
   useEffect(() => {
     const deleteButton = document.getElementById("deleteConfirmButton");
     if (deleteButton) {
-      deleteButton.disabled = !(isConfirmed && confirmationText === "DELETE");
+      deleteButton.disabled = !isConfirmed;
     }
-  }, [isConfirmed, confirmationText]);
+  }, [isConfirmed]);
 
   // Early return after hooks
   if (!order) return null;
 
   const handleConfirm = () => {
-    if (isConfirmed && confirmationText === "DELETE") {
+    if (isConfirmed) {
       onConfirm(order.id);
     }
   };
@@ -208,29 +207,8 @@ const DeleteOrderModal = ({ order, onClose, onConfirm }) => {
                 />
                 <label htmlFor="confirmDelete">
                   I understand that this action is permanent and cannot be
-                  undone
+                  undone. All data will be permanently lost.
                 </label>
-              </div>
-              <div className="type-to-confirm">
-                <label htmlFor="typeConfirm">
-                  Type <strong>"DELETE"</strong> to confirm:
-                </label>
-                <input
-                  type="text"
-                  id="typeConfirm"
-                  placeholder="DELETE"
-                  className={`confirmation-input ${
-                    confirmationText === "DELETE"
-                      ? "valid"
-                      : confirmationText && confirmationText !== "DELETE"
-                      ? "invalid"
-                      : ""
-                  }`}
-                  value={confirmationText}
-                  onChange={(e) =>
-                    setConfirmationText(e.target.value.toUpperCase())
-                  }
-                />
               </div>
             </div>
           </div>
@@ -244,7 +222,7 @@ const DeleteOrderModal = ({ order, onClose, onConfirm }) => {
               className="btn-danger"
               onClick={handleConfirm}
               id="deleteConfirmButton"
-              disabled={!(isConfirmed && confirmationText === "DELETE")}
+              disabled={!isConfirmed}
             >
               <FontAwesomeIcon icon={faTrash} />
               Permanently Delete
