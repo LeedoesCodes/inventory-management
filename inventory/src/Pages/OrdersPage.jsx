@@ -50,6 +50,7 @@ export default function OrdersPage() {
   const [cart, setCart] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedPackagingType, setSelectedPackagingType] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [sortBy, setSortBy] = useState("name");
   const [sortOrder, setSortOrder] = useState("asc");
@@ -142,9 +143,6 @@ export default function OrdersPage() {
   };
 
   // Calculate discounted price for a product
-  // Calculate discounted price for a product
-  // Calculate discounted price for a product
-  // Calculate discounted price for a product
   const getDiscountedPrice = (product) => {
     if (!customerDiscounts.length) return product.price;
 
@@ -178,6 +176,7 @@ export default function OrdersPage() {
 
     return Math.max(0, discountedPrice);
   };
+
   // Simple barcode scanning
   const handleBarcodeScanned = (barcode) => {
     if (!barcode || barcode.trim() === "") return false;
@@ -397,10 +396,18 @@ export default function OrdersPage() {
     removeFromCart(itemId);
   };
 
-  // Search handler
-  const handleSearch = (term, category) => {
+  // Updated search handler to match ProductSearch component
+  const handleSearch = (term, category, unit = "", packagingType = "") => {
     setSearchTerm(term.toLowerCase());
     setSelectedCategory(category);
+    setSelectedPackagingType(packagingType);
+    // Note: We're ignoring the 'unit' parameter since OrdersPage doesn't use unit filtering
+  };
+
+  const clearAllFilters = () => {
+    setSearchTerm("");
+    setSelectedCategory("");
+    setSelectedPackagingType("");
   };
 
   // Simple totals calculation with discounts
@@ -703,7 +710,6 @@ export default function OrdersPage() {
   }, [debounceTimer]);
 
   // Update pending order when cart changes AND dialog is open
-  // Update pending order when cart changes AND dialog is open
   useEffect(() => {
     if (showConfirmation) {
       const orderItems = products
@@ -739,8 +745,14 @@ export default function OrdersPage() {
       const matchesSearch = p.name.toLowerCase().includes(searchTerm);
       const matchesCategory =
         !selectedCategory || p.category === selectedCategory;
+      const matchesPackaging =
+        !selectedPackagingType ||
+        (p.packagingType || "single") === selectedPackagingType;
       const matchesStock = p.stock > 0;
-      return matchesSearch && matchesCategory && matchesStock;
+
+      return (
+        matchesSearch && matchesCategory && matchesPackaging && matchesStock
+      );
     })
     .sort((a, b) => {
       let aValue = a[sortBy];
@@ -773,11 +785,13 @@ export default function OrdersPage() {
             <p>Select products and manage customer orders</p>
           </div>
 
-          {/* Barcode Scanner Component */}
+          {/* Barcode Scanner Component - Temporarily Hidden */}
+          {/*
           <BarcodeScanner
             onBarcodeScanned={handleBarcodeScanned}
             products={products}
           />
+          */}
 
           {/* Enhanced Search & Filters Section */}
           <div className="search-filters-section">
@@ -785,13 +799,11 @@ export default function OrdersPage() {
               onSearch={handleSearch}
               categories={categories}
               selectedCategory={selectedCategory}
+              selectedPackagingType={selectedPackagingType}
             />
 
-            {(searchTerm || selectedCategory) && (
-              <button
-                className="clear-filters-btn"
-                onClick={() => handleSearch("", "")}
-              >
+            {(searchTerm || selectedCategory || selectedPackagingType) && (
+              <button className="clear-filters-btn" onClick={clearAllFilters}>
                 Clear Filters
               </button>
             )}
@@ -834,6 +846,14 @@ export default function OrdersPage() {
               {selectedCategory && (
                 <span className="filter-info">• {selectedCategory}</span>
               )}
+              {selectedPackagingType && (
+                <span className="filter-info">
+                  •{" "}
+                  {selectedPackagingType === "single"
+                    ? "Single Items"
+                    : "Bulk Packages"}
+                </span>
+              )}
             </div>
           </div>
 
@@ -845,7 +865,7 @@ export default function OrdersPage() {
                   <button
                     key={index}
                     className="customer-tag"
-                    onClick={() => setCustomerName(customer)} // Just set the name, don't auto-capitalize while typing
+                    onClick={() => setCustomerName(customer)} // Just set the name
                   >
                     {customer}
                   </button>
@@ -866,10 +886,10 @@ export default function OrdersPage() {
               <div className="no-products">
                 <FontAwesomeIcon icon={faSearch} size="3x" />
                 <p>No products found matching your criteria</p>
-                {(searchTerm || selectedCategory) && (
+                {(searchTerm || selectedCategory || selectedPackagingType) && (
                   <button
                     className="clear-filters-btn"
-                    onClick={() => handleSearch("", "")}
+                    onClick={clearAllFilters}
                     style={{ marginTop: "1rem" }}
                   >
                     Clear Filters
@@ -914,6 +934,13 @@ export default function OrdersPage() {
                           {p.category && (
                             <span className="category-badge">{p.category}</span>
                           )}
+                          {/* UPDATED: Packaging badge with data attribute */}
+                          <span
+                            className="packaging-badge"
+                            data-packaging={p.packagingType || "single"}
+                          >
+                            {p.packagingType === "bulk" ? "Bulk" : "Single"}
+                          </span>
                         </div>
 
                         <div className="product-meta">

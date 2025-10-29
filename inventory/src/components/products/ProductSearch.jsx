@@ -7,6 +7,7 @@ export default function ProductSearch({
   units = [],
   selectedCategory = "",
   selectedUnit = "",
+  selectedPackagingType = "",
 }) {
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -14,20 +15,32 @@ export default function ProductSearch({
   const defaultUnits = ["piece", "bag", "pack", "bottle", "can", "box"];
   const availableUnits = units.length > 0 ? units : defaultUnits;
 
+  // Packaging type options
+  const packagingTypes = [
+    { value: "", label: "All Packaging" },
+    { value: "single", label: "Single Items" },
+    { value: "bulk", label: "Bulk Packages" },
+  ];
+
   const handleSearchChange = (e) => {
     const term = e.target.value;
     setSearchTerm(term);
-    onSearch(term, selectedCategory, selectedUnit);
+    onSearch(term, selectedCategory, selectedUnit, selectedPackagingType);
   };
 
   const handleCategoryChange = (e) => {
     const category = e.target.value;
-    onSearch(searchTerm, category, selectedUnit);
+    onSearch(searchTerm, category, selectedUnit, selectedPackagingType);
   };
 
   const handleUnitChange = (e) => {
     const unit = e.target.value;
-    onSearch(searchTerm, selectedCategory, unit);
+    onSearch(searchTerm, selectedCategory, unit, selectedPackagingType);
+  };
+
+  const handlePackagingTypeChange = (e) => {
+    const packagingType = e.target.value;
+    onSearch(searchTerm, selectedCategory, selectedUnit, packagingType);
   };
 
   return (
@@ -65,6 +78,19 @@ export default function ProductSearch({
           {availableUnits.map((unit, idx) => (
             <option key={idx} value={unit}>
               {unit.charAt(0).toUpperCase() + unit.slice(1)}
+            </option>
+          ))}
+        </select>
+
+        {/* NEW: Packaging Type Filter */}
+        <select
+          value={selectedPackagingType}
+          onChange={handlePackagingTypeChange}
+          className="filter-select"
+        >
+          {packagingTypes.map((type) => (
+            <option key={type.value} value={type.value}>
+              {type.label}
             </option>
           ))}
         </select>
