@@ -40,6 +40,7 @@ export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedUnit, setSelectedUnit] = useState("");
+  const [selectedPackagingType, setSelectedPackagingType] = useState("");
 
   // Enhanced filtering states
   const [sortBy, setSortBy] = useState("name");
@@ -65,6 +66,7 @@ export default function ProductsPage() {
       setSearchTerm("");
       setSelectedCategory("");
       setSelectedUnit("");
+      setSelectedPackagingType("");
       setStockFilter("all");
 
       // Clear the URL parameter after 5 seconds
@@ -161,6 +163,7 @@ export default function ProductsPage() {
     console.log("🟡 SEARCH TERM:", searchTerm);
     console.log("🟡 SELECTED CATEGORY:", selectedCategory);
     console.log("🟡 SELECTED UNIT:", selectedUnit);
+    console.log("🟡 SELECTED PACKAGING TYPE:", selectedPackagingType);
     console.log("🟡 STOCK FILTER:", stockFilter);
     console.log("🟡 SORT BY:", sortBy, "ORDER:", sortOrder);
 
@@ -170,6 +173,11 @@ export default function ProductsPage() {
       const matchesCategory =
         !selectedCategory || p.category === selectedCategory;
       const matchesUnit = !selectedUnit || (p.unit || "piece") === selectedUnit;
+
+      // NEW: Packaging type filter
+      const matchesPackagingType =
+        !selectedPackagingType ||
+        (p.packagingType || "single") === selectedPackagingType;
 
       // Enhanced: Stock filter
       const currentStock = p.stock || 0;
@@ -196,6 +204,7 @@ export default function ProductsPage() {
         matchesSearch &&
         matchesCategory &&
         matchesUnit &&
+        matchesPackagingType && // NEW: Include packaging type filter
         matchesStock &&
         matchesStockVisibility;
 
@@ -263,12 +272,22 @@ export default function ProductsPage() {
     setFilteredProducts(filtered);
   };
 
-  // Handle search with unit filter
-  const handleSearch = (term, category, unit = "") => {
-    console.log("🔍 SEARCH: Term:", term, "Category:", category, "Unit:", unit);
+  // Handle search with unit and packaging type filter
+  const handleSearch = (term, category, unit = "", packagingType = "") => {
+    console.log(
+      "🔍 SEARCH: Term:",
+      term,
+      "Category:",
+      category,
+      "Unit:",
+      unit,
+      "Packaging:",
+      packagingType
+    );
     setSearchTerm(term);
     setSelectedCategory(category);
     setSelectedUnit(unit);
+    setSelectedPackagingType(packagingType);
   };
 
   // Handle sort changes
@@ -288,6 +307,7 @@ export default function ProductsPage() {
     setSearchTerm("");
     setSelectedCategory("");
     setSelectedUnit("");
+    setSelectedPackagingType("");
     setStockFilter("all");
   };
 
@@ -300,6 +320,7 @@ export default function ProductsPage() {
     searchTerm,
     selectedCategory,
     selectedUnit,
+    selectedPackagingType,
     stockFilter,
     sortBy,
     sortOrder,
@@ -411,7 +432,7 @@ export default function ProductsPage() {
 
         {/* Show either the form or the products list */}
         {showForm ? (
-          // Full-page form layout - FIXED: Added products-content class
+          // Full-page form layout
           <div className="product-form-fullpage products-content">
             <div className="form-header">
               <div className="header-content">
@@ -495,6 +516,7 @@ export default function ProductsPage() {
                 units={units}
                 selectedCategory={selectedCategory}
                 selectedUnit={selectedUnit}
+                selectedPackagingType={selectedPackagingType}
               />
 
               {/* Enhanced Filter Groups */}
@@ -516,6 +538,7 @@ export default function ProductsPage() {
                 {(searchTerm ||
                   selectedCategory ||
                   selectedUnit ||
+                  selectedPackagingType ||
                   stockFilter !== "all") && (
                   <button
                     className="clear-filters-btn"
@@ -564,10 +587,17 @@ export default function ProductsPage() {
                 <span>{filteredProducts.length} products</span>
                 {(selectedCategory ||
                   selectedUnit ||
+                  selectedPackagingType ||
                   stockFilter !== "all") && (
                   <span className="filter-info">
                     {selectedCategory && ` • ${selectedCategory}`}
                     {selectedUnit && ` • ${selectedUnit}`}
+                    {selectedPackagingType &&
+                      ` • ${
+                        selectedPackagingType === "single"
+                          ? "Single Items"
+                          : "Bulk Packages"
+                      }`}
                     {stockFilter !== "all" && ` • ${stockFilter}`}
                   </span>
                 )}

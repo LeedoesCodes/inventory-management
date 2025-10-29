@@ -2028,3 +2028,120 @@
     }
   }
 }
+// Add this to your existing orders.scss file
+
+.products-list {
+  .product-card {
+    .product-header {
+      .product-info {
+        // Add packaging badge styles
+        .packaging-badge {
+          background: var(--accent-color);
+          color: white; // Force white text for better contrast
+          padding: 0.3rem 0.7rem;
+          border-radius: 10px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: capitalize;
+          align-self: flex-start;
+          border: 1px solid rgba(255, 255, 255, 0.3); // Added border for better definition
+
+          // Specific styling for bulk items to differentiate
+          &[data-packaging="bulk"] {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          }
+
+          &[data-packaging="single"] {
+            background: linear-gradient(
+              135deg,
+              var(--accent-color) 0%,
+              var(--accent-hover) 100%
+            );
+          }
+        }
+
+        // Update the existing badges to ensure consistency
+        .category-badge {
+          background: var(--accent-color);
+          color: white; // Force white text
+          padding: 0.3rem 0.7rem;
+          border-radius: 10px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: capitalize;
+          align-self: flex-start;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .unit-badge {
+          background: var(--success-color);
+          color: white; // Force white text
+          padding: 0.3rem 0.7rem;
+          border-radius: 10px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: capitalize;
+          align-self: flex-start;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+      }
+    }
+  }
+}
+
+// Alternative approach if you want to use CSS variables for text color
+// but white is better for contrast on colored backgrounds
+.products-list {
+  .product-card {
+    .product-header {
+      .product-info {
+        .packaging-badge {
+          background: var(--accent-color);
+          color: var(--text-on-accent, white); // Fallback to white
+          padding: 0.3rem 0.7rem;
+          border-radius: 10px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: capitalize;
+          align-self: flex-start;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+      }
+    }
+  }
+}
+
+// Dark theme specific adjustments if needed
+[data-theme="dark"] {
+  .products-list {
+    .product-card {
+      .product-header {
+        .product-info {
+          .packaging-badge {
+            // In dark mode, ensure the badge has enough contrast
+            background: var(--accent-color);
+            color: white;
+            border-color: rgba(
+              255,
+              255,
+              255,
+              0.4
+            ); // Slightly more visible border in dark mode
+
+            &[data-packaging="bulk"] {
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+
+            &[data-packaging="single"] {
+              background: linear-gradient(
+                135deg,
+                var(--accent-color) 0%,
+                var(--accent-hover) 100%
+              );
+            }
+          }
+        }
+      }
+    }
+  }
+}

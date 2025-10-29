@@ -18,13 +18,17 @@
       border-radius: 12px;
       width: 100%;
       max-width: 800px;
-      max-height: 90vh;
+      // max-height: 90vh; // Replaced by Flexbox max-height
       animation: modalSlideIn 0.2s ease-out;
-      display: flex;
-      flex-direction: column;
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
         0 10px 10px -5px rgba(0, 0, 0, 0.04);
-      overflow: hidden;
+
+      /* --- FIX: Make modal a flex column & constrain its height --- */
+      display: flex;
+      flex-direction: column;
+      max-height: 90vh; /* Prevents modal from being taller than viewport */
+      overflow: hidden; /* Ensures content clipping */
+      /* --- END FIX --- */
 
       .modal-header {
         display: flex;
@@ -32,7 +36,10 @@
         justify-content: space-between;
         padding: 1.5rem 2rem;
         border-bottom: 1px solid #e5e7eb;
+
+        /* --- FIX: Prevent header from shrinking --- */
         flex-shrink: 0;
+        /* --- END FIX --- */
 
         &.success-header {
           background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
@@ -98,10 +105,13 @@
 
       .modal-body {
         padding: 2rem;
-        max-height: calc(90vh - 140px);
-        overflow-y: auto;
+        // max-height: calc(90vh - 140px); // Replaced by Flexbox
         background: #fafafa;
-        flex: 1;
+
+        /* --- FIX: Make body fill space and scroll, removing fixed max-height --- */
+        flex: 1; /* Tells the body to fill all available vertical space */
+        overflow-y: auto; /* This makes ONLY the body scrollable */
+        /* --- END FIX --- */
 
         .section-title {
           color: #374151;
@@ -538,7 +548,9 @@
         padding: 1.5rem 2rem;
         background: #f9fafb;
         border-top: 1px solid #e5e7eb;
+        /* --- FIX: Prevent footer from shrinking --- */
         flex-shrink: 0;
+        /* --- END FIX --- */
 
         .btn {
           flex: 1;
@@ -546,7 +558,7 @@
           border: none;
           border-radius: 8px;
           font-size: 0.95rem;
-          font-weight: 500;
+          font-weight: 500; // Adjusted for better readability
           cursor: pointer;
           transition: all 0.2s ease;
           display: flex;
@@ -554,6 +566,31 @@
           justify-content: center;
           gap: 0.5rem;
           text-decoration: none;
+          position: relative; // Needed for potential pseudo-elements like hover effects
+          overflow: hidden; // Ensures pseudo-elements stay within bounds
+
+          // --- Optional: Add a subtle shine effect on hover ---
+          &::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+              90deg,
+              transparent,
+              rgba(255, 255, 255, 0.2),
+              // Lighter shine for light theme
+              transparent
+            );
+            transition: left 0.4s ease;
+          }
+
+          &:hover:not(:disabled)::before {
+            left: 100%;
+          }
+          // --- End Optional Shine Effect ---
 
           &:hover:not(:disabled) {
             transform: translateY(-1px);
@@ -562,44 +599,71 @@
 
           &:active:not(:disabled) {
             transform: translateY(0);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); // Slightly less shadow on click
           }
 
+          // --- COLOR STYLES START ---
           &.btn-secondary {
-            background: #6b7280;
+            background: linear-gradient(
+              135deg,
+              #6b7280,
+              #4b5563
+            ); // Gray gradient
             color: white;
+            box-shadow: 0 2px 4px rgba(75, 85, 99, 0.2);
 
             &:hover:not(:disabled) {
-              background: #4b5563;
+              background: linear-gradient(
+                135deg,
+                #4b5563,
+                #374151
+              ); // Darker gray on hover
+              box-shadow: 0 4px 12px rgba(75, 85, 99, 0.3);
             }
           }
 
           &.btn-success {
-            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            background: linear-gradient(
+              135deg,
+              #10b981,
+              #059669
+            ); // Green gradient
             color: white;
+            box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2);
 
             &:hover:not(:disabled) {
-              background: linear-gradient(135deg, #047857 0%, #065f46 100%);
-            }
-
-            &:disabled {
-              background: #9ca3af;
-              cursor: not-allowed;
-              transform: none;
-              box-shadow: none;
+              background: linear-gradient(
+                135deg,
+                #059669,
+                #047857
+              ); // Darker green on hover
+              box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
             }
           }
 
           &.btn-warning {
-            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            background: linear-gradient(
+              135deg,
+              #f59e0b,
+              #d97706
+            ); // Amber/Orange gradient
             color: white;
+            box-shadow: 0 2px 4px rgba(217, 119, 6, 0.2);
 
             &:hover:not(:disabled) {
-              background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
+              background: linear-gradient(
+                135deg,
+                #d97706,
+                #b45309
+              ); // Darker amber/orange on hover
+              box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
             }
           }
+          // --- COLOR STYLES END ---
 
           &:disabled {
-            opacity: 0.6;
+            background: #d1d5db; // Lighter gray when disabled
+            color: #9ca3af;
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
@@ -866,8 +930,86 @@
         }
 
         .modal-footer {
-          background: #1f2937;
-          border-top-color: #374151;
+          background: #1f2937; // Dark footer background
+          border-top-color: #374151; // Darker border
+
+          .btn {
+            // --- Optional: Dark theme shine effect ---
+            &::before {
+              background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.1),
+                // Dimmer shine for dark theme
+                transparent
+              );
+            }
+            // --- End Optional Shine Effect ---
+
+            &.btn-secondary {
+              background: linear-gradient(
+                135deg,
+                #4b5563,
+                #374151
+              ); // Dark Gray gradient
+              color: #e5e7eb; // Light text
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+
+              &:hover:not(:disabled) {
+                background: linear-gradient(
+                  135deg,
+                  #374151,
+                  #1f2937
+                ); // Even Darker gray on hover
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+              }
+            }
+
+            &.btn-success {
+              background: linear-gradient(
+                135deg,
+                #059669,
+                #047857
+              ); // Dark Green gradient
+              color: #d1fae5; // Lighter green text
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+
+              &:hover:not(:disabled) {
+                background: linear-gradient(
+                  135deg,
+                  #047857,
+                  #065f46
+                ); // Even Darker green on hover
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+              }
+            }
+
+            &.btn-warning {
+              background: linear-gradient(
+                135deg,
+                #d97706,
+                #b45309
+              ); // Dark Amber/Orange gradient
+              color: #ffedd5; // Lighter orange text
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+
+              &:hover:not(:disabled) {
+                background: linear-gradient(
+                  135deg,
+                  #b45309,
+                  #92400e
+                ); // Even Darker amber/orange on hover
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+              }
+            }
+
+            &:disabled {
+              background: #374151; // Darker gray when disabled
+              color: #6b7280;
+              box-shadow: none;
+              opacity: 0.7; // Slightly more visible disabled state
+            }
+          }
         }
       }
     }
@@ -891,7 +1033,9 @@
 
         .modal-body {
           padding: 1.25rem;
-          max-height: calc(95vh - 120px);
+          max-height: calc(
+            95vh - 120px
+          ); // Adjust max-height for smaller screens
 
           .payment-order-summary .summary-grid {
             grid-template-columns: 1fr;
