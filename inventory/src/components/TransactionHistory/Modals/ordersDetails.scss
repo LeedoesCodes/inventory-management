@@ -8,7 +8,18 @@
     max-width: 900px;
     animation: modalSlideIn 0.3s ease-out;
 
+    /* --- FIX: Make modal a flex column & constrain its height --- */
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh; /* Prevents modal from being taller than viewport */
+    overflow: hidden; /* Ensures content clipping */
+    /* --- END FIX --- */
+
     .modal-header {
+      /* --- FIX: Prevent header from shrinking --- */
+      flex-shrink: 0;
+      /* --- END FIX --- */
+
       background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
       border-bottom: 1px solid #e2e8f0;
       padding: 1.5rem 2rem;
@@ -70,8 +81,13 @@
 
     .modal-body {
       padding: 2rem;
-      max-height: 70vh;
-      overflow-y: auto;
+
+      /* --- FIX: Make body fill space and scroll, removing fixed max-height --- */
+      flex: 1; /* Tells the body to fill all available vertical space */
+      /* max-height: 70vh; <-- REMOVED */
+      /* --- END FIX --- */
+
+      overflow-y: auto; /* This makes ONLY the body scrollable */
       background: #f8fafc;
 
       // View Toggle Section
@@ -812,6 +828,10 @@
     }
 
     .modal-footer {
+      /* --- FIX: Prevent footer from shrinking --- */
+      flex-shrink: 0;
+      /* --- END FIX --- */
+
       display: flex;
       gap: 1rem;
       padding: 1.5rem 2rem;
@@ -1398,5 +1418,17 @@
         justify-content: flex-start;
       }
     }
+  }
+}
+
+// Animation
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
