@@ -25,10 +25,13 @@ import ProductSearch from "../components/products/ProductSearch";
 import Header from "../components/UI/Headers";
 import Sidebar from "../components/UI/Sidebar";
 import { useSidebar } from "../context/SidebarContext";
+import { useCategoryMigration } from "../hooks/useCategoryMigration"; // NEW: Import migration hook
 import "../styles/products.scss";
 
 export default function ProductsPage() {
   const { isCollapsed } = useSidebar();
+  const { isMigrating } = useCategoryMigration(); // NEW: Use migration hook
+
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -53,6 +56,46 @@ export default function ProductsPage() {
     bulkPackages: 0,
     withRelationships: 0,
   });
+
+  // UPDATED: Enhanced fetchCategories with migration fallback
+  const fetchCategories = async () => {
+    try {
+      const categoriesSnapshot = await getDocs(collection(db, "categories"));
+      const categoriesData = categoriesSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        name: doc.data().name,
+      }));
+
+      // Sort categories alphabetically and add "none" option
+      const sortedCategories = categoriesData
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((cat) => cat.name);
+
+      // If no categories exist yet, use product categories as fallback
+      if (sortedCategories.length === 0) {
+        const productsSnapshot = await getDocs(collection(db, "products"));
+        const productCategories = [
+          ...new Set(
+            productsSnapshot.docs
+              .map((doc) => doc.data().category)
+              .filter((cat) => cat && cat !== "none")
+          ),
+        ].sort();
+
+        setCategories(["none", ...productCategories]);
+        console.log(
+          "ℹ️ Using product categories as fallback:",
+          productCategories
+        );
+      } else {
+        setCategories(["none", ...sortedCategories]);
+      }
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      // Fallback to empty array with "none"
+      setCategories(["none"]);
+    }
+  };
 
   // Check for highlighted product on component mount and URL changes
   useEffect(() => {
@@ -137,15 +180,11 @@ export default function ProductsPage() {
       setProducts(productsData);
       applyFiltersAndSorting(productsData);
 
-      // Extract unique categories and units
-      const uniqueCategories = [
-        ...new Set(productsData.map((p) => p.category).filter(Boolean)),
-      ];
+      // Fetch categories
+      await fetchCategories();
 
       // Use hardcoded units like in OrdersPage
       const defaultUnits = ["piece", "bag", "pack", "bottle", "can", "box"];
-
-      setCategories(uniqueCategories);
       setUnits(defaultUnits);
     } catch (error) {
       console.error("🔴 Error fetching products:", error);
@@ -345,7 +384,7 @@ export default function ProductsPage() {
     }
   };
 
-  // Updated handleSave function with packaging data
+  // UPDATED: handleSave function with auto-category creation
   const handleSave = async (productData, imageFile) => {
     try {
       console.log("🟡 [ProductsPage] RECEIVED PRODUCT DATA:", productData);
@@ -360,6 +399,29 @@ export default function ProductsPage() {
         );
         await uploadBytes(storageRef, imageFile);
         imageUrl = await getDownloadURL(storageRef);
+      }
+
+      // NEW: Auto-create category if it doesn't exist in the categories collection
+      if (
+        productData.category &&
+        productData.category !== "none" &&
+        !categories.includes(productData.category)
+      ) {
+        try {
+          await addDoc(collection(db, "categories"), {
+            name: productData.category,
+            createdAt: new Date(),
+            createdBy: "auto-created",
+            autoCreated: true,
+          });
+          console.log(`✅ Auto-created new category: ${productData.category}`);
+
+          // Refresh categories list
+          await fetchCategories();
+        } catch (error) {
+          console.error("Error auto-creating category:", error);
+          // Continue with product save even if category creation fails
+        }
       }
 
       // Enhanced product payload with packaging
@@ -430,6 +492,16 @@ export default function ProductsPage() {
       <div className={`products-page ${isCollapsed ? "collapsed" : ""}`}>
         <Header />
 
+        {/* NEW: Migration Loading Overlay */}
+        {isMigrating && (
+          <div className="migration-overlay">
+            <div className="migration-message">
+              <div className="loading-spinner"></div>
+              <p>Setting up categories system...</p>
+            </div>
+          </div>
+        )}
+
         {/* Show either the form or the products list */}
         {showForm ? (
           // Full-page form layout
@@ -457,6 +529,7 @@ export default function ProductsPage() {
                 onClose={handleCloseForm}
                 isFullPage={true}
                 allProducts={products} // Pass all products for packaging relationships
+                categories={categories} // Pass dynamic categories to form
               />
             </div>
           </div>

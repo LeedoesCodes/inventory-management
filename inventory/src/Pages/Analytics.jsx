@@ -28,8 +28,6 @@ import {
   faCrown,
   faSpinner,
   faExclamationTriangle,
-  faFilter,
-  faChartArea,
 } from "@fortawesome/free-solid-svg-icons";
 
 // Chart components
@@ -37,7 +35,142 @@ import RevenueChart from "../components/Analytics/RevenueChart";
 import SalesTrendChart from "../components/Analytics/SalesTrendChart";
 import ProductPerformance from "../components/Analytics/ProductPerformance";
 import ProductComparisonChart from "../components/Analytics/ProductComparisonChart";
-import DummyDataButton from "../components/Analytics/DummyDataButton";
+
+// Error Boundary for Chart Components
+class ChartErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("Chart Error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div
+          className="chart-error"
+          style={{
+            padding: "40px 20px",
+            textAlign: "center",
+            background: "#f8f9fa",
+            borderRadius: "8px",
+            border: "1px dashed #dee2e6",
+            color: "#6c757d",
+          }}
+        >
+          <FontAwesomeIcon
+            icon={faExclamationTriangle}
+            size="2x"
+            style={{ color: "#6c757d", marginBottom: "15px", opacity: 0.5 }}
+          />
+          <h4 style={{ margin: "10px 0", color: "#495057" }}>
+            {this.props.chartName} Unavailable
+          </h4>
+          <p style={{ margin: "0 0 15px 0" }}>
+            This chart failed to load due to a technical issue.
+          </p>
+          <button
+            onClick={() => this.setState({ hasError: false })}
+            style={{
+              padding: "8px 16px",
+              background: "#007bff",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontSize: "14px",
+            }}
+          >
+            Try Again
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// Safe chart wrapper components
+const SafeRevenueChart = ({ data }) => (
+  <ChartErrorBoundary chartName="Revenue Chart">
+    <RevenueChart data={data || []} />
+  </ChartErrorBoundary>
+);
+
+const SafeProductComparisonChart = ({ products, timeRange }) => (
+  <ChartErrorBoundary chartName="Product Comparison Chart">
+    <ProductComparisonChart products={products || []} timeRange={timeRange} />
+  </ChartErrorBoundary>
+);
+
+const SafeSalesTrendChart = ({ data }) => (
+  <ChartErrorBoundary chartName="Sales Trends Chart">
+    <SalesTrendChart data={data || []} />
+  </ChartErrorBoundary>
+);
+
+const SafeProductPerformance = ({ data }) => (
+  <ChartErrorBoundary chartName="Product Performance Chart">
+    <ProductPerformance data={data || []} />
+  </ChartErrorBoundary>
+);
+
+// Safe data accessor functions
+const getItemName = (item) => {
+  if (!item || typeof item !== "object") return "Unknown Product";
+  return item.name || item.productName || "Unknown Product";
+};
+
+const getItemQuantity = (item) => {
+  if (!item || typeof item !== "object") return 1;
+  return typeof item.quantity === "number" ? item.quantity : 1;
+};
+
+const getItemPrice = (item) => {
+  if (!item || typeof item !== "object") return 0;
+  return typeof item.price === "number" ? item.price : 0;
+};
+
+const getItemProductId = (item) => {
+  if (!item || typeof item !== "object") return "unknown";
+  return item.id || item.productId || "unknown";
+};
+
+const getTransactionTotal = (transaction) => {
+  if (!transaction || typeof transaction !== "object") return 0;
+  return typeof transaction.totalAmount === "number"
+    ? transaction.totalAmount
+    : 0;
+};
+
+const getTransactionDate = (transaction) => {
+  if (!transaction || !transaction.createdAt) return new Date();
+
+  try {
+    if (transaction.createdAt?.toDate) {
+      return transaction.createdAt.toDate();
+    }
+    if (transaction.createdAt instanceof Date) {
+      return transaction.createdAt;
+    }
+    return new Date(transaction.createdAt);
+  } catch (error) {
+    console.error("Error parsing transaction date:", error);
+    return new Date();
+  }
+};
+
+const safeArray = (array) => {
+  return Array.isArray(array) ? array : [];
+};
 
 export default function Analytics() {
   const { isCollapsed } = useSidebar();
@@ -72,18 +205,25 @@ export default function Analytics() {
       );
       const transactionsSnapshot = await getDocs(transactionsQuery);
 
-      const transactions = transactionsSnapshot.docs.map((doc) => {
-        const data = doc.data();
-        const createdAt = data.createdAt?.toDate
-          ? data.createdAt.toDate()
-          : new Date(data.createdAt);
+      const transactions = transactionsSnapshot.docs
+        .map((doc) => {
+          try {
+            const data = doc.data();
+            const createdAt = getTransactionDate(data);
 
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: createdAt,
-        };
-      });
+            return {
+              id: doc.id,
+              ...data,
+              createdAt: createdAt,
+              // Ensure items is always an array
+              items: safeArray(data.items),
+            };
+          } catch (error) {
+            console.error("Error processing transaction:", doc.id, error);
+            return null;
+          }
+        })
+        .filter((transaction) => transaction !== null); // Remove null transactions
 
       // Fetch products for product performance
       const productsSnapshot = await getDocs(collection(db, "products"));
@@ -99,10 +239,10 @@ export default function Analytics() {
       const allProducts = processAllProducts(transactions, products, timeRange);
 
       setAnalyticsData({
-        revenueData,
-        salesTrends,
-        topProducts,
-        allProducts,
+        revenueData: revenueData || [],
+        salesTrends: salesTrends || [],
+        topProducts: topProducts || [],
+        allProducts: allProducts || [],
         loading: false,
         error: null,
       });
@@ -112,193 +252,264 @@ export default function Analytics() {
         ...prev,
         loading: false,
         error: "Failed to load analytics data",
+        revenueData: [],
+        salesTrends: [],
+        topProducts: [],
+        allProducts: [],
       }));
     }
   };
 
   // Process all products for comparison
   const processAllProducts = (transactions, products, range) => {
-    const filteredTransactions = filterTransactionsByTimeRange(
-      transactions,
-      range
-    );
+    try {
+      const filteredTransactions = filterTransactionsByTimeRange(
+        transactions,
+        range
+      );
 
-    const productPerformance = {};
+      const productPerformance = {};
 
-    // Calculate performance for each product
-    filteredTransactions.forEach((transaction) => {
-      transaction.items?.forEach((item) => {
-        const productId = item.productId || item.id;
-        const productName = item.name || item.productName;
-        const quantity = item.quantity || 1;
-        const price = item.price || 0;
-        const date = transaction.createdAt.toLocaleDateString("en-CA");
+      // Calculate performance for each product
+      filteredTransactions.forEach((transaction) => {
+        const items = safeArray(transaction?.items);
 
-        if (!productPerformance[productId]) {
-          productPerformance[productId] = {
-            id: productId,
-            name: productName,
-            dailySales: {},
-            totalSales: 0,
-            totalRevenue: 0,
-          };
-        }
+        items.forEach((item) => {
+          if (!item || typeof item !== "object") return;
 
-        // Track daily sales
-        if (!productPerformance[productId].dailySales[date]) {
-          productPerformance[productId].dailySales[date] = {
-            sales: 0,
-            revenue: 0,
-          };
-        }
+          const productId = getItemProductId(item);
+          const productName = getItemName(item);
+          const quantity = getItemQuantity(item);
+          const price = getItemPrice(item);
+          const date =
+            getTransactionDate(transaction).toLocaleDateString("en-CA");
 
-        productPerformance[productId].dailySales[date].sales += quantity;
-        productPerformance[productId].dailySales[date].revenue +=
-          price * quantity;
-        productPerformance[productId].totalSales += quantity;
-        productPerformance[productId].totalRevenue += price * quantity;
+          if (!productPerformance[productId]) {
+            productPerformance[productId] = {
+              id: productId,
+              name: productName,
+              dailySales: {},
+              totalSales: 0,
+              totalRevenue: 0,
+            };
+          }
+
+          // Track daily sales
+          if (!productPerformance[productId].dailySales[date]) {
+            productPerformance[productId].dailySales[date] = {
+              sales: 0,
+              revenue: 0,
+            };
+          }
+
+          productPerformance[productId].dailySales[date].sales += quantity;
+          productPerformance[productId].dailySales[date].revenue +=
+            price * quantity;
+          productPerformance[productId].totalSales += quantity;
+          productPerformance[productId].totalRevenue += price * quantity;
+        });
       });
-    });
 
-    // Convert to array format
-    return Object.values(productPerformance).map((product) => ({
-      ...product,
-      // Format data for comparison chart
-      comparisonData: Object.entries(product.dailySales)
-        .map(([date, data]) => ({
-          date,
-          sales: data.sales,
-          revenue: data.revenue,
-        }))
-        .sort((a, b) => new Date(a.date) - new Date(b.date)),
-    }));
+      // Convert to array format
+      return Object.values(productPerformance).map((product) => ({
+        ...product,
+        // Format data for comparison chart
+        comparisonData: Object.entries(product.dailySales)
+          .map(([date, data]) => ({
+            date,
+            sales: data?.sales || 0,
+            revenue: data?.revenue || 0,
+          }))
+          .sort((a, b) => new Date(a.date) - new Date(b.date)),
+      }));
+    } catch (error) {
+      console.error("Error in processAllProducts:", error);
+      return [];
+    }
   };
 
   // Filter transactions by time range
   const filterTransactionsByTimeRange = (transactions, range) => {
-    const now = new Date();
-    let startDate;
+    try {
+      const now = new Date();
+      let startDate;
 
-    switch (range) {
-      case "7days":
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      case "30days":
-        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        break;
-      case "90days":
-        startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-        break;
-      case "1year":
-        startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-        break;
-      case "all":
-      default:
-        startDate = new Date(0);
-        break;
+      switch (range) {
+        case "7days":
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case "30days":
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        case "90days":
+          startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+          break;
+        case "1year":
+          startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+          break;
+        case "all":
+        default:
+          startDate = new Date(0);
+          break;
+      }
+
+      return transactions.filter(
+        (transaction) =>
+          transaction && getTransactionDate(transaction) >= startDate
+      );
+    } catch (error) {
+      console.error("Error in filterTransactionsByTimeRange:", error);
+      return [];
     }
-
-    return transactions.filter(
-      (transaction) => transaction.createdAt >= startDate
-    );
   };
 
   const processRevenueData = (transactions, range) => {
-    const filteredTransactions = filterTransactionsByTimeRange(
-      transactions,
-      range
-    );
+    try {
+      const filteredTransactions = filterTransactionsByTimeRange(
+        transactions,
+        range
+      );
 
-    const dailyRevenue = {};
-    filteredTransactions.forEach((transaction) => {
-      const date = transaction.createdAt.toLocaleDateString("en-CA");
-      const revenue = transaction.totalAmount || transaction.total || 0;
+      const dailyRevenue = {};
+      filteredTransactions.forEach((transaction) => {
+        if (!transaction) return;
+        const date =
+          getTransactionDate(transaction).toLocaleDateString("en-CA");
+        const revenue = getTransactionTotal(transaction);
 
-      if (!dailyRevenue[date]) {
-        dailyRevenue[date] = 0;
-      }
-      dailyRevenue[date] += revenue;
-    });
+        if (!dailyRevenue[date]) {
+          dailyRevenue[date] = 0;
+        }
+        dailyRevenue[date] += revenue;
+      });
 
-    return Object.entries(dailyRevenue)
-      .map(([date, revenue]) => ({
-        date,
-        revenue: Math.round(revenue * 100) / 100,
-      }))
-      .sort((a, b) => new Date(a.date) - new Date(b.date));
+      return Object.entries(dailyRevenue)
+        .map(([date, revenue]) => ({
+          date,
+          revenue: Math.round(revenue * 100) / 100,
+        }))
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+    } catch (error) {
+      console.error("Error in processRevenueData:", error);
+      return [];
+    }
   };
 
   const processSalesTrends = (transactions, range) => {
-    const filteredTransactions = filterTransactionsByTimeRange(
-      transactions,
-      range
-    );
+    try {
+      const filteredTransactions = filterTransactionsByTimeRange(
+        transactions,
+        range
+      );
 
-    const dailyOrders = {};
-    filteredTransactions.forEach((transaction) => {
-      const date = transaction.createdAt.toLocaleDateString("en-CA");
-      dailyOrders[date] = (dailyOrders[date] || 0) + 1;
-    });
+      const dailyOrders = {};
+      filteredTransactions.forEach((transaction) => {
+        if (!transaction) return;
+        const date =
+          getTransactionDate(transaction).toLocaleDateString("en-CA");
+        dailyOrders[date] = (dailyOrders[date] || 0) + 1;
+      });
 
-    return Object.entries(dailyOrders)
-      .map(([date, orders]) => ({
-        date,
-        orders,
-      }))
-      .sort((a, b) => new Date(a.date) - new Date(b.date));
+      return Object.entries(dailyOrders)
+        .map(([date, orders]) => ({
+          date,
+          orders,
+        }))
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+    } catch (error) {
+      console.error("Error in processSalesTrends:", error);
+      return [];
+    }
   };
 
   const processTopProducts = (transactions, products, range) => {
-    const filteredTransactions = filterTransactionsByTimeRange(
-      transactions,
-      range
-    );
+    try {
+      const filteredTransactions = filterTransactionsByTimeRange(
+        transactions,
+        range
+      );
 
-    const productSales = {};
-    filteredTransactions.forEach((transaction) => {
-      transaction.items?.forEach((item) => {
-        const productName = item.name || item.productName;
-        const quantity = item.quantity || 1;
-        const price = item.price || 0;
+      const productSales = {};
+      filteredTransactions.forEach((transaction) => {
+        const items = safeArray(transaction?.items);
+        items.forEach((item) => {
+          if (!item || typeof item !== "object") return;
 
-        if (!productSales[productName]) {
-          productSales[productName] = {
-            name: productName,
-            sales: 0,
-            revenue: 0,
-          };
-        }
+          const productName = getItemName(item);
+          const quantity = getItemQuantity(item);
+          const price = getItemPrice(item);
 
-        productSales[productName].sales += quantity;
-        productSales[productName].revenue += price * quantity;
+          if (!productSales[productName]) {
+            productSales[productName] = {
+              name: productName,
+              sales: 0,
+              revenue: 0,
+            };
+          }
+
+          productSales[productName].sales += quantity;
+          productSales[productName].revenue += price * quantity;
+        });
       });
-    });
 
-    return Object.values(productSales)
-      .sort((a, b) => b.sales - a.sales)
-      .slice(0, 10);
+      return Object.values(productSales)
+        .sort((a, b) => (b.sales || 0) - (a.sales || 0))
+        .slice(0, 10);
+    } catch (error) {
+      console.error("Error in processTopProducts:", error);
+      return [];
+    }
   };
 
   const calculateSummaryMetrics = () => {
-    const { revenueData, salesTrends, topProducts } = analyticsData;
+    try {
+      const { revenueData, salesTrends, topProducts } = analyticsData;
 
-    const totalRevenue = revenueData.reduce((sum, day) => sum + day.revenue, 0);
-    const totalOrders = salesTrends.reduce((sum, day) => sum + day.orders, 0);
-    const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-    const bestSellingProduct = topProducts[0]?.name || "No data";
+      const safeRevenueData = safeArray(revenueData);
+      const safeSalesTrends = safeArray(salesTrends);
+      const safeTopProducts = safeArray(topProducts);
 
-    return {
-      totalRevenue,
-      totalOrders,
-      avgOrderValue,
-      bestSellingProduct,
-    };
+      const totalRevenue = safeRevenueData.reduce(
+        (sum, day) => sum + (day.revenue || 0),
+        0
+      );
+      const totalOrders = safeSalesTrends.reduce(
+        (sum, day) => sum + (day.orders || 0),
+        0
+      );
+      const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+      // FIXED: Safe access to best selling product
+      const bestSellingProduct =
+        safeTopProducts.length > 0 && safeTopProducts[0]?.name
+          ? safeTopProducts[0].name
+          : "No data";
+
+      return {
+        totalRevenue,
+        totalOrders,
+        avgOrderValue,
+        bestSellingProduct,
+      };
+    } catch (error) {
+      console.error("Error in calculateSummaryMetrics:", error);
+      return {
+        totalRevenue: 0,
+        totalOrders: 0,
+        avgOrderValue: 0,
+        bestSellingProduct: "No data",
+      };
+    }
   };
 
   // Memoize summary metrics to prevent recalculation on every render
   const summaryMetrics = useMemo(() => {
     return calculateSummaryMetrics();
-  }, [analyticsData]);
+  }, [
+    analyticsData.revenueData,
+    analyticsData.salesTrends,
+    analyticsData.topProducts,
+  ]);
 
   useEffect(() => {
     fetchAnalyticsData();
@@ -436,15 +647,18 @@ export default function Analytics() {
                 Revenue Over Time
               </h3>
             </div>
-            <RevenueChart data={analyticsData.revenueData} />
+            <SafeRevenueChart data={analyticsData.revenueData} />
           </div>
 
           {/* Product Comparison Chart */}
           <div className="analytics-card full-width">
             <div className="card-header">
-              <span className="chart-subtitle"></span>
+              <h3>
+                <FontAwesomeIcon icon={faChartBar} className="card-icon" />
+                Product Performance Comparison
+              </h3>
             </div>
-            <ProductComparisonChart
+            <SafeProductComparisonChart
               products={analyticsData.allProducts}
               timeRange={timeRange}
             />
@@ -458,7 +672,7 @@ export default function Analytics() {
                 Daily Orders
               </h3>
             </div>
-            <SalesTrendChart data={analyticsData.salesTrends} />
+            <SafeSalesTrendChart data={analyticsData.salesTrends} />
           </div>
 
           {/* Product Performance */}
@@ -469,7 +683,7 @@ export default function Analytics() {
                 Top Products
               </h3>
             </div>
-            <ProductPerformance data={analyticsData.topProducts} />
+            <SafeProductPerformance data={analyticsData.topProducts} />
           </div>
         </div>
       </div>
