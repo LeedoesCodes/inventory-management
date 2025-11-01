@@ -140,11 +140,6 @@ export default function ProductList({
                       </div>
 
                       <div className="info-item">
-                        <span className="field-label">Sold:</span>
-                        <span className="product-sold">{p.sold || 0}</span>
-                      </div>
-
-                      <div className="info-item">
                         <span className="field-label">Category:</span>
                         <span className="product-category">
                           {p.category || "Uncategorized"}
@@ -196,8 +191,6 @@ export default function ProductList({
 
                 {/* Enhanced Action Buttons */}
                 <div className="product-actions enhanced-actions">
-                  {/* Quick Packaging Actions */}
-
                   {/* Standard Actions */}
                   <div className="standard-actions">
                     <button

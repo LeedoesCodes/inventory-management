@@ -47,6 +47,7 @@ const capitalizeCustomerName = (name) => {
 export default function OrdersPage() {
   const { isCollapsed } = useSidebar();
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [cart, setCart] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -62,6 +63,27 @@ export default function OrdersPage() {
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [customerDiscounts, setCustomerDiscounts] = useState([]);
 
+  // Fetch categories from Firestore
+  const fetchCategories = async () => {
+    try {
+      const categoriesSnapshot = await getDocs(collection(db, "categories"));
+      const categoriesData = categoriesSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        name: doc.data().name,
+      }));
+
+      // Sort categories alphabetically
+      const sortedCategories = categoriesData
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((cat) => cat.name);
+
+      setCategories(sortedCategories);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      setCategories([]);
+    }
+  };
+
   // Fetch products
   const fetchProducts = async () => {
     try {
@@ -72,6 +94,9 @@ export default function OrdersPage() {
         ...doc.data(),
       }));
       setProducts(productsData);
+
+      // Fetch categories
+      await fetchCategories();
     } catch (error) {
       console.error("Error fetching products:", error);
     } finally {
@@ -733,11 +758,6 @@ export default function OrdersPage() {
       }));
     }
   }, [cart, showConfirmation, products, customerDiscounts]);
-
-  // Get unique categories from products
-  const categories = [
-    ...new Set(products.map((p) => p.category).filter(Boolean)),
-  ];
 
   // Filter and sort products (only show in-stock products)
   const filteredAndSortedProducts = products

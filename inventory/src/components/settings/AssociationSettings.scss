@@ -1,0 +1,244 @@
+// AssociationSettings.scss - Enhanced with theme support
+.association-settings {
+  .setting-name {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+
+    .setting-icon {
+      color: var(--accent-color);
+      font-size: 0.9rem;
+      width: 16px;
+    }
+  }
+
+  .setting-description {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+
+  .slider-control {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 250px;
+
+    .setting-slider {
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--border-color);
+      outline: none;
+
+      transition: all 0.2s ease;
+
+      &::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--accent-color);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 2px solid white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
+
+      &::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--accent-color);
+        cursor: pointer;
+        border: 2px solid white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        transition: all 0.2s ease;
+      }
+
+      &:hover {
+        &::-webkit-slider-thumb {
+          transform: scale(1.1);
+          box-shadow: 0 2px 6px rgba(0, 123, 255, 0.4);
+        }
+
+        &::-moz-range-thumb {
+          transform: scale(1.1);
+          box-shadow: 0 2px 6px rgba(0, 123, 255, 0.4);
+        }
+      }
+
+      &:focus {
+        &::-webkit-slider-thumb {
+          box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+        }
+
+        &::-moz-range-thumb {
+          box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+        }
+      }
+    }
+
+    .slider-value {
+      min-width: 60px;
+      text-align: center;
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      background: var(--input-bg);
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      transition: all 0.2s ease;
+    }
+  }
+}
+
+/* Settings table layout for association rules */
+.association-settings .settings-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.association-settings .settings-row {
+  display: flex;
+  align-items: center;
+  padding: 1.5rem;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.2s ease;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: var(--input-bg);
+
+    .slider-value {
+      border-color: var(--accent-color);
+      box-shadow: 0 1px 3px rgba(0, 123, 255, 0.1);
+    }
+  }
+}
+
+.association-settings .setting-info {
+  flex: 1;
+  min-width: 0;
+  padding-right: 2rem;
+}
+
+.association-settings .setting-control {
+  min-width: 280px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] {
+  .association-settings {
+    .setting-slider {
+      background: var(--secondary-color);
+
+      &::-webkit-slider-thumb {
+        background: var(--accent-color);
+        border-color: var(--bg-secondary);
+      }
+
+      &::-moz-range-thumb {
+        background: var(--accent-color);
+        border-color: var(--bg-secondary);
+      }
+
+      &:hover {
+        &::-webkit-slider-thumb {
+          box-shadow: 0 2px 6px rgba(99, 179, 237, 0.4);
+        }
+
+        &::-moz-range-thumb {
+          box-shadow: 0 2px 6px rgba(99, 179, 237, 0.4);
+        }
+      }
+    }
+
+    .slider-value {
+      background: var(--input-bg);
+      border-color: var(--border-color);
+      color: var(--text-primary);
+    }
+
+    .settings-row:hover .slider-value {
+      border-color: var(--accent-color);
+      box-shadow: 0 1px 3px rgba(99, 179, 237, 0.2);
+    }
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .association-settings {
+    .slider-control {
+      flex-direction: column;
+      gap: 0.75rem;
+      min-width: auto;
+      width: 100%;
+
+      .setting-slider {
+        width: 100%;
+      }
+
+      .slider-value {
+        align-self: flex-start;
+      }
+    }
+
+    .settings-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1.25rem;
+    }
+
+    .setting-info {
+      padding-right: 0;
+    }
+
+    .setting-control {
+      min-width: auto;
+      width: 100%;
+      justify-content: flex-start;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .association-settings {
+    .setting-name {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.25rem;
+    }
+
+    .slider-control {
+      .slider-value {
+        min-width: 50px;
+        padding: 0.3rem 0.5rem;
+        font-size: 0.85rem;
+      }
+    }
+
+    .settings-row {
+      padding: 1rem;
+    }
+  }
+}

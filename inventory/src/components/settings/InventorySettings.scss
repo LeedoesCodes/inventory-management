@@ -1,0 +1,530 @@
+// InventorySettings.scss - Enhanced with theme support
+.inventory-settings {
+  .settings-table {
+    .setting-control {
+      .input-with-suffix {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+
+        .setting-input {
+          width: 90px;
+          padding: 0.6rem 0.75rem;
+          border: 1px solid var(--border-color);
+          border-radius: 6px;
+          background: var(--input-bg);
+          color: var(--text-primary);
+          text-align: center;
+          font-size: 0.9rem;
+          font-weight: 500;
+          transition: all 0.2s ease;
+
+          &:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+          }
+
+          &:hover {
+            border-color: var(--accent-color);
+          }
+        }
+
+        .input-suffix {
+          color: var(--text-secondary);
+          font-size: 0.9rem;
+          font-weight: 500;
+          min-width: 50px;
+        }
+      }
+    }
+  }
+}
+
+/* Settings table layout for inventory */
+.inventory-settings .settings-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--card-bg);
+}
+
+.inventory-settings .settings-row {
+  display: flex;
+  align-items: center;
+  padding: 1.5rem;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: var(--input-bg);
+
+    .setting-input {
+      border-color: var(--accent-color);
+      box-shadow: 0 1px 3px rgba(0, 123, 255, 0.1);
+    }
+
+    .toggle-slider {
+      border-color: var(--accent-color);
+    }
+  }
+}
+
+.inventory-settings .setting-info {
+  flex: 1;
+  min-width: 0;
+  padding-right: 2rem;
+}
+
+.inventory-settings .setting-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  display: block;
+}
+
+.inventory-settings .setting-description {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.inventory-settings .setting-control {
+  min-width: 220px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* Toggle Switch for Inventory - Enhanced */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 26px;
+
+  input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+
+    &:checked + .toggle-slider {
+      background-color: var(--success-color);
+    }
+
+    &:checked + .toggle-slider:before {
+      transform: translateX(26px);
+    }
+
+    &:focus + .toggle-slider {
+      box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.25);
+    }
+  }
+
+  .toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--border-color);
+    transition: 0.3s ease;
+    border-radius: 26px;
+    border: 2px solid transparent;
+
+    &:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 2px;
+      background-color: white;
+      transition: 0.3s ease;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  &:hover .toggle-slider {
+    border-color: var(--accent-color);
+    transform: scale(1.05);
+  }
+
+  &.loading .toggle-slider {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+/* Stock level indicator */
+.stock-level-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+
+  .level-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--border-color);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+
+    .level-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        var(--success-color),
+        var(--warning-color)
+      );
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+  }
+
+  .level-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+  }
+}
+
+/* Notification settings */
+.notification-settings {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--input-bg);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+
+  .notification-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-color);
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .notification-info {
+      flex: 1;
+
+      .notification-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+      }
+
+      .notification-desc {
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+      }
+    }
+
+    .notification-control {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+
+      .notification-badge {
+        background: var(--accent-color);
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+/* Inventory statistics */
+.inventory-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: var(--input-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+
+  .stat-item {
+    text-align: center;
+    padding: 1rem;
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent-color);
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    &.warning .stat-value {
+      color: var(--warning-color);
+    }
+
+    &.danger .stat-value {
+      color: var(--danger-color);
+    }
+
+    &.success .stat-value {
+      color: var(--success-color);
+    }
+  }
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] {
+  .inventory-settings {
+    .settings-table {
+      background: var(--card-bg);
+      border-color: var(--border-color);
+    }
+
+    .settings-row {
+      background: var(--card-bg);
+      border-color: var(--border-color);
+
+      &:hover {
+        background: var(--input-bg);
+      }
+    }
+
+    .setting-input {
+      background: var(--input-bg);
+      border-color: var(--border-color);
+      color: var(--text-primary);
+
+      &:focus {
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(99, 179, 237, 0.2);
+      }
+    }
+
+    .toggle-switch {
+      .toggle-slider {
+        background-color: var(--secondary-color);
+
+        &:before {
+          background-color: var(--bg-secondary);
+        }
+      }
+    }
+  }
+
+  .notification-settings {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+  }
+
+  .inventory-stats {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+
+    .stat-item {
+      .stat-value {
+        color: var(--accent-color);
+      }
+
+      &.warning .stat-value {
+        color: var(--warning-color);
+      }
+
+      &.danger .stat-value {
+        color: var(--danger-color);
+      }
+
+      &.success .stat-value {
+        color: var(--success-color);
+      }
+    }
+  }
+
+  .stock-level-indicator {
+    .level-bar {
+      background: var(--secondary-color);
+
+      .level-fill {
+        background: linear-gradient(90deg, #48bb78, #ed8936);
+      }
+    }
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .inventory-settings {
+    .settings-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1.25rem;
+    }
+
+    .setting-info {
+      padding-right: 0;
+    }
+
+    .setting-control {
+      min-width: auto;
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    .input-with-suffix {
+      justify-content: flex-start;
+      width: 100%;
+    }
+  }
+
+  .inventory-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+
+  .notification-settings {
+    .notification-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+
+      .notification-control {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .inventory-settings {
+    .settings-row {
+      padding: 1rem;
+    }
+
+    .input-with-suffix {
+      .setting-input {
+        width: 80px;
+        padding: 0.5rem;
+      }
+    }
+  }
+
+  .inventory-stats {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+
+    .stat-item {
+      padding: 0.75rem;
+
+      .stat-value {
+        font-size: 1.25rem;
+      }
+    }
+  }
+
+  .toggle-switch {
+    width: 48px;
+    height: 24px;
+
+    input:checked + .toggle-slider:before {
+      transform: translateX(24px);
+    }
+
+    .toggle-slider:before {
+      height: 16px;
+      width: 16px;
+      left: 2px;
+      bottom: 2px;
+    }
+  }
+
+  .stock-level-indicator {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+
+    .level-bar {
+      width: 100%;
+    }
+  }
+}
+
+/* Animation for toggle switches */
+@keyframes togglePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+  }
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  animation: togglePulse 0.6s ease;
+}
+
+/* Focus states for accessibility */
+.toggle-switch input:focus + .toggle-slider,
+.setting-input:focus {
+  outline: 2px solid transparent;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .inventory-settings {
+    .setting-input {
+      border-width: 2px;
+    }
+
+    .toggle-switch .toggle-slider {
+      border-width: 2px;
+    }
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .inventory-settings {
+    .settings-row,
+    .setting-input,
+    .toggle-slider {
+      transition: none;
+    }
+  }
+
+  .toggle-switch input:checked + .toggle-slider {
+    animation: none;
+  }
+}

@@ -27,6 +27,27 @@ import {
 // Custom hooks
 import { useChartResize } from "../../hooks/useChartResize";
 
+// Safe data accessor functions
+const getProductName = (product) => {
+  if (!product || typeof product !== "object") return "Unknown Product";
+  return product.name || "Unknown Product";
+};
+
+const getProductTotalSales = (product) => {
+  if (!product || typeof product !== "object") return 0;
+  return typeof product.totalSales === "number" ? product.totalSales : 0;
+};
+
+const getProductTotalRevenue = (product) => {
+  if (!product || typeof product !== "object") return 0;
+  return typeof product.totalRevenue === "number" ? product.totalRevenue : 0;
+};
+
+const getProductComparisonData = (product) => {
+  if (!product || typeof product !== "object") return [];
+  return Array.isArray(product.comparisonData) ? product.comparisonData : [];
+};
+
 const ProductComparisonChart = memo(
   ({ products, timeRange }) => {
     const [selectedProducts, setSelectedProducts] = useState([]);
@@ -55,8 +76,8 @@ const ProductComparisonChart = memo(
           // Auto-load the most recent saved combination
           if (parsed.length > 0) {
             const mostRecent = parsed[parsed.length - 1];
-            setSelectedProducts(mostRecent.productIds);
-            setMetricType(mostRecent.metricType);
+            setSelectedProducts(mostRecent.productIds || []);
+            setMetricType(mostRecent.metricType || "sales");
             setIsLocked(true);
           }
         } catch (error) {
@@ -75,9 +96,10 @@ const ProductComparisonChart = memo(
         productIds: [...selectedProducts],
         metricType,
         createdAt: new Date().toISOString(),
-        productNames: selectedProducts.map(
-          (id) => products.find((p) => p.id === id)?.name || "Unknown"
-        ),
+        productNames: selectedProducts.map((id) => {
+          const product = products.find((p) => p.id === id);
+          return getProductName(product);
+        }),
       };
 
       const updatedCombinations = [...savedCombinations, newCombination];
@@ -91,8 +113,8 @@ const ProductComparisonChart = memo(
     }, [selectedProducts, savedCombinations.length, metricType, products]);
 
     const loadSavedCombination = useCallback((combination) => {
-      setSelectedProducts(combination.productIds);
-      setMetricType(combination.metricType);
+      setSelectedProducts(combination.productIds || []);
+      setMetricType(combination.metricType || "sales");
       setIsLocked(true);
       setIsSelectionOpen(false);
     }, []);
@@ -159,9 +181,11 @@ const ProductComparisonChart = memo(
 
     // Memoized data calculations
     const availableProducts = useMemo(() => {
-      return products
-        .filter((product) => product.totalSales > 0)
-        .sort((a, b) => b.totalSales - a.sales)
+      const safeProducts = Array.isArray(products) ? products : [];
+
+      return safeProducts
+        .filter((product) => getProductTotalSales(product) > 0)
+        .sort((a, b) => getProductTotalSales(b) - getProductTotalSales(a))
         .slice(0, 20);
     }, [products]);
 
@@ -169,10 +193,16 @@ const ProductComparisonChart = memo(
       if (selectedProducts.length === 0) return [];
 
       const allDates = new Set();
+      const safeProducts = Array.isArray(products) ? products : [];
+
       selectedProducts.forEach((productId) => {
-        const product = products.find((p) => p.id === productId);
-        product?.comparisonData?.forEach((day) => {
-          allDates.add(day.date);
+        const product = safeProducts.find((p) => p.id === productId);
+        const comparisonData = getProductComparisonData(product);
+
+        comparisonData?.forEach((day) => {
+          if (day && day.date) {
+            allDates.add(day.date);
+          }
         });
       });
 
@@ -181,14 +211,16 @@ const ProductComparisonChart = memo(
       return datesArray.map((date) => {
         const dataPoint = { date };
         selectedProducts.forEach((productId) => {
-          const product = products.find((p) => p.id === productId);
-          const dayData = product?.comparisonData?.find((d) => d.date === date);
+          const product = safeProducts.find((p) => p.id === productId);
+          const productName = getProductName(product);
+          const comparisonData = getProductComparisonData(product);
+          const dayData = comparisonData?.find((d) => d && d.date === date);
 
           if (metricType === "sales") {
-            dataPoint[product.name] = dayData ? dayData.sales : 0;
+            dataPoint[productName] = dayData ? dayData.sales || 0 : 0;
           } else {
-            dataPoint[product.name] = dayData
-              ? Math.round(dayData.revenue * 100) / 100
+            dataPoint[productName] = dayData
+              ? Math.round((dayData.revenue || 0) * 100) / 100
               : 0;
           }
         });
@@ -277,14 +309,18 @@ const ProductComparisonChart = memo(
           <div className="tags-header">Currently Comparing:</div>
           <div className="tags-container">
             {selectedProducts.map((productId, index) => {
-              const product = products.find((p) => p.id === productId);
+              const product = Array.isArray(products)
+                ? products.find((p) => p.id === productId)
+                : null;
+              const productName = getProductName(product);
+
               return (
                 <div
                   key={productId}
                   className="product-tag"
                   style={{ borderLeftColor: chartColors[index] }}
                 >
-                  <span className="product-tag-name">{product?.name}</span>
+                  <span className="product-tag-name">{productName}</span>
                   {!isLocked && (
                     <button
                       onClick={() => removeProduct(productId)}
@@ -311,33 +347,39 @@ const ProductComparisonChart = memo(
         );
       }
 
-      return availableProducts.map((product) => (
-        <div
-          key={product.id}
-          className={`product-selection-item ${
-            selectedProducts.includes(product.id) ? "selected" : ""
-          } ${
-            (selectedProducts.length >= 4 &&
-              !selectedProducts.includes(product.id)) ||
-            isLocked
-              ? "disabled"
-              : ""
-          }`}
-          onClick={() => toggleProduct(product.id)}
-        >
-          <div className="product-checkbox">
-            {selectedProducts.includes(product.id) && (
-              <div className="checkbox-indicator" />
-            )}
+      return availableProducts.map((product) => {
+        const productName = getProductName(product);
+        const totalSales = getProductTotalSales(product);
+        const totalRevenue = getProductTotalRevenue(product);
+
+        return (
+          <div
+            key={product.id}
+            className={`product-selection-item ${
+              selectedProducts.includes(product.id) ? "selected" : ""
+            } ${
+              (selectedProducts.length >= 4 &&
+                !selectedProducts.includes(product.id)) ||
+              isLocked
+                ? "disabled"
+                : ""
+            }`}
+            onClick={() => toggleProduct(product.id)}
+          >
+            <div className="product-checkbox">
+              {selectedProducts.includes(product.id) && (
+                <div className="checkbox-indicator" />
+              )}
+            </div>
+            <div className="product-info">
+              <span className="product-name">{productName}</span>
+              <span className="product-stats">
+                {totalSales} sales • ₱{totalRevenue.toFixed(2)}
+              </span>
+            </div>
           </div>
-          <div className="product-info">
-            <span className="product-name">{product.name}</span>
-            <span className="product-stats">
-              {product.totalSales} sales • ₱{product.totalRevenue.toFixed(2)}
-            </span>
-          </div>
-        </div>
-      ));
+        );
+      });
     }, [availableProducts, selectedProducts, isLocked, toggleProduct]);
 
     // Memoized saved combinations
@@ -360,8 +402,9 @@ const ProductComparisonChart = memo(
               >
                 <span className="saved-name">{combination.name}</span>
                 <span className="saved-products">
-                  {combination.productNames.slice(0, 2).join(", ")}
-                  {combination.productNames.length > 2 &&
+                  {combination.productNames?.slice(0, 2).join(", ") ||
+                    "No products"}
+                  {combination.productNames?.length > 2 &&
                     ` +${combination.productNames.length - 2} more`}
                 </span>
                 <button
@@ -568,12 +611,16 @@ const ProductComparisonChart = memo(
                     />
                   )}
                   {selectedProducts.map((productId, index) => {
-                    const product = products.find((p) => p.id === productId);
+                    const product = Array.isArray(products)
+                      ? products.find((p) => p.id === productId)
+                      : null;
+                    const productName = getProductName(product);
+
                     return (
                       <Line
                         key={productId}
                         type="monotone"
-                        dataKey={product?.name}
+                        dataKey={productName}
                         stroke={chartColors[index]}
                         strokeWidth={chartConfig.line.strokeWidth}
                         dot={chartConfig.line.dot}

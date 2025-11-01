@@ -130,74 +130,6 @@
   }
 }
 
-// Save Status Container - FIXED POSITION
-.save-status-container {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 20px;
-  width: 100%;
-}
-
-.save-status-indicator {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  max-width: fit-content;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-
-  &.saving {
-    background-color: #fff3cd;
-    color: #856404;
-    border: 1px solid #ffeaa7;
-  }
-
-  &.saved {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-  }
-
-  &.error {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-  }
-
-  .status-icon {
-    font-size: 0.9rem;
-  }
-}
-
-// Dark theme adjustments for save status
-[data-theme="dark"] {
-  .save-status-indicator {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-
-    &.saving {
-      background-color: #453c2a;
-      color: #fef3c7;
-      border-color: #92400e;
-    }
-
-    &.saved {
-      background-color: #1c4532;
-      color: #68d391;
-      border-color: #22543d;
-    }
-
-    &.error {
-      background-color: #442727;
-      color: #fc8181;
-      border-color: #742a2a;
-    }
-  }
-}
-
 // SettingsPage.scss - Enhanced with theme support
 .settings-page {
   margin-top: 80px;
@@ -402,16 +334,6 @@
   .settings-container {
     padding: 20px 15px;
   }
-
-  .save-status-container {
-    justify-content: flex-start;
-  }
-
-  .save-status-indicator {
-    width: 100%;
-    max-width: none;
-    justify-content: center;
-  }
 }
 
 @media (max-width: 480px) {
@@ -429,9 +351,12 @@
       margin-right: 6px;
     }
   }
-
-  .save-status-indicator {
-    padding: 0.6rem 1rem;
-    font-size: 0.85rem;
-  }
 }
+
+// Import component-specific styles AFTER variables and base styles
+@import "./settings/SettingsTabs";
+@import "./settings/GeneralSettings";
+@import "./settings/CategoriesSettings";
+@import "./settings/InventorySettings";
+@import "./settings/AssociationSettings";
+@import "./settings/ThemeSettings";

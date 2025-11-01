@@ -5,30 +5,6 @@ import { storage } from "../../../Firebase/firebase";
 import ProductSearchSelector from "../../UI/ProductSearchSelector";
 import "./productform.scss";
 
-const categories = [
-  "LARGE",
-  "EXTRA SIZE(UA)",
-  "FAMILY",
-  "BEERMATCH",
-  "SUNDAYS",
-  "MARSHMALLOW",
-  "BREADPAN 100/24G",
-  "PINATSU",
-  "FROOZE",
-  "SMART C+ 500ML",
-  "SMART C+LITER",
-  "ROYAL DAICHI",
-  "DKFPI",
-  "LOADED 32X100",
-  "NUTRI 25X100",
-  "NUTRI 60X50",
-  "NUTRI 90X25",
-  "LONBISCO",
-  "LESLIE'S",
-  "PURESNACK",
-  "none",
-];
-
 // Add unit types
 const unitTypes = ["piece", "bag", "pack", "bottle", "can", "box"];
 
@@ -38,6 +14,7 @@ export default function ProductForm({
   onClose,
   isFullPage = false,
   allProducts = [], // Add this prop to get all products for packaging relationships
+  categories = [], // Add categories as a prop (dynamic from Firestore)
 }) {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
@@ -50,6 +27,9 @@ export default function ProductForm({
   const [useCustomThreshold, setUseCustomThreshold] = useState(false);
   const [customThreshold, setCustomThreshold] = useState("");
   const [defaultThreshold, setDefaultThreshold] = useState(5);
+
+  // NEW: Track if name was manually modified
+  const [isNameManuallySet, setIsNameManuallySet] = useState(false);
 
   // Packaging states
   const [unit, setUnit] = useState("piece");
@@ -64,6 +44,17 @@ export default function ProductForm({
       product.packagingType === "single" && product.id !== selectedProduct?.id
   );
 
+  // NEW: Handle name change - mark as manually set when user types
+  const handleNameChange = (e) => {
+    const newName = e.target.value;
+    setName(newName);
+
+    // Mark as manually set if user is typing (not empty and not just whitespace)
+    if (newName.trim() !== "") {
+      setIsNameManuallySet(true);
+    }
+  };
+
   // NEW: Handle product selection from search
   const handleParentProductSelect = (productId, productName) => {
     setParentProductId(productId);
@@ -76,15 +67,10 @@ export default function ProductForm({
       );
 
       if (parentProduct) {
-        // Auto-generate name if empty or matches default pattern
-        const currentName = name.trim();
-        const shouldAutoName =
-          !currentName ||
-          currentName === `${parentProduct.name} - ${piecesPerPackage} Pack` ||
-          currentName === parentProduct.name;
-
-        if (shouldAutoName) {
-          const suggestedName = `${parentProduct.name} - ${piecesPerPackage} Pack`;
+        // ONLY auto-generate name if it hasn't been manually set
+        if (!isNameManuallySet) {
+          // UPDATED: Remove "Pack" suffix from auto-generated name
+          const suggestedName = `${parentProduct.name}`;
           setName(suggestedName);
         }
 
@@ -127,15 +113,10 @@ export default function ProductForm({
       );
 
       if (parentProduct) {
-        // Auto-generate name if empty or matches default pattern
-        const currentName = name.trim();
-        const shouldAutoName =
-          !currentName ||
-          currentName === `${parentProduct.name} - ${piecesPerPackage} Pack` ||
-          currentName === parentProduct.name;
-
-        if (shouldAutoName) {
-          const suggestedName = `${parentProduct.name} - ${piecesPerPackage} Pack`;
+        // ONLY auto-generate name if it hasn't been manually set
+        if (!isNameManuallySet) {
+          // UPDATED: Remove "Pack" suffix from auto-generated name
+          const suggestedName = `${parentProduct.name}`;
           setName(suggestedName);
         }
 
@@ -178,6 +159,7 @@ export default function ProductForm({
     costPrice,
     category,
     unit,
+    isNameManuallySet, // Add this dependency
   ]);
 
   // Reset form when packaging type changes
@@ -236,6 +218,7 @@ export default function ProductForm({
     fetchDefaultThreshold();
   }, []);
 
+  // Reset manual name flag when selected product changes
   useEffect(() => {
     if (selectedProduct) {
       console.log("Selected Product Data:", selectedProduct);
@@ -271,6 +254,9 @@ export default function ProductForm({
       );
 
       setImageFile(null);
+
+      // Reset manual name flag when editing existing product
+      setIsNameManuallySet(!!selectedProduct.name);
     } else {
       // Reset all fields for new product
       setName("");
@@ -287,6 +273,9 @@ export default function ProductForm({
       setUseCustomThreshold(false);
       setCustomThreshold(defaultThreshold.toString());
       setImageFile(null);
+
+      // Reset manual name flag for new product
+      setIsNameManuallySet(false);
     }
   }, [selectedProduct, defaultThreshold, allProducts]);
 
@@ -477,13 +466,15 @@ export default function ProductForm({
                 type="text"
                 value={name}
                 placeholder="Enter product name"
-                onChange={(e) => setName(e.target.value)}
+                onChange={handleNameChange}
                 required
                 disabled={uploading}
               />
               {packagingType === "bulk" && parentProduct && (
                 <small className="field-hint">
-                  Auto-generated from {parentProduct.name}
+                  {isNameManuallySet
+                    ? "Manual name entered"
+                    : `Auto-generated from ${parentProduct.name}`}
                 </small>
               )}
             </div>
