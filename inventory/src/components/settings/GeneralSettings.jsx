@@ -10,6 +10,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../Firebase/firebase";
+import "./GeneralSettings.scss";
 
 const GeneralSettings = ({ settings, onSettingsChange, onSave }) => {
   const [showAutoSaveModal, setShowAutoSaveModal] = useState(false);

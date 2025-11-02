@@ -143,7 +143,7 @@ const SettingsPage = () => {
     }
   };
 
-  // Handle categories operations
+  // FIXED: Handle categories operations with proper document references
   const handleCategoriesUpdate = async (operation, data) => {
     try {
       switch (operation) {
@@ -191,10 +191,11 @@ const SettingsPage = () => {
           const batch = writeBatch(db);
           const oldCategory = categories.find((cat) => cat.id === data.id);
 
-          productsSnapshot.docs.forEach((doc) => {
-            const product = doc.data();
+          productsSnapshot.docs.forEach((docSnap) => {
+            const product = docSnap.data();
             if (product.category === oldCategory.name) {
-              const productRef = doc(db, "products", doc.id);
+              // FIX: Use docSnap.ref instead of recreating the document reference
+              const productRef = docSnap.ref;
               batch.update(productRef, { category: data.name });
             }
           });
@@ -204,14 +205,15 @@ const SettingsPage = () => {
           break;
 
         case "delete":
-          // Update products with this category to "none"
+          // FIXED: Category deletion with proper document references
           const productsSnap = await getDocs(collection(db, "products"));
           const deleteBatch = writeBatch(db);
 
-          productsSnap.docs.forEach((doc) => {
-            const product = doc.data();
+          productsSnap.docs.forEach((docSnap) => {
+            const product = docSnap.data();
             if (product.category === data.name) {
-              const productRef = doc(db, "products", doc.id);
+              // FIX: Use docSnap.ref instead of recreating the document reference
+              const productRef = docSnap.ref;
               deleteBatch.update(productRef, { category: "none" });
             }
           });
