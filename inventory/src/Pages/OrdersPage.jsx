@@ -63,7 +63,7 @@ export default function OrdersPage() {
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [customerDiscounts, setCustomerDiscounts] = useState([]);
 
-  // Fetch categories from Firestore
+  // Fetch categories from Firestore - FIXED DUPLICATES
   const fetchCategories = async () => {
     try {
       const categoriesSnapshot = await getDocs(collection(db, "categories"));
@@ -72,10 +72,15 @@ export default function OrdersPage() {
         name: doc.data().name,
       }));
 
+      // Use Set to ensure uniqueness
+      const uniqueCategories = [
+        ...new Set(categoriesData.map((cat) => cat.name)),
+      ];
+
       // Sort categories alphabetically
-      const sortedCategories = categoriesData
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .map((cat) => cat.name);
+      const sortedCategories = uniqueCategories.sort((a, b) =>
+        a.localeCompare(b)
+      );
 
       setCategories(sortedCategories);
     } catch (error) {
@@ -759,12 +764,17 @@ export default function OrdersPage() {
     }
   }, [cart, showConfirmation, products, customerDiscounts]);
 
-  // Filter and sort products (only show in-stock products)
+  // FIXED: Filter and sort products with better category handling
   const filteredAndSortedProducts = products
     .filter((p) => {
       const matchesSearch = p.name.toLowerCase().includes(searchTerm);
+
+      // FIXED: Handle case where category might not exist anymore
       const matchesCategory =
-        !selectedCategory || p.category === selectedCategory;
+        !selectedCategory ||
+        p.category === selectedCategory ||
+        (!p.category && selectedCategory === "none");
+
       const matchesPackaging =
         !selectedPackagingType ||
         (p.packagingType || "single") === selectedPackagingType;

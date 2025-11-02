@@ -57,7 +57,7 @@ export default function ProductsPage() {
     withRelationships: 0,
   });
 
-  // UPDATED: Enhanced fetchCategories with migration fallback
+  // UPDATED: Enhanced fetchCategories without duplication
   const fetchCategories = async () => {
     try {
       const categoriesSnapshot = await getDocs(collection(db, "categories"));
@@ -71,25 +71,8 @@ export default function ProductsPage() {
         .sort((a, b) => a.name.localeCompare(b.name))
         .map((cat) => cat.name);
 
-      // If no categories exist yet, use product categories as fallback
-      if (sortedCategories.length === 0) {
-        const productsSnapshot = await getDocs(collection(db, "products"));
-        const productCategories = [
-          ...new Set(
-            productsSnapshot.docs
-              .map((doc) => doc.data().category)
-              .filter((cat) => cat && cat !== "none")
-          ),
-        ].sort();
-
-        setCategories(["none", ...productCategories]);
-        console.log(
-          "ℹ️ Using product categories as fallback:",
-          productCategories
-        );
-      } else {
-        setCategories(["none", ...sortedCategories]);
-      }
+      // Only use categories from the categories collection, don't mix with product categories
+      setCategories(["none", ...sortedCategories]);
     } catch (error) {
       console.error("Error fetching categories:", error);
       // Fallback to empty array with "none"
@@ -384,7 +367,7 @@ export default function ProductsPage() {
     }
   };
 
-  // UPDATED: handleSave function with auto-category creation
+  // UPDATED: handleSave function with auto-category creation and duplicate check
   const handleSave = async (productData, imageFile) => {
     try {
       console.log("🟡 [ProductsPage] RECEIVED PRODUCT DATA:", productData);
@@ -401,20 +384,36 @@ export default function ProductsPage() {
         imageUrl = await getDownloadURL(storageRef);
       }
 
-      // NEW: Auto-create category if it doesn't exist in the categories collection
+      // UPDATED: Auto-create category with duplicate check
       if (
         productData.category &&
         productData.category !== "none" &&
         !categories.includes(productData.category)
       ) {
         try {
-          await addDoc(collection(db, "categories"), {
-            name: productData.category,
-            createdAt: new Date(),
-            createdBy: "auto-created",
-            autoCreated: true,
-          });
-          console.log(`✅ Auto-created new category: ${productData.category}`);
+          // Check if category already exists in Firestore (case-insensitive)
+          const categoriesSnapshot = await getDocs(
+            collection(db, "categories")
+          );
+          const existingCategory = categoriesSnapshot.docs.find(
+            (catDoc) =>
+              catDoc.data().name.toLowerCase() ===
+              productData.category.toLowerCase()
+          );
+
+          if (!existingCategory) {
+            await addDoc(collection(db, "categories"), {
+              name: productData.category,
+              createdAt: new Date(),
+              createdBy: "auto-created",
+              autoCreated: true,
+            });
+            console.log(
+              `✅ Auto-created new category: ${productData.category}`
+            );
+          } else {
+            console.log(`ℹ️ Category already exists: ${productData.category}`);
+          }
 
           // Refresh categories list
           await fetchCategories();

@@ -35,6 +35,7 @@ const InventorySettings = ({ settings, onSettingsChange }) => {
           </div>
         </div>
 
+        {/* Auto-restock Notification - Commented out for future use
         <div className="settings-row">
           <div className="setting-info">
             <label className="setting-name">Auto-restock Notification</label>
@@ -49,7 +50,9 @@ const InventorySettings = ({ settings, onSettingsChange }) => {
             </label>
           </div>
         </div>
+        */}
 
+        {/* Stock Update Alerts - Commented out for future use
         <div className="settings-row">
           <div className="setting-info">
             <label className="setting-name">Stock Update Alerts</label>
@@ -64,6 +67,7 @@ const InventorySettings = ({ settings, onSettingsChange }) => {
             </label>
           </div>
         </div>
+        */}
       </div>
     </div>
   );

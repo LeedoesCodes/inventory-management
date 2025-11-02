@@ -45,10 +45,27 @@ export const useCategoryMigration = () => {
         return;
       }
 
+      // Remove any duplicates (case-insensitive)
+      const uniqueCategories = [];
+      const seenCategories = new Set();
+
+      productCategories.forEach((category) => {
+        const lowerCaseCategory = category.toLowerCase();
+        if (!seenCategories.has(lowerCaseCategory)) {
+          seenCategories.add(lowerCaseCategory);
+          uniqueCategories.push(category);
+        }
+      });
+
+      console.log(
+        "📦 Unique categories after deduplication:",
+        uniqueCategories
+      );
+
       // Create batch to add all categories at once
       const batch = writeBatch(db);
 
-      productCategories.forEach((categoryName) => {
+      uniqueCategories.forEach((categoryName) => {
         const newCategoryRef = doc(collection(db, "categories"));
         batch.set(newCategoryRef, {
           name: categoryName,
@@ -62,8 +79,8 @@ export const useCategoryMigration = () => {
       await batch.commit();
 
       console.log(
-        `✅ Successfully migrated ${productCategories.length} categories:`,
-        productCategories
+        `✅ Successfully migrated ${uniqueCategories.length} categories:`,
+        uniqueCategories
       );
       setMigrationComplete(true);
 
