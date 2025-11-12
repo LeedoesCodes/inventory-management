@@ -1,4 +1,4 @@
-// pages/ProductsPage.jsx
+// src/Pages/ProductsPage.jsx
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -25,12 +25,13 @@ import ProductSearch from "../components/products/ProductSearch";
 import Header from "../components/UI/Headers";
 import Sidebar from "../components/UI/Sidebar";
 import { useSidebar } from "../context/SidebarContext";
-import { useCategoryMigration } from "../hooks/useCategoryMigration"; // NEW: Import migration hook
+import { useCategoryMigration } from "../hooks/useCategoryMigration";
+import { StockConverter } from "../components/products/utils/stockConverter";
 import "../styles/products.scss";
 
 export default function ProductsPage() {
   const { isCollapsed } = useSidebar();
-  const { isMigrating } = useCategoryMigration(); // NEW: Use migration hook
+  const { isMigrating } = useCategoryMigration();
 
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -57,7 +58,6 @@ export default function ProductsPage() {
     withRelationships: 0,
   });
 
-  // UPDATED: Enhanced fetchCategories without duplication
   const fetchCategories = async () => {
     try {
       const categoriesSnapshot = await getDocs(collection(db, "categories"));
@@ -66,16 +66,13 @@ export default function ProductsPage() {
         name: doc.data().name,
       }));
 
-      // Sort categories alphabetically and add "none" option
       const sortedCategories = categoriesData
         .sort((a, b) => a.name.localeCompare(b.name))
         .map((cat) => cat.name);
 
-      // Only use categories from the categories collection, don't mix with product categories
       setCategories(["none", ...sortedCategories]);
     } catch (error) {
       console.error("Error fetching categories:", error);
-      // Fallback to empty array with "none"
       setCategories(["none"]);
     }
   };
@@ -117,7 +114,6 @@ export default function ProductsPage() {
         (p) => p.packagingType === "bulk"
       ).length;
 
-      // Products with packaging relationships (single items that have bulk packages)
       const withRelationships = products.filter(
         (p) =>
           p.packagingType === "single" &&
@@ -150,23 +146,11 @@ export default function ProductsPage() {
       }));
       console.log("🟡 PRODUCTS FETCHED:", productsData.length);
 
-      // Debug: Check packaging data
-      console.log("📦 LOADED PRODUCTS WITH PACKAGING:");
-      productsData.forEach((product) => {
-        console.log(
-          `  ${product.name}: packagingType = ${
-            product.packagingType || "single"
-          }, parentProductId = ${product.parentProductId || "none"}`
-        );
-      });
-
       setProducts(productsData);
       applyFiltersAndSorting(productsData);
 
-      // Fetch categories
       await fetchCategories();
 
-      // Use hardcoded units like in OrdersPage
       const defaultUnits = ["piece", "bag", "pack", "bottle", "can", "box"];
       setUnits(defaultUnits);
     } catch (error) {
@@ -181,13 +165,6 @@ export default function ProductsPage() {
   // Enhanced filtering and sorting function
   const applyFiltersAndSorting = (productsArray) => {
     console.log("🟡 FILTERING: Applying filters and sorting");
-    console.log("🟡 HIGHLIGHTED PRODUCT ID:", highlightedProductId);
-    console.log("🟡 SEARCH TERM:", searchTerm);
-    console.log("🟡 SELECTED CATEGORY:", selectedCategory);
-    console.log("🟡 SELECTED UNIT:", selectedUnit);
-    console.log("🟡 SELECTED PACKAGING TYPE:", selectedPackagingType);
-    console.log("🟡 STOCK FILTER:", stockFilter);
-    console.log("🟡 SORT BY:", sortBy, "ORDER:", sortOrder);
 
     let filtered = productsArray.filter((p) => {
       const matchesSearch =
@@ -196,28 +173,26 @@ export default function ProductsPage() {
         !selectedCategory || p.category === selectedCategory;
       const matchesUnit = !selectedUnit || (p.unit || "piece") === selectedUnit;
 
-      // NEW: Packaging type filter
       const matchesPackagingType =
         !selectedPackagingType ||
         (p.packagingType || "single") === selectedPackagingType;
 
-      // Enhanced: Stock filter
+      const availableStock = StockConverter.getAvailableStock(p, productsArray);
       const currentStock = p.stock || 0;
       const threshold = p.lowStockThreshold || 5;
+
       const matchesStock =
         stockFilter === "all" ||
-        (stockFilter === "inStock" && currentStock > 0) ||
-        (stockFilter === "outOfStock" && currentStock === 0) ||
+        (stockFilter === "inStock" && availableStock > 0) ||
+        (stockFilter === "outOfStock" && availableStock === 0) ||
         (stockFilter === "lowStock" &&
-          currentStock > 0 &&
-          currentStock <= threshold);
+          availableStock > 0 &&
+          availableStock <= threshold);
 
-      // If this is the highlighted product, show it regardless of stock
       const isHighlightedProduct = p.id === highlightedProductId;
 
-      // Only show products with stock > 0, OR if it's the highlighted product, OR if showing out of stock
       const matchesStockVisibility =
-        currentStock > 0 ||
+        availableStock > 0 ||
         isHighlightedProduct ||
         stockFilter === "outOfStock" ||
         stockFilter === "all";
@@ -226,7 +201,7 @@ export default function ProductsPage() {
         matchesSearch &&
         matchesCategory &&
         matchesUnit &&
-        matchesPackagingType && // NEW: Include packaging type filter
+        matchesPackagingType &&
         matchesStock &&
         matchesStockVisibility;
 
@@ -240,11 +215,9 @@ export default function ProductsPage() {
       let aValue = a[sortBy];
       let bValue = b[sortBy];
 
-      // Handle undefined values
       if (aValue === undefined || aValue === null) aValue = "";
       if (bValue === undefined || bValue === null) bValue = "";
 
-      // Special handling for packaging type
       if (sortBy === "packagingType") {
         const aType = a.packagingType || "single";
         const bType = b.packagingType || "single";
@@ -256,7 +229,6 @@ export default function ProductsPage() {
         }
       }
 
-      // Convert to numbers for numeric fields
       if (
         sortBy === "price" ||
         sortBy === "costPrice" ||
@@ -273,9 +245,7 @@ export default function ProductsPage() {
         } else {
           return bValue - aValue;
         }
-      }
-      // Handle string fields
-      else {
+      } else {
         aValue = String(aValue).toLowerCase();
         bValue = String(bValue).toLowerCase();
 
@@ -367,7 +337,6 @@ export default function ProductsPage() {
     }
   };
 
-  // UPDATED: handleSave function with auto-category creation and duplicate check
   const handleSave = async (productData, imageFile) => {
     try {
       console.log("🟡 [ProductsPage] RECEIVED PRODUCT DATA:", productData);
@@ -384,14 +353,12 @@ export default function ProductsPage() {
         imageUrl = await getDownloadURL(storageRef);
       }
 
-      // UPDATED: Auto-create category with duplicate check
       if (
         productData.category &&
         productData.category !== "none" &&
         !categories.includes(productData.category)
       ) {
         try {
-          // Check if category already exists in Firestore (case-insensitive)
           const categoriesSnapshot = await getDocs(
             collection(db, "categories")
           );
@@ -415,15 +382,12 @@ export default function ProductsPage() {
             console.log(`ℹ️ Category already exists: ${productData.category}`);
           }
 
-          // Refresh categories list
           await fetchCategories();
         } catch (error) {
           console.error("Error auto-creating category:", error);
-          // Continue with product save even if category creation fails
         }
       }
 
-      // Enhanced product payload with packaging
       const productPayload = {
         name: productData.name,
         price: Number(productData.price),
@@ -439,7 +403,6 @@ export default function ProductsPage() {
             ? productData.lowStockThreshold
             : null,
 
-        // Packaging fields
         packagingType: productData.packagingType || "single",
         piecesPerPackage: productData.piecesPerPackage || 1,
         parentProductId: productData.parentProductId || null,
@@ -452,7 +415,6 @@ export default function ProductsPage() {
 
       if (selectedProduct) {
         console.log("🟡 UPDATING EXISTING PRODUCT:", selectedProduct.id);
-        // Keep the sold count from existing product
         productPayload.sold = selectedProduct.sold || 0;
         await updateDoc(
           doc(db, "products", selectedProduct.id),
@@ -467,7 +429,6 @@ export default function ProductsPage() {
         console.log("🟢 PRODUCT CREATED IN FIREBASE");
       }
 
-      // Refresh the products list
       console.log("🟡 REFRESHING PRODUCTS LIST...");
       await fetchProducts();
 
@@ -491,7 +452,6 @@ export default function ProductsPage() {
       <div className={`products-page ${isCollapsed ? "collapsed" : ""}`}>
         <Header />
 
-        {/* NEW: Migration Loading Overlay */}
         {isMigrating && (
           <div className="migration-overlay">
             <div className="migration-message">
@@ -501,9 +461,7 @@ export default function ProductsPage() {
           </div>
         )}
 
-        {/* Show either the form or the products list */}
         {showForm ? (
-          // Full-page form layout
           <div className="product-form-fullpage products-content">
             <div className="form-header">
               <div className="header-content">
@@ -527,21 +485,18 @@ export default function ProductsPage() {
                 onSave={handleSave}
                 onClose={handleCloseForm}
                 isFullPage={true}
-                allProducts={products} // Pass all products for packaging relationships
-                categories={categories} // Pass dynamic categories to form
+                allProducts={products}
+                categories={categories}
               />
             </div>
           </div>
         ) : (
-          // Main content with products list
           <div className="products-content">
-            {/* Enhanced Header with Statistics */}
             <div className="products-header">
               <div className="header-content">
                 <h1>Products Management</h1>
                 <p>Manage your product inventory and details</p>
 
-                {/* Packaging Statistics */}
                 <div className="packaging-stats">
                   <div className="stat-item">
                     <FontAwesomeIcon
@@ -580,7 +535,6 @@ export default function ProductsPage() {
               </div>
             </div>
 
-            {/* Enhanced Search and Filters Section */}
             <div className="search-filters-section enhanced-filters">
               <ProductSearch
                 onSearch={handleSearch}
@@ -591,7 +545,6 @@ export default function ProductsPage() {
                 selectedPackagingType={selectedPackagingType}
               />
 
-              {/* Enhanced Filter Groups */}
               <div className="filter-groups-row">
                 <div className="filter-group">
                   <label>Stock Status:</label>
@@ -622,7 +575,6 @@ export default function ProductsPage() {
               </div>
             </div>
 
-            {/* Enhanced Controls Bar */}
             <div className="products-controls-bar enhanced-controls">
               <div className="control-group">
                 <label>
@@ -676,10 +628,12 @@ export default function ProductsPage() {
               </div>
             </div>
 
-            {/* Products List */}
             <div className="products-list-container">
               <ProductList
-                products={filteredProducts}
+                products={filteredProducts.map((p) => ({
+                  ...p,
+                  availableStock: StockConverter.getAvailableStock(p, products),
+                }))}
                 onEdit={handleEditProduct}
                 onDelete={handleDeleteProduct}
                 highlightedProductId={highlightedProductId}
@@ -687,7 +641,6 @@ export default function ProductsPage() {
               />
             </div>
 
-            {/* FAB Button */}
             <button className="fab" onClick={handleAddProduct}>
               +
             </button>
