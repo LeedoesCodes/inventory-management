@@ -1,3 +1,4 @@
+// src/Pages/OrdersPage.jsx
 import React, { useState, useEffect } from "react";
 import {
   collection,
@@ -25,6 +26,7 @@ import {
   faShoppingCart,
   faExclamationTriangle,
 } from "@fortawesome/free-solid-svg-icons";
+import { StockConverter } from "../components/products/utils/stockConverter";
 import "../styles/orders.scss";
 
 // Normalize customer name for case-insensitive operations
@@ -63,7 +65,7 @@ export default function OrdersPage() {
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [customerDiscounts, setCustomerDiscounts] = useState([]);
 
-  // Fetch categories from Firestore - FIXED DUPLICATES
+  // Fetch categories from Firestore
   const fetchCategories = async () => {
     try {
       const categoriesSnapshot = await getDocs(collection(db, "categories"));
@@ -72,12 +74,10 @@ export default function OrdersPage() {
         name: doc.data().name,
       }));
 
-      // Use Set to ensure uniqueness
       const uniqueCategories = [
         ...new Set(categoriesData.map((cat) => cat.name)),
       ];
 
-      // Sort categories alphabetically
       const sortedCategories = uniqueCategories.sort((a, b) =>
         a.localeCompare(b)
       );
@@ -100,7 +100,6 @@ export default function OrdersPage() {
       }));
       setProducts(productsData);
 
-      // Fetch categories
       await fetchCategories();
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -121,7 +120,6 @@ export default function OrdersPage() {
       );
       const snapshot = await getDocs(ordersQuery);
 
-      // Use Set with normalized names for case-insensitive uniqueness
       const uniqueCustomers = new Set();
       const customers = [];
 
@@ -131,7 +129,6 @@ export default function OrdersPage() {
           const normalizedName = normalizeCustomerName(orderData.customerName);
           if (!uniqueCustomers.has(normalizedName)) {
             uniqueCustomers.add(normalizedName);
-            // Store properly capitalized name
             customers.push(capitalizeCustomerName(orderData.customerName));
           }
         }
@@ -188,18 +185,14 @@ export default function OrdersPage() {
       discountedPrice =
         product.price * (1 - categoryDiscount.discountValue / 100);
     } else {
-      // For LARGE category, handle bulk vs individual pricing
       if (product.category === "LARGE") {
         if (product.price >= 100) {
-          // This is a bulk item - apply discount and keep as bulk price
           discountedPrice = product.price - categoryDiscount.discountValue;
         } else {
-          // This is an individual piece - apply smaller discount
           discountedPrice =
             product.price - categoryDiscount.discountValue / 100;
         }
       } else {
-        // Other categories - apply normal discount
         discountedPrice = product.price - categoryDiscount.discountValue;
       }
     }
@@ -220,12 +213,16 @@ export default function OrdersPage() {
     });
 
     if (product) {
+      const availableStock = StockConverter.getAvailableStock(
+        product,
+        products
+      );
       const currentQty = cart[product.id]?.quantity || 0;
       const newQty = currentQty + 1;
 
-      if (newQty > product.stock) {
+      if (newQty > availableStock) {
         console.warn(
-          `❌ Not enough stock for ${product.name}. Only ${product.stock} available.`
+          `❌ Not enough stock for ${product.name}. Only ${availableStock} available.`
         );
         return false;
       }
@@ -248,7 +245,7 @@ export default function OrdersPage() {
     }
   };
 
-  // Customer management functions with case-insensitive handling and proper capitalization
+  // Customer management functions
   const saveCustomerToManagement = async (customerName) => {
     if (
       !customerName ||
@@ -261,7 +258,6 @@ export default function OrdersPage() {
       const normalizedName = normalizeCustomerName(customerName);
       const capitalizedName = capitalizeCustomerName(customerName);
 
-      // Check if customer exists (case-insensitive)
       const customersSnapshot = await getDocs(collection(db, "customers"));
       const existingCustomer = customersSnapshot.docs.find((doc) => {
         const customerData = doc.data();
@@ -271,10 +267,9 @@ export default function OrdersPage() {
       });
 
       if (!existingCustomer) {
-        // Create new customer with normalized and capitalized fields
         await addDoc(collection(db, "customers"), {
-          name: capitalizedName, // Store properly capitalized name
-          nameLower: normalizedName, // Store lowercase for searching
+          name: capitalizedName,
+          nameLower: normalizedName,
           phone: "",
           address: "",
           createdAt: new Date(),
@@ -290,7 +285,6 @@ export default function OrdersPage() {
         const existingName = existingCustomer.data().name;
         console.log("ℹ️ Customer already exists:", existingName);
 
-        // Update customer name to proper capitalization if different
         if (existingName !== capitalizedName) {
           await updateDoc(doc(db, "customers", existingCustomer.id), {
             name: capitalizedName,
@@ -342,9 +336,8 @@ export default function OrdersPage() {
     }
   };
 
-  // Customer name change handler - FIXED: Allow free typing with spaces
+  // Customer name change handler
   const handleCustomerNameChange = (name) => {
-    // Allow free typing - don't auto-capitalize while typing
     setCustomerName(name);
 
     if (debounceTimer) {
@@ -353,7 +346,6 @@ export default function OrdersPage() {
 
     if (name && name.trim() !== "" && name !== "Walk-in Customer") {
       const timer = setTimeout(() => {
-        // Only capitalize when saving to database (after debounce)
         const capitalizedName = capitalizeCustomerName(name);
         saveCustomerToManagement(capitalizedName);
       }, 2000);
@@ -364,7 +356,8 @@ export default function OrdersPage() {
   // Product selection and quantity functions
   const toggleProduct = (id) => {
     const product = products.find((p) => p.id === id);
-    if (product && product.stock === 0) return;
+    const availableStock = StockConverter.getAvailableStock(product, products);
+    if (product && availableStock === 0) return;
 
     setCart((prev) => ({
       ...prev,
@@ -378,11 +371,12 @@ export default function OrdersPage() {
 
   const changeQuantity = (id, delta) => {
     const product = products.find((p) => p.id === id);
+    const availableStock = StockConverter.getAvailableStock(product, products);
     const currentQty = cart[id]?.quantity || 1;
     const newQty = Math.max(1, currentQty + delta);
 
-    if (product && newQty > product.stock) {
-      alert(`Only ${product.stock} items available in stock`);
+    if (product && newQty > availableStock) {
+      alert(`Only ${availableStock} items available in stock`);
       return;
     }
 
@@ -394,10 +388,11 @@ export default function OrdersPage() {
 
   const setQuantity = (id, quantity) => {
     const product = products.find((p) => p.id === id);
+    const availableStock = StockConverter.getAvailableStock(product, products);
     const newQty = Math.max(1, parseInt(quantity) || 1);
 
-    if (product && newQty > product.stock) {
-      alert(`Only ${product.stock} items available in stock`);
+    if (product && newQty > availableStock) {
+      alert(`Only ${availableStock} items available in stock`);
       return;
     }
 
@@ -431,7 +426,6 @@ export default function OrdersPage() {
     setSearchTerm(term.toLowerCase());
     setSelectedCategory(category);
     setSelectedPackagingType(packagingType);
-    // Note: We're ignoring the 'unit' parameter since OrdersPage doesn't use unit filtering
   };
 
   const clearAllFilters = () => {
@@ -485,14 +479,13 @@ export default function OrdersPage() {
     const orderItems = cartItems.map((item) => ({
       id: item.productId,
       name: item.name,
-      price: item.discountedPrice, // Use discounted price instead of original
+      price: item.discountedPrice,
       discountedPrice: item.discountedPrice,
       quantity: item.quantity,
       subtotal: item.subtotal,
       category: item.category,
     }));
 
-    // Use properly capitalized customer name for the order
     const finalCustomerName = customerName || "Walk-in Customer";
     const capitalizedCustomerName =
       finalCustomerName === "Walk-in Customer"
@@ -519,11 +512,13 @@ export default function OrdersPage() {
       console.log(`📅 Due Date: ${dueDate || "Not applicable"}`);
 
       const batch = writeBatch(db);
+      const stockUpdates = [];
+      let updatedProducts = [...products]; // Track product changes
 
       // Check stock availability for all items
       console.log("📦 Checking stock availability...");
       for (const item of pendingOrder.items) {
-        const product = products.find((p) => p.id === item.id);
+        const product = updatedProducts.find((p) => p.id === item.id);
 
         if (!product) {
           const errorMsg = `Product not found: ${item.name} (ID: ${item.id})`;
@@ -533,12 +528,81 @@ export default function OrdersPage() {
           return;
         }
 
+        const availableStock = StockConverter.getAvailableStock(
+          product,
+          updatedProducts
+        );
         console.log(
-          `📊 Product stock: ${product.stock}, requested: ${item.quantity}`
+          `📊 Product: ${product.name}, Requested: ${item.quantity}, Available: ${availableStock}`
         );
 
-        if (product.stock < item.quantity) {
-          const errorMsg = `Not enough stock for ${item.name}. Only ${product.stock} available.`;
+        // For single items, check if we need to convert bulk packages
+        if (
+          product.packagingType === "single" &&
+          product.stock < item.quantity
+        ) {
+          const neededQuantity = item.quantity;
+          const currentStock = product.stock || 0;
+
+          if (currentStock < neededQuantity) {
+            const canConvert = StockConverter.canAutoConvert(
+              updatedProducts,
+              product.id,
+              neededQuantity
+            );
+
+            if (!canConvert) {
+              const errorMsg = `Not enough stock for ${product.name}. Only ${availableStock} pieces available.`;
+              console.error("❌", errorMsg);
+              alert(errorMsg);
+              setShowConfirmation(false);
+              return;
+            }
+
+            // Perform the conversion
+            const conversionResult = await StockConverter.convertBulkToSingle(
+              updatedProducts,
+              product.id,
+              neededQuantity - currentStock
+            );
+
+            if (!conversionResult.success) {
+              alert(`Stock conversion failed: ${conversionResult.message}`);
+              setShowConfirmation(false);
+              return;
+            }
+
+            // Update local products state with converted quantities
+            updatedProducts = conversionResult.updatedProducts;
+            stockUpdates.push(...conversionResult.updates);
+
+            // 🔥 CRITICAL FIX: Update Firebase for bulk products too
+            conversionResult.updates.forEach((update) => {
+              const productRef = doc(db, "products", update.productId);
+              const currentProduct = updatedProducts.find(
+                (p) => p.id === update.productId
+              );
+
+              if (currentProduct) {
+                batch.update(productRef, {
+                  stock: currentProduct.stock,
+                  // Also update sold count if needed
+                  sold:
+                    (currentProduct.sold || 0) +
+                    (update.type === "single" ? update.quantity : 0),
+                });
+                console.log(
+                  `🔥 UPDATING FIREBASE: ${currentProduct.name} stock -> ${currentProduct.stock}`
+                );
+              }
+            });
+          }
+        }
+
+        // Regular stock check for bulk items or single items with sufficient stock
+        const currentProduct = updatedProducts.find((p) => p.id === item.id);
+        if (currentProduct.stock < item.quantity) {
+          const errorMsg = `Not enough stock for ${currentProduct.name}. Only ${currentProduct.stock} available.`;
           console.error("❌", errorMsg);
           alert(errorMsg);
           setShowConfirmation(false);
@@ -546,11 +610,11 @@ export default function OrdersPage() {
         }
       }
 
-      // Update stock and sold quantities
-      console.log("🔄 Updating stock quantities...");
+      // Update stock and sold quantities in Firestore for ALL products in the order
+      console.log("🔄 Updating stock quantities in Firebase...");
       pendingOrder.items.forEach((item) => {
         const productRef = doc(db, "products", item.id);
-        const currentProduct = products.find((p) => p.id === item.id);
+        const currentProduct = updatedProducts.find((p) => p.id === item.id);
 
         if (!currentProduct) {
           console.error(`❌ Product not found for stock update: ${item.id}`);
@@ -559,16 +623,21 @@ export default function OrdersPage() {
 
         const currentSold = currentProduct.sold || 0;
         const currentStock = currentProduct.stock || 0;
+
         console.log(
-          `📊 Updating product stock: ${currentStock} -> ${
+          `📊 Final update for ${currentProduct.name}: ${currentStock} -> ${
             currentStock - item.quantity
           }`
         );
+
         batch.update(productRef, {
           stock: currentStock - item.quantity,
           sold: currentSold + item.quantity,
         });
       });
+
+      // Update local state with the converted quantities
+      setProducts(updatedProducts);
 
       // Save/update customer data
       if (
@@ -595,7 +664,6 @@ export default function OrdersPage() {
       // Create order record with case-insensitive customer name
       console.log("📝 Creating order record...");
 
-      // Prepare the order data
       const orderData = {
         customerName: pendingOrder.customerName,
         customerNameLower: normalizeCustomerName(pendingOrder.customerName),
@@ -610,9 +678,9 @@ export default function OrdersPage() {
         remainingBalance:
           paymentMethod === "credit" ? pendingOrder.totalAmount : 0,
         discountsApplied: customerDiscounts.length > 0,
+        stockConversions: stockUpdates.length > 0 ? stockUpdates : null,
       };
 
-      // Handle due date properly
       if (paymentMethod === "credit" && dueDate) {
         console.log("💾 Saving due date to order:", dueDate);
         const dueDateObj = new Date(dueDate);
@@ -625,7 +693,6 @@ export default function OrdersPage() {
         orderData.dueDate = null;
       }
 
-      // Add payment history for non-credit orders
       if (paymentMethod !== "credit") {
         orderData.paymentHistory = [
           {
@@ -747,7 +814,7 @@ export default function OrdersPage() {
         .map((p) => ({
           id: p.id,
           name: p.name,
-          price: getDiscountedPrice(p), // Use discounted price
+          price: getDiscountedPrice(p),
           discountedPrice: getDiscountedPrice(p),
           quantity: cart[p.id].quantity,
           subtotal: getDiscountedPrice(p) * cart[p.id].quantity,
@@ -764,12 +831,11 @@ export default function OrdersPage() {
     }
   }, [cart, showConfirmation, products, customerDiscounts]);
 
-  // FIXED: Filter and sort products with better category handling
+  // Filter and sort products
   const filteredAndSortedProducts = products
     .filter((p) => {
       const matchesSearch = p.name.toLowerCase().includes(searchTerm);
 
-      // FIXED: Handle case where category might not exist anymore
       const matchesCategory =
         !selectedCategory ||
         p.category === selectedCategory ||
@@ -778,7 +844,9 @@ export default function OrdersPage() {
       const matchesPackaging =
         !selectedPackagingType ||
         (p.packagingType || "single") === selectedPackagingType;
-      const matchesStock = p.stock > 0;
+
+      const availableStock = StockConverter.getAvailableStock(p, products);
+      const matchesStock = availableStock > 0;
 
       return (
         matchesSearch && matchesCategory && matchesPackaging && matchesStock
@@ -814,14 +882,6 @@ export default function OrdersPage() {
             <h2>Create new orders</h2>
             <p>Select products and manage customer orders</p>
           </div>
-
-          {/* Barcode Scanner Component - Temporarily Hidden */}
-          {/*
-          <BarcodeScanner
-            onBarcodeScanned={handleBarcodeScanned}
-            products={products}
-          />
-          */}
 
           {/* Enhanced Search & Filters Section */}
           <div className="search-filters-section">
@@ -895,7 +955,7 @@ export default function OrdersPage() {
                   <button
                     key={index}
                     className="customer-tag"
-                    onClick={() => setCustomerName(customer)} // Just set the name
+                    onClick={() => setCustomerName(customer)}
                   >
                     {customer}
                   </button>
@@ -929,8 +989,12 @@ export default function OrdersPage() {
             ) : (
               <div className="products-list">
                 {filteredAndSortedProducts.map((p) => {
+                  const availableStock = StockConverter.getAvailableStock(
+                    p,
+                    products
+                  );
+                  const isOutOfStock = availableStock === 0;
                   const item = cart[p.id] || {};
-                  const isOutOfStock = p.stock === 0;
                   const isSelected = item.checked;
                   const discountedPrice = getDiscountedPrice(p);
                   const hasDiscount = discountedPrice < p.price;
@@ -964,7 +1028,6 @@ export default function OrdersPage() {
                           {p.category && (
                             <span className="category-badge">{p.category}</span>
                           )}
-                          {/* UPDATED: Packaging badge with data attribute */}
                           <span
                             className="packaging-badge"
                             data-packaging={p.packagingType || "single"}
@@ -978,10 +1041,17 @@ export default function OrdersPage() {
                             <span>₱{discountedPrice.toFixed(2)}</span>
                             <span
                               className={`stock-badge ${
-                                p.stock < 5 ? "low-stock" : ""
+                                availableStock < 5 ? "low-stock" : ""
                               }`}
                             >
-                              {p.stock} in stock
+                              {availableStock} available
+                              {p.packagingType === "single" &&
+                                availableStock > p.stock && (
+                                  <span className="stock-conversion-hint">
+                                    {" "}
+                                    (includes bulk)
+                                  </span>
+                                )}
                             </span>
                           </div>
                         </div>
@@ -1008,14 +1078,14 @@ export default function OrdersPage() {
                               }
                               onClick={(e) => e.stopPropagation()}
                               min="1"
-                              max={p.stock}
+                              max={availableStock}
                             />
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 changeQuantity(p.id, 1);
                               }}
-                              disabled={item.quantity >= p.stock}
+                              disabled={item.quantity >= availableStock}
                             >
                               +
                             </button>

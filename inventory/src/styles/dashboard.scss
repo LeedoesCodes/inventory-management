@@ -4,14 +4,15 @@
   min-height: 100vh;
   transition: all 0.3s ease;
   margin-left: 230px;
-  width: 82%;
+  width: calc(100% - 230px);
+  box-sizing: border-box;
 
   // Light theme (default)
   background: #f5f7fa;
 
   &.collapsed {
     margin-left: 60px;
-    width: 93.3%;
+    width: calc(100% - 60px);
   }
 
   // FontAwesome icon styles for Dashboard
@@ -1281,6 +1282,11 @@
     margin-left: 0 !important;
     width: 100% !important;
     padding: 1rem;
+
+    &.collapsed {
+      margin-left: 0 !important;
+      width: 100% !important;
+    }
 
     .dashboard-header {
       flex-direction: column;
