@@ -52,15 +52,32 @@ const OrderDetailsModal = ({
 
   // Calculate totals - use current items or bad order items if viewing history
   const currentItems = selectedBadOrder ? selectedBadOrder.items : order.items;
+
+  // Calculate subtotal based on actual items (not including bad order adjustments)
   const subtotal =
     currentItems?.reduce((sum, item) => sum + item.price * item.quantity, 0) ||
     0;
+
   const discount = order.discount || 0;
   const tax = order.tax || 0;
-  const grandTotal = subtotal - discount + (tax || 0);
+
+  // Calculate grand total considering bad order refunds
+  const originalGrandTotal = subtotal - discount + (tax || 0);
+
+  // Calculate total refund from all bad orders
+  const totalBadOrderRefund =
+    order.badOrders?.reduce((total, badOrder) => {
+      return total + (badOrder.refundAmount || 0);
+    }, 0) || 0;
+
+  // Adjusted grand total after bad order refunds
+  const grandTotal = Math.max(0, originalGrandTotal - totalBadOrderRefund);
+
   const totalPaid =
     order.paymentHistory?.reduce((sum, payment) => sum + payment.amount, 0) ||
     0;
+
+  // Balance should consider the adjusted grand total after bad order refunds
   const balance = grandTotal - totalPaid;
 
   // Due date calculations
@@ -185,6 +202,9 @@ const OrderDetailsModal = ({
     }
   };
 
+  // Check if order has bad orders
+  const hasBadOrders = order.badOrders && order.badOrders.length > 0;
+
   return (
     <div className="order-details-modal-component modal-overlay">
       <div className="modal-content">
@@ -203,13 +223,19 @@ const OrderDetailsModal = ({
             {isOverdue && (
               <span className="overdue-indicator-header">(OVERDUE)</span>
             )}
+            {hasBadOrders && !selectedBadOrder && (
+              <span className="bad-order-exists-badge">
+                (Has {order.badOrders.length} Bad Order
+                {order.badOrders.length !== 1 ? "s" : ""})
+              </span>
+            )}
           </h3>
           <button onClick={onClose}>×</button>
         </div>
 
         <div className="modal-body">
           {/* New Section: View Toggle */}
-          {order.badOrders && order.badOrders.length > 0 && (
+          {hasBadOrders && (
             <div className="view-toggle-section">
               <div className="view-toggle-buttons">
                 <button
@@ -259,9 +285,9 @@ const OrderDetailsModal = ({
                           </span>
                         </div>
                         <div className="bad-order-amount">
-                          {badOrder.totalRefundAmount > 0 && (
+                          {badOrder.refundAmount > 0 && (
                             <span className="refund-amount">
-                              Refund: ₱{badOrder.totalRefundAmount.toFixed(2)}
+                              Refund: ₱{badOrder.refundAmount.toFixed(2)}
                             </span>
                           )}
                         </div>
@@ -299,10 +325,9 @@ const OrderDetailsModal = ({
                       <span className="bad-order-reason">
                         Reason: {selectedBadOrder.reason}
                       </span>
-                      {selectedBadOrder.totalRefundAmount > 0 && (
+                      {selectedBadOrder.refundAmount > 0 && (
                         <span className="bad-order-refund">
-                          Refund: ₱
-                          {selectedBadOrder.totalRefundAmount.toFixed(2)}
+                          Refund: ₱{selectedBadOrder.refundAmount.toFixed(2)}
                         </span>
                       )}
                     </div>
@@ -387,11 +412,16 @@ const OrderDetailsModal = ({
                   </span>
                 </div>
                 {/* New bad order count row */}
-                {order.hasBadOrder && (
+                {hasBadOrders && (
                   <div className="detail-row">
                     <span className="detail-label">Bad Orders:</span>
                     <span className="detail-value bad-order-count">
-                      {order.badOrders?.length || 0} recorded
+                      {order.badOrders.length} recorded
+                      {totalBadOrderRefund > 0 && (
+                        <span className="total-refund-amount">
+                          (Total Refund: ₱{totalBadOrderRefund.toFixed(2)})
+                        </span>
+                      )}
                     </span>
                   </div>
                 )}
@@ -498,17 +528,35 @@ const OrderDetailsModal = ({
                 } ${isOverdue ? "overdue-payment" : ""}`}
               >
                 <div className="payment-summary-row">
-                  <span className="summary-label">Total Amount:</span>
+                  <span className="summary-label">Original Amount:</span>
+                  <span className="summary-value original-amount">
+                    ₱{originalGrandTotal.toFixed(2)}
+                  </span>
+                </div>
+
+                {hasBadOrders && (
+                  <div className="payment-summary-row">
+                    <span className="summary-label">Bad Order Refunds:</span>
+                    <span className="summary-value refund-amount">
+                      -₱{totalBadOrderRefund.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+
+                <div className="payment-summary-row">
+                  <span className="summary-label">Adjusted Total:</span>
                   <span className="summary-value total-amount">
                     ₱{grandTotal.toFixed(2)}
                   </span>
                 </div>
+
                 <div className="payment-summary-row">
                   <span className="summary-label">Amount Paid:</span>
                   <span className="summary-value paid-amount">
                     ₱{totalPaid.toFixed(2)}
                   </span>
                 </div>
+
                 <div className="payment-summary-row">
                   <span className="summary-label">Balance Due:</span>
                   <span className="summary-value balance-amount">
@@ -610,10 +658,32 @@ const OrderDetailsModal = ({
               </div>
             )}
 
+            {/* Show original total if there are bad orders */}
+            {hasBadOrders && !selectedBadOrder && (
+              <div className="total-row original-total">
+                <span className="total-label">Original Total:</span>
+                <span className="total-value original-total">
+                  ₱{originalGrandTotal.toFixed(2)}
+                </span>
+              </div>
+            )}
+
+            {/* Show bad order refunds */}
+            {hasBadOrders && !selectedBadOrder && (
+              <div className="total-row bad-order-refund">
+                <span className="total-label">Bad Order Refunds:</span>
+                <span className="total-value refund-amount">
+                  -₱{totalBadOrderRefund.toFixed(2)}
+                </span>
+              </div>
+            )}
+
             <div className="total-row grand-total">
               <span className="total-label">
                 <FontAwesomeIcon icon={faDollarSign} />
-                Grand Total:
+                {hasBadOrders && !selectedBadOrder
+                  ? "Adjusted Total:"
+                  : "Grand Total:"}
               </span>
               <span className="total-value grand-total">
                 ₱{grandTotal.toFixed(2)}
@@ -645,15 +715,6 @@ const OrderDetailsModal = ({
                   </span>
                 </div>
               </>
-            )}
-
-            {order.refundAmount > 0 && (
-              <div className="total-row refund-row">
-                <span className="total-label">Refund Amount:</span>
-                <span className="total-value refund-total">
-                  -₱{order.refundAmount.toFixed(2)}
-                </span>
-              </div>
             )}
           </div>
 

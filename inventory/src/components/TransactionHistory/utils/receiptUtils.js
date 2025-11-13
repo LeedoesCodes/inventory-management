@@ -8,6 +8,8 @@ export const printReceipt = (order) => {
   const printWindow = window.open("", "_blank");
 
   const paymentMethod = getPaymentMethodInfo(order.paymentMethod);
+
+  // Calculate payment progress considering bad order adjustments
   const paymentProgress = getPaymentProgress(order);
 
   const receiptContent = generateReceiptHTML(
@@ -39,6 +41,30 @@ const generateReceiptHTML = (order, paymentMethod, paymentProgress) => {
   const isPartiallyPaid =
     order.paymentMethod === "credit" && order.paymentStatus === "partial";
   const isFullyPaid = order.paymentStatus === "paid";
+
+  // Calculate totals considering bad orders
+  const subtotal =
+    order.items?.reduce((sum, item) => sum + item.price * item.quantity, 0) ||
+    0;
+  const discount = order.discount || 0;
+  const tax = order.tax || 0;
+  const originalGrandTotal = subtotal - discount + (tax || 0);
+
+  // Calculate total refund from bad orders
+  const totalBadOrderRefund =
+    order.badOrders?.reduce((total, badOrder) => {
+      return total + (badOrder.refundAmount || 0);
+    }, 0) || 0;
+
+  const adjustedGrandTotal = Math.max(
+    0,
+    originalGrandTotal - totalBadOrderRefund
+  );
+
+  const totalPaid =
+    order.paymentHistory?.reduce((sum, payment) => sum + payment.amount, 0) ||
+    0;
+  const balanceDue = adjustedGrandTotal - totalPaid;
 
   return `
     <!DOCTYPE html>
@@ -232,6 +258,11 @@ const generateReceiptHTML = (order, paymentMethod, paymentProgress) => {
             color: #dc3545;
           }
           
+          .bad-order-adjustment {
+            color: #dc3545;
+            font-style: italic;
+          }
+          
           .payment-history {
             margin: 10px 0;
             padding-top: 10px;
@@ -334,16 +365,27 @@ const generateReceiptHTML = (order, paymentMethod, paymentProgress) => {
             paymentProgress,
             isCreditPending,
             isPartiallyPaid,
-            isFullyPaid
+            isFullyPaid,
+            adjustedGrandTotal,
+            balanceDue
           )}
           ${generateItemsTable(order)}
-          ${generateTotals(order, isPartiallyPaid)}
+          ${generateTotals(
+            order,
+            isPartiallyPaid,
+            originalGrandTotal,
+            totalBadOrderRefund,
+            adjustedGrandTotal,
+            totalPaid,
+            balanceDue
+          )}
           ${generatePaymentHistory(order)}
           ${generateSpecialNotices(
             order,
             isCreditPending,
             isPartiallyPaid,
-            isFullyPaid
+            isFullyPaid,
+            totalBadOrderRefund
           )}
           ${generateFooter()}
         </div>
@@ -382,7 +424,7 @@ const generateReceiptHeader = (order) => {
     <div class="header">
       <h1>ORDER RECEIPT</h1>
       <div class="store-info">Freddie Food Wholesaling</div>
-      <div class="store-info">Contact: +1234567890</div>
+      <div class="store-info">Contact: 09855007680</div>
       <div class="order-info">
         <div class="info-row">
           <span class="info-label">Receipt No:</span>
@@ -455,7 +497,9 @@ const generatePaymentInfo = (
   paymentProgress,
   isCreditPending,
   isPartiallyPaid,
-  isFullyPaid
+  isFullyPaid,
+  adjustedGrandTotal,
+  balanceDue
 ) => {
   let paymentStatusText = "";
   let paymentStatusClass = "";
@@ -475,8 +519,6 @@ const generatePaymentInfo = (
   }
 
   const paidAmount = order.paidAmount || 0;
-  const remainingBalance =
-    order.remainingBalance || (isCreditPending ? order.totalAmount : 0);
 
   // Safely handle paidAt date
   let paidAtDate = "";
@@ -510,12 +552,16 @@ const generatePaymentInfo = (
           ? `
         <div class="payment-details">
           <div class="info-row">
+            <span>Adjusted Total:</span>
+            <span>₱${adjustedGrandTotal.toFixed(2)}</span>
+          </div>
+          <div class="info-row">
             <span>Amount Paid:</span>
             <span>₱${paidAmount.toFixed(2)}</span>
           </div>
           <div class="info-row">
             <span>Remaining Balance:</span>
-            <span>₱${remainingBalance.toFixed(2)}</span>
+            <span>₱${balanceDue.toFixed(2)}</span>
           </div>
         </div>
         <div class="payment-progress">
@@ -569,7 +615,9 @@ const generateItemsTable = (order) => {
               <td>${item.name || `Item ${index + 1}`}</td>
               <td class="quantity">${item.quantity || 0}</td>
               <td class="price">₱${(item.price || 0).toFixed(2)}</td>
-              <td class="subtotal">₱${(item.subtotal || 0).toFixed(2)}</td>
+              <td class="subtotal">₱${(
+                (item.price || 0) * (item.quantity || 0)
+              ).toFixed(2)}</td>
             </tr>
           `
           )
@@ -582,9 +630,16 @@ const generateItemsTable = (order) => {
 /**
  * Generate totals section
  */
-const generateTotals = (order, isPartiallyPaid) => {
-  const paidAmount = order.paidAmount || 0;
-  const remainingBalance = order.remainingBalance || order.totalAmount;
+const generateTotals = (
+  order,
+  isPartiallyPaid,
+  originalGrandTotal,
+  totalBadOrderRefund,
+  adjustedGrandTotal,
+  totalPaid,
+  balanceDue
+) => {
+  const hasBadOrders = totalBadOrderRefund > 0;
 
   return `
     <div class="totals">
@@ -594,11 +649,37 @@ const generateTotals = (order, isPartiallyPaid) => {
       </div>
       
       ${
-        order.hasBadOrder
+        order.discount > 0
           ? `
-        <div class="total-row refund-amount">
-          <span>Refunded:</span>
-          <span>-₱${(order.badOrderRefundAmount || 0).toFixed(2)}</span>
+        <div class="total-row">
+          <span>Discount:</span>
+          <span>-₱${(order.discount || 0).toFixed(2)}</span>
+        </div>
+      `
+          : ""
+      }
+      
+      ${
+        order.tax > 0
+          ? `
+        <div class="total-row">
+          <span>Tax:</span>
+          <span>+₱${(order.tax || 0).toFixed(2)}</span>
+        </div>
+      `
+          : ""
+      }
+      
+      ${
+        hasBadOrders
+          ? `
+        <div class="total-row">
+          <span>Original Total:</span>
+          <span>₱${originalGrandTotal.toFixed(2)}</span>
+        </div>
+        <div class="total-row bad-order-adjustment">
+          <span>Bad Order Refunds:</span>
+          <span>-₱${totalBadOrderRefund.toFixed(2)}</span>
         </div>
       `
           : ""
@@ -608,20 +689,26 @@ const generateTotals = (order, isPartiallyPaid) => {
         isPartiallyPaid
           ? `
         <div class="total-row">
+          <span>Adjusted Total:</span>
+          <span>₱${adjustedGrandTotal.toFixed(2)}</span>
+        </div>
+        <div class="total-row">
           <span>Amount Paid:</span>
-          <span>₱${paidAmount.toFixed(2)}</span>
+          <span>₱${totalPaid.toFixed(2)}</span>
         </div>
         <div class="total-row">
           <span>Balance Due:</span>
-          <span>₱${remainingBalance.toFixed(2)}</span>
+          <span>₱${balanceDue.toFixed(2)}</span>
         </div>
       `
           : ""
       }
       
       <div class="total-row grand-total">
-        <span>${isPartiallyPaid ? "Original Total:" : "Total Amount:"}</span>
-        <span>₱${(order.totalAmount || 0).toFixed(2)}</span>
+        <span>${
+          hasBadOrders || isPartiallyPaid ? "Final Amount:" : "Total Amount:"
+        }</span>
+        <span>₱${adjustedGrandTotal.toFixed(2)}</span>
       </div>
     </div>
   `;
@@ -698,15 +785,19 @@ const generateSpecialNotices = (
   order,
   isCreditPending,
   isPartiallyPaid,
-  isFullyPaid
+  isFullyPaid,
+  totalBadOrderRefund
 ) => {
   let notices = "";
 
-  if (order.hasBadOrder) {
+  if (totalBadOrderRefund > 0) {
     notices += `
       <div class="bad-order-notice">
         <strong>⚠️ BAD ORDER PROCESSED</strong><br>
-        Refund Amount: ₱${(order.badOrderRefundAmount || 0).toFixed(2)}
+        Total Refund Amount: ₱${totalBadOrderRefund.toFixed(2)}<br>
+        ${order.badOrders?.length || 0} bad order${
+      order.badOrders?.length !== 1 ? "s" : ""
+    } recorded
       </div>
     `;
   }
@@ -720,22 +811,24 @@ const generateSpecialNotices = (
   }
 
   if (isCreditPending) {
-    const remainingBalance = order.remainingBalance || order.totalAmount;
+    const adjustedGrandTotal = (order.totalAmount || 0) - totalBadOrderRefund;
+    const balanceDue = adjustedGrandTotal - (order.paidAmount || 0);
     notices += `
       <div class="credit-notice">
         <strong>CREDIT ORDER - PENDING PAYMENT</strong><br>
-        Please settle your balance of ₱${remainingBalance.toFixed(2)}
+        Please settle your balance of ₱${balanceDue.toFixed(2)}
       </div>
     `;
   }
 
   if (isPartiallyPaid) {
-    const remainingBalance = order.remainingBalance || order.totalAmount;
+    const adjustedGrandTotal = (order.totalAmount || 0) - totalBadOrderRefund;
+    const balanceDue = adjustedGrandTotal - (order.paidAmount || 0);
     notices += `
       <div class="partial-payment-notice">
         <strong>PARTIAL PAYMENT RECEIVED</strong><br>
         Thank you for your payment of ₱${(order.paidAmount || 0).toFixed(2)}<br>
-        Remaining balance: ₱${remainingBalance.toFixed(2)}
+        Remaining balance: ₱${balanceDue.toFixed(2)}
       </div>
     `;
   }
@@ -773,6 +866,13 @@ export const printQuickReceipt = (order) => {
   const printWindow = window.open("", "_blank");
   const paymentMethod = getPaymentMethodInfo(order.paymentMethod);
 
+  // Calculate adjusted total for quick receipt
+  const totalBadOrderRefund =
+    order.badOrders?.reduce((total, badOrder) => {
+      return total + (badOrder.refundAmount || 0);
+    }, 0) || 0;
+  const adjustedTotal = (order.totalAmount || 0) - totalBadOrderRefund;
+
   const quickReceiptContent = `
     <!DOCTYPE html>
     <html>
@@ -785,6 +885,7 @@ export const printQuickReceipt = (order) => {
           .items { width: 100%; border-collapse: collapse; margin: 10px 0; }
           .items td { padding: 2px 0; }
           .total { font-weight: bold; margin-top: 10px; border-top: 1px dashed #000; padding-top: 5px; }
+          .bad-order-note { color: #dc3545; font-size: 10px; margin-top: 5px; }
           @media print { body { margin: 0; } }
         </style>
       </head>
@@ -805,14 +906,24 @@ export const printQuickReceipt = (order) => {
             <tr>
               <td>${item.name || "Item"}</td>
               <td>×${item.quantity || 0}</td>
-              <td>₱${(item.subtotal || 0).toFixed(2)}</td>
+              <td>₱${((item.price || 0) * (item.quantity || 0)).toFixed(2)}</td>
             </tr>
           `
             )
             .join("")}
         </table>
         <div class="total">
-          Total: ₱${(order.totalAmount || 0).toFixed(2)}<br>
+          ${
+            totalBadOrderRefund > 0
+              ? `Original: ₱${(order.totalAmount || 0).toFixed(2)}<br>`
+              : ""
+          }
+          ${
+            totalBadOrderRefund > 0
+              ? `Refunds: -₱${totalBadOrderRefund.toFixed(2)}<br>`
+              : ""
+          }
+          Total: ₱${adjustedTotal.toFixed(2)}<br>
           Payment: ${paymentMethod?.name || "Cash"}<br>
           ${order.paymentStatus === "pending" ? "Status: PENDING PAYMENT" : ""}
           ${
@@ -821,6 +932,17 @@ export const printQuickReceipt = (order) => {
               : ""
           }
         </div>
+        ${
+          totalBadOrderRefund > 0
+            ? `
+          <div class="bad-order-note">
+            Includes ${order.badOrders?.length || 0} bad order adjustment${
+                order.badOrders?.length !== 1 ? "s" : ""
+              }
+          </div>
+        `
+            : ""
+        }
         <script>
           setTimeout(function() {
             window.print();

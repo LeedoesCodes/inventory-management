@@ -11,8 +11,9 @@ import {
   faInfoCircle,
   faSearch,
   faCheckCircle,
-  faSyncAlt,
-  faBoxOpen,
+  faExchangeAlt,
+  faPlus,
+  faMinus,
 } from "@fortawesome/free-solid-svg-icons";
 
 // Import components
@@ -31,6 +32,12 @@ const BadOrderModal = ({
 
   // State to track replacement type for each item (piece or bag)
   const [replacementTypes, setReplacementTypes] = useState({});
+
+  // State for general replacement settings
+  const [generalReplacement, setGeneralReplacement] = useState({
+    enabled: false,
+    products: [], // Array of { productId, productName, quantity, replacementType }
+  });
 
   // Calculate refund amount based on bad order details
   const calculateRefundAmount = () => {
@@ -59,6 +66,148 @@ const BadOrderModal = ({
 
   const refundAmount = calculateRefundAmount();
 
+  // Handle general replacement toggle
+  const handleGeneralReplacementToggle = (enabled) => {
+    setGeneralReplacement((prev) => ({
+      ...prev,
+      enabled,
+      products: enabled ? prev.products : [],
+    }));
+
+    if (!enabled) {
+      // Reset to individual product selections
+      resetToIndividualSelections();
+    }
+  };
+
+  // Add a new product to general replacement
+  const handleAddGeneralProduct = () => {
+    setGeneralReplacement((prev) => ({
+      ...prev,
+      products: [
+        ...prev.products,
+        {
+          productId: "",
+          productName: "",
+          quantity: 1,
+          replacementType: "piece",
+        },
+      ],
+    }));
+  };
+
+  // Remove a product from general replacement
+  const handleRemoveGeneralProduct = (index) => {
+    setGeneralReplacement((prev) => ({
+      ...prev,
+      products: prev.products.filter((_, i) => i !== index),
+    }));
+  };
+
+  // Handle general product selection
+  const handleGeneralProductSelect = (index, productId, productName) => {
+    const updatedProducts = [...generalReplacement.products];
+    updatedProducts[index] = {
+      ...updatedProducts[index],
+      productId,
+      productName,
+    };
+
+    setGeneralReplacement((prev) => ({
+      ...prev,
+      products: updatedProducts,
+    }));
+  };
+
+  // Handle general product quantity change - FIXED VERSION
+  const handleGeneralProductQuantityChange = (index, quantity) => {
+    const updatedProducts = [...generalReplacement.products];
+
+    // Allow empty string for better UX, but default to 1 when processing
+    const newQuantity =
+      quantity === "" ? "" : Math.max(1, parseInt(quantity) || 1);
+
+    updatedProducts[index] = {
+      ...updatedProducts[index],
+      quantity: newQuantity,
+    };
+
+    setGeneralReplacement((prev) => ({
+      ...prev,
+      products: updatedProducts,
+    }));
+  };
+
+  // Handle general replacement type change
+  const handleGeneralReplacementTypeChange = (index, replacementType) => {
+    const updatedProducts = [...generalReplacement.products];
+    updatedProducts[index] = {
+      ...updatedProducts[index],
+      replacementType,
+    };
+
+    setGeneralReplacement((prev) => ({
+      ...prev,
+      products: updatedProducts,
+    }));
+  };
+
+  // Apply general replacement to all items with bad pieces
+  const applyGeneralReplacementToItems = () => {
+    if (!generalReplacement.enabled || generalReplacement.products.length === 0)
+      return;
+
+    const currentItems = badOrderDetails.items || order.items;
+    const updatedItems = currentItems.map((item) => {
+      // Only update items that have bad pieces
+      if ((item.badPieces || 0) > 0) {
+        // For general replacement, we'll use the first product as primary
+        // but the actual deduction will be handled in the backend
+        const primaryProduct = generalReplacement.products[0];
+        return {
+          ...item,
+          selectedProductId: primaryProduct.productId,
+          selectedProductName: primaryProduct.productName,
+          generalReplacementProducts: generalReplacement.products,
+        };
+      }
+      return item;
+    });
+
+    setBadOrderDetails({
+      ...badOrderDetails,
+      items: updatedItems,
+    });
+  };
+
+  // Reset to individual product selections
+  const resetToIndividualSelections = () => {
+    const currentItems = badOrderDetails.items || order.items;
+    const updatedItems = currentItems.map((item) => {
+      const productInfo = allProducts.find((p) => p.id === item.id);
+      if (productInfo?.packagingType === "bulk") {
+        const suggestedProduct = findIndividualProductForBulk(productInfo);
+        return {
+          ...item,
+          selectedProductId: suggestedProduct?.id || item.id,
+          selectedProductName: suggestedProduct?.name || item.name,
+          generalReplacementProducts: undefined,
+        };
+      }
+      return {
+        ...item,
+        selectedProductId: item.id,
+        selectedProductName: item.name,
+        generalReplacementProducts: undefined,
+      };
+    });
+
+    setBadOrderDetails({
+      ...badOrderDetails,
+      items: updatedItems,
+    });
+  };
+
   const handleItemBadPiecesChange = (itemIndex, badPieces) => {
     const currentItems = badOrderDetails.items || order.items;
     const updatedItems = [...currentItems];
@@ -67,15 +216,14 @@ const BadOrderModal = ({
 
     // Determine max pieces based on replacement type
     let maxPieces;
-    if (
-      replacementTypes[itemIndex] === "bag" &&
-      productInfo?.packagingType === "bulk"
-    ) {
+    const replacementType = replacementTypes[itemIndex] || "piece";
+
+    if (replacementType === "bag" && productInfo?.packagingType === "bulk") {
       maxPieces = item.quantity; // Maximum is the number of bags
     } else {
       maxPieces =
         productInfo?.packagingType === "bulk"
-          ? productInfo?.piecesPerPackage || 1
+          ? (productInfo?.piecesPerPackage || 1) * item.quantity
           : item.quantity;
     }
 
@@ -84,10 +232,9 @@ const BadOrderModal = ({
     if (newBadPieces > maxPieces) {
       alert(
         `Cannot replace more than ${maxPieces} ${
-          replacementTypes[itemIndex] === "bag" ? "bags" : "pieces"
+          replacementType === "bag" ? "bags" : "pieces"
         } for ${item.name}`
       );
-      // Don't update state if invalid, but keep the UI consistent with the max value
       updatedItems[itemIndex] = {
         ...item,
         badPieces: maxPieces,
@@ -103,9 +250,26 @@ const BadOrderModal = ({
       ...badOrderDetails,
       items: updatedItems,
     });
+
+    // If general replacement is enabled and we're adding bad pieces, apply general product
+    if (
+      generalReplacement.enabled &&
+      generalReplacement.products.length > 0 &&
+      newBadPieces > 0
+    ) {
+      setTimeout(() => applyGeneralReplacementToItems(), 0);
+    }
   };
 
   const handleProductSelect = (itemIndex, productId, productName) => {
+    // Don't allow individual product selection when general replacement is enabled
+    if (generalReplacement.enabled) {
+      alert(
+        "Individual product selection is disabled when general replacement is enabled. Please disable general replacement first."
+      );
+      return;
+    }
+
     const currentItems = badOrderDetails.items || order.items;
     const updatedItems = [...currentItems];
     updatedItems[itemIndex] = {
@@ -187,10 +351,60 @@ const BadOrderModal = ({
     }
   };
 
+  // Get available products for general replacement - ALL products
+  const getAvailableGeneralReplacementProducts = () => {
+    return allProducts;
+  };
+
   const itemsForValidation = badOrderDetails.items || order.items;
   const hasValidBadOrderItems = itemsForValidation.some(
     (item) => (item.badPieces || 0) > 0 && item.selectedProductId
   );
+
+  // Check if general replacement has valid products - FIXED VERSION
+  const hasValidGeneralReplacement = generalReplacement.products.some(
+    (product) =>
+      product.productId && (product.quantity > 0 || product.quantity === "")
+  );
+
+  // Validate before processing - FIXED VERSION
+  const validateBeforeProcessing = () => {
+    if (!badOrderDetails.reason) {
+      alert("Please select a reason for the bad order");
+      return false;
+    }
+
+    if (!hasValidBadOrderItems) {
+      alert(
+        "Please specify at least one item to replace with valid quantities"
+      );
+      return false;
+    }
+
+    // Validate general replacement if enabled
+    if (generalReplacement.enabled) {
+      if (generalReplacement.products.length === 0) {
+        alert("Please add at least one replacement product");
+        return false;
+      }
+
+      // Check each product has valid data
+      for (const product of generalReplacement.products) {
+        if (!product.productId) {
+          alert("Please select a product for all replacement entries");
+          return false;
+        }
+        if (!product.quantity || product.quantity < 1) {
+          alert(
+            "Please enter a valid quantity (at least 1) for all replacement products"
+          );
+          return false;
+        }
+      }
+    }
+
+    return true;
+  };
 
   const formatDate = (date) => {
     if (!date) return "N/A";
@@ -214,6 +428,14 @@ const BadOrderModal = ({
 
   // Handle replacement type change
   const handleReplacementTypeChange = (itemIndex, newType) => {
+    // Don't allow individual replacement type changes when general replacement is enabled
+    if (generalReplacement.enabled) {
+      alert(
+        "Individual replacement type changes are disabled when general replacement is enabled. Please disable general replacement first."
+      );
+      return;
+    }
+
     setReplacementTypes((prev) => ({
       ...prev,
       [itemIndex]: newType,
@@ -315,26 +537,18 @@ const BadOrderModal = ({
         reason: "", // Also reset reason
         action: "replace", // Reset action
       }));
-    }
-  }, [order, allProducts, setBadOrderDetails]); // Added setBadOrderDetails to deps
 
-  // Handle process bad order button click
+      // Reset general replacement when order changes
+      setGeneralReplacement({
+        enabled: false,
+        products: [],
+      });
+    }
+  }, [order, allProducts, setBadOrderDetails]);
+
+  // Handle process bad order button click - FIXED VERSION
   const handleProcessClick = () => {
-    console.log("Process Bad Order Clicked - Current State:");
-    console.log("Bad Order Details:", badOrderDetails);
-    console.log("Has Valid Items:", hasValidBadOrderItems);
-    console.log("Reason:", badOrderDetails.reason);
-
-    // Validate required fields
-    if (!badOrderDetails.reason) {
-      alert("Please select a reason for the bad order");
-      return;
-    }
-
-    if (!hasValidBadOrderItems) {
-      alert(
-        "Please specify at least one item to replace with valid quantities"
-      );
+    if (!validateBeforeProcessing()) {
       return;
     }
 
@@ -345,10 +559,19 @@ const BadOrderModal = ({
         ...badOrderDetails,
         refundAmount,
         processedAt: new Date().toISOString(),
+        generalReplacement: generalReplacement.enabled
+          ? {
+              ...generalReplacement,
+              products: generalReplacement.products.map((product) => ({
+                ...product,
+                // Ensure quantity is at least 1
+                quantity: Math.max(1, product.quantity || 1),
+              })),
+            }
+          : null,
       },
     };
 
-    console.log("Sending to parent:", badOrderData);
     onProcessBadOrder(badOrderData);
   };
 
@@ -422,8 +645,8 @@ const BadOrderModal = ({
               <div className="instruction-step">
                 <span className="step-number">3</span>
                 <span>
-                  <strong>Manual override:</strong> Use search to select
-                  different products if needed
+                  <strong>General Replacement:</strong> Use specific products
+                  from inventory for all replacements (optional)
                 </span>
               </div>
               <div className="instruction-step">
@@ -433,12 +656,188 @@ const BadOrderModal = ({
             </div>
           </div>
 
+          {/* General Replacement Section */}
+          <div className="general-replacement-section">
+            <div className="form-section">
+              <h4 className="section-title">
+                <FontAwesomeIcon icon={faExchangeAlt} />
+                General Replacement (Optional)
+              </h4>
+
+              <div className="general-replacement-card">
+                <div className="general-replacement-toggle">
+                  <div className="toggle-container">
+                    <span className="toggle-label">General Replacement:</span>
+                    <div
+                      className={`sliding-toggle ${
+                        generalReplacement.enabled ? "enabled" : "disabled"
+                      }`}
+                      onClick={() =>
+                        handleGeneralReplacementToggle(
+                          !generalReplacement.enabled
+                        )
+                      }
+                    >
+                      <div className="toggle-slider"></div>
+                      <div className="toggle-options">
+                        <span className="toggle-option disabled"></span>
+                        <span className="toggle-option enabled"></span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="toggle-description">
+                    Toggle to use specific products from inventory for all
+                    replacements
+                  </div>
+                </div>
+
+                {generalReplacement.enabled && (
+                  <div className="general-replacement-controls">
+                    <div className="general-products-list">
+                      {generalReplacement.products.map((product, index) => (
+                        <div key={index} className="general-product-item">
+                          <div className="general-product-header">
+                            <h5>Replacement Product #{index + 1}</h5>
+                            {generalReplacement.products.length > 1 && (
+                              <button
+                                type="button"
+                                className="remove-product-btn"
+                                onClick={() =>
+                                  handleRemoveGeneralProduct(index)
+                                }
+                              >
+                                <FontAwesomeIcon icon={faMinus} />
+                                Remove
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="general-product-form">
+                            <div className="form-group">
+                              <label>
+                                <FontAwesomeIcon icon={faSearch} />
+                                Select Product *
+                              </label>
+                              <ProductSearchSelector
+                                products={getAvailableGeneralReplacementProducts()}
+                                selectedProductId={product.productId}
+                                onProductSelect={(productId, productName) =>
+                                  handleGeneralProductSelect(
+                                    index,
+                                    productId,
+                                    productName
+                                  )
+                                }
+                                placeholder="Search for any product in inventory..."
+                              />
+                            </div>
+
+                            {product.productId && (
+                              <div className="form-group replacement-type-toggle">
+                                <label>Replacement Type</label>
+                                <div className="toggle-container">
+                                  <span className="toggle-label">
+                                    {product.replacementType === "piece"
+                                      ? "By Piece"
+                                      : "By Bag"}
+                                  </span>
+                                  <div
+                                    className={`sliding-toggle ${
+                                      product.replacementType === "piece"
+                                        ? "piece-active"
+                                        : "bag-active"
+                                    }`}
+                                    onClick={() =>
+                                      handleGeneralReplacementTypeChange(
+                                        index,
+                                        product.replacementType === "piece"
+                                          ? "bag"
+                                          : "piece"
+                                      )
+                                    }
+                                  >
+                                    <div className="toggle-slider"></div>
+                                    <div className="toggle-options">
+                                      <span className="toggle-option piece">
+                                        Piece
+                                      </span>
+                                      <span className="toggle-option bag">
+                                        Bag
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="toggle-description">
+                                  {product.replacementType === "piece"
+                                    ? "Replace as individual pieces"
+                                    : "Replace as entire bags/packages"}
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="form-group">
+                              <label>Quantity to Deduct *</label>
+                              <input
+                                type="number"
+                                min="1"
+                                value={product.quantity}
+                                onChange={(e) =>
+                                  handleGeneralProductQuantityChange(
+                                    index,
+                                    e.target.value
+                                  )
+                                }
+                                className="quantity-input"
+                                placeholder="Enter quantity"
+                              />
+                              <div className="input-info">
+                                Number of{" "}
+                                {product.replacementType === "piece"
+                                  ? "pieces"
+                                  : "bags"}{" "}
+                                to deduct from stock
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      className="add-product-btn"
+                      onClick={handleAddGeneralProduct}
+                    >
+                      <FontAwesomeIcon icon={faPlus} />
+                      Add Another Replacement Product
+                    </button>
+
+                    <div className="general-replacement-notice">
+                      <FontAwesomeIcon icon={faInfoCircle} />
+                      <strong>How this works:</strong> When you specify
+                      quantities for bad items below, the system will use the
+                      selected products above for stock deduction. You can add
+                      multiple products if needed.
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Bad Order Form */}
           <div className="bad-order-form">
             <div className="form-section">
               <h4 className="section-title">
                 <FontAwesomeIcon icon={faBox} />
-                Specify Replacement Details
+                Specify Items to Replace
+                {generalReplacement.enabled &&
+                  generalReplacement.products.length > 0 && (
+                    <span className="general-mode-badge">
+                      Using {generalReplacement.products.length} Replacement
+                      Product(s)
+                    </span>
+                  )}
               </h4>
 
               {(badOrderDetails.items || order.items)?.map((item, index) => {
@@ -496,7 +895,7 @@ const BadOrderModal = ({
                   replacementType === "bag" && isBulkProduct
                     ? item.quantity // Max is number of bags
                     : isBulkProduct
-                    ? productInfo?.piecesPerPackage || 1 // Max pieces per package
+                    ? (productInfo?.piecesPerPackage || 1) * item.quantity // Max pieces total
                     : item.quantity; // For single items, max is quantity ordered
 
                 return (
@@ -520,8 +919,8 @@ const BadOrderModal = ({
                     </div>
 
                     <div className="replacement-controls">
-                      {/* Replacement Type Toggle - Only show for ACTUAL bulk products */}
-                      {isBulkProduct && (
+                      {/* Replacement Type Toggle - Only show for ACTUAL bulk products and when general replacement is disabled */}
+                      {isBulkProduct && !generalReplacement.enabled && (
                         <div className="form-group replacement-type-toggle">
                           <label>Replacement Type</label>
                           <div className="toggle-container">
@@ -560,81 +959,108 @@ const BadOrderModal = ({
                         </div>
                       )}
 
-                      {/* Product Selection */}
-                      <div className="form-group product-selection">
-                        <label>
-                          <FontAwesomeIcon icon={faSearch} />
-                          {isBulkProduct
-                            ? `Select ${
-                                replacementType === "piece"
-                                  ? "Individual Product"
-                                  : "Bulk Product"
-                              } to Deduct From *`
-                            : "Product to Deduct From *"}
-                        </label>
+                      {/* Product Selection - Only show when general replacement is disabled */}
+                      {!generalReplacement.enabled && (
+                        <div className="form-group product-selection">
+                          <label>
+                            <FontAwesomeIcon icon={faSearch} />
+                            {isBulkProduct
+                              ? `Select ${
+                                  replacementType === "piece"
+                                    ? "Individual Product"
+                                    : "Bulk Product"
+                                } to Deduct From *`
+                              : "Product to Deduct From *"}
+                          </label>
 
-                        {isBulkProduct ? (
-                          <div className="search-with-suggestion">
-                            <ProductSearchSelector
-                              products={getAvailableReplacementProducts(
-                                item,
-                                replacementType
-                              )}
-                              selectedProductId={item.selectedProductId}
-                              onProductSelect={(productId, productName) =>
-                                handleProductSelect(
-                                  index,
-                                  productId,
-                                  productName
-                                )
-                              }
-                              placeholder={`Search for ${
-                                replacementType === "piece"
-                                  ? "individual"
-                                  : "bulk"
-                              } products...`}
-                            />
-                          </div>
-                        ) : (
-                          <div className="auto-selected-product">
-                            <div className="selected-product-card">
-                              <div className="product-name">
-                                <strong>{item.name}</strong>
-                              </div>
-                              <div className="stock-info">
-                                Current stock: {productInfo?.stock || 0} pieces
-                              </div>
+                          {isBulkProduct ? (
+                            <div className="search-with-suggestion">
+                              <ProductSearchSelector
+                                products={getAvailableReplacementProducts(
+                                  item,
+                                  replacementType
+                                )}
+                                selectedProductId={item.selectedProductId}
+                                onProductSelect={(productId, productName) =>
+                                  handleProductSelect(
+                                    index,
+                                    productId,
+                                    productName
+                                  )
+                                }
+                                placeholder={`Search for ${
+                                  replacementType === "piece"
+                                    ? "individual"
+                                    : "bulk"
+                                } products...`}
+                              />
                             </div>
-                            <input
-                              type="hidden"
-                              value={item.id}
-                              onChange={(e) =>
-                                handleProductSelect(index, item.id, item.name)
-                              }
-                            />
-                          </div>
-                        )}
+                          ) : (
+                            <div className="auto-selected-product">
+                              <div className="selected-product-card">
+                                <div className="product-name">
+                                  <strong>{item.name}</strong>
+                                </div>
+                                <div className="stock-info">
+                                  Current stock: {productInfo?.stock || 0}{" "}
+                                  pieces
+                                </div>
+                              </div>
+                              <input
+                                type="hidden"
+                                value={item.id}
+                                onChange={(e) =>
+                                  handleProductSelect(index, item.id, item.name)
+                                }
+                              />
+                            </div>
+                          )}
 
-                        {item.selectedProductId && (
-                          <div className="selected-product-confirmation">
-                            <FontAwesomeIcon icon={faCheckCircle} />
-                            Will deduct from:{" "}
-                            <strong>{item.selectedProductName}</strong>
-                            {!isBulkProduct && " (this product)"}
-                            {isBulkProduct &&
-                              replacementType === "piece" &&
-                              " (individual product)"}
-                            {isBulkProduct &&
-                              replacementType === "bag" &&
-                              " (bulk product)"}
+                          {item.selectedProductId && (
+                            <div className="selected-product-confirmation">
+                              <FontAwesomeIcon icon={faCheckCircle} />
+                              Will deduct from:{" "}
+                              <strong>{item.selectedProductName}</strong>
+                              {!isBulkProduct && " (this product)"}
+                              {isBulkProduct &&
+                                replacementType === "piece" &&
+                                " (individual product)"}
+                              {isBulkProduct &&
+                                replacementType === "bag" &&
+                                " (bulk product)"}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Show general replacement info when enabled */}
+                      {generalReplacement.enabled && (
+                        <div className="general-replacement-info">
+                          <div className="general-replacement-badge">
+                            <FontAwesomeIcon icon={faExchangeAlt} />
+                            Using General Replacement
                           </div>
-                        )}
-                      </div>
+                          <div className="general-product-details">
+                            <strong>Replacement Products:</strong>{" "}
+                            {generalReplacement.products.length > 0
+                              ? generalReplacement.products
+                                  .map((p) => p.productName)
+                                  .join(", ")
+                              : "No products selected"}
+                            {generalReplacement.products.length === 0 && (
+                              <div className="input-warning">
+                                Please add at least one replacement product
+                                above
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Quantity Input */}
                       <div className="form-group pieces-input">
                         <label>
-                          {isBulkProduct
+                          {isBulkProduct && !generalReplacement.enabled
                             ? `Number of ${
                                 replacementType === "piece" ? "Pieces" : "Bags"
                               } to Replace *`
@@ -650,11 +1076,19 @@ const BadOrderModal = ({
                           }
                           placeholder="0"
                           className="pieces-input-field"
+                          disabled={
+                            generalReplacement.enabled &&
+                            generalReplacement.products.length === 0
+                          }
                         />
                         <div className="input-info">
                           <span className="max-pieces">
                             Maximum: {maxQuantity}{" "}
-                            {replacementType === "piece" ? "pieces" : "bags"}
+                            {isBulkProduct &&
+                            !generalReplacement.enabled &&
+                            replacementType === "bag"
+                              ? "bags"
+                              : "pieces"}
                           </span>
                           {isBulkProduct &&
                             replacementType === "piece" &&
@@ -665,6 +1099,12 @@ const BadOrderModal = ({
                               </span>
                             )}
                         </div>
+                        {generalReplacement.enabled &&
+                          generalReplacement.products.length === 0 && (
+                            <div className="input-warning">
+                              Please add at least one replacement product first
+                            </div>
+                          )}
                       </div>
 
                       {/* Replacement Summary */}
@@ -686,16 +1126,19 @@ const BadOrderModal = ({
                               </div>
                               <div className="summary-row">
                                 <span className="summary-label">
-                                  {replacementType === "piece"
-                                    ? "Pieces"
-                                    : "Bags"}{" "}
-                                  to replace:
+                                  {!generalReplacement.enabled && isBulkProduct
+                                    ? (replacementType === "piece"
+                                        ? "Pieces"
+                                        : "Bags") + " to replace:"
+                                    : "Pieces to replace:"}
                                 </span>
                                 <span className="summary-value pieces-count">
                                   {item.badPieces}{" "}
-                                  {replacementType === "piece"
-                                    ? "pieces"
-                                    : "bags"}
+                                  {!generalReplacement.enabled &&
+                                  isBulkProduct &&
+                                  replacementType === "bag"
+                                    ? "bags"
+                                    : "pieces"}
                                 </span>
                               </div>
                               <div className="summary-row">
@@ -704,6 +1147,8 @@ const BadOrderModal = ({
                                 </span>
                                 <span className="summary-value target-product">
                                   {item.selectedProductName}
+                                  {generalReplacement.enabled &&
+                                    " (General Replacement)"}
                                 </span>
                               </div>
                               <div className="summary-row">
@@ -714,9 +1159,7 @@ const BadOrderModal = ({
                                   {allProducts.find(
                                     (p) => p.id === item.selectedProductId
                                   )?.stock || 0}{" "}
-                                  {replacementType === "piece"
-                                    ? "pieces"
-                                    : "bags"}
+                                  pieces
                                 </span>
                               </div>
                               <div className="summary-row new-stock">
@@ -727,9 +1170,7 @@ const BadOrderModal = ({
                                   {(allProducts.find(
                                     (p) => p.id === item.selectedProductId
                                   )?.stock || 0) - item.badPieces}{" "}
-                                  {replacementType === "piece"
-                                    ? "pieces"
-                                    : "bags"}
+                                  pieces
                                 </span>
                               </div>
                             </div>
@@ -865,11 +1306,17 @@ const BadOrderModal = ({
           <button
             className="btn btn-warning"
             onClick={handleProcessClick}
-            disabled={!badOrderDetails.reason || !hasValidBadOrderItems}
+            disabled={
+              !badOrderDetails.reason ||
+              !hasValidBadOrderItems ||
+              (generalReplacement.enabled &&
+                generalReplacement.products.length === 0)
+            }
           >
             <FontAwesomeIcon icon={faExclamationTriangle} />
             Process Bad Order
             {refundAmount > 0 && ` (Refund: ₱${refundAmount.toFixed(2)})`}
+            {generalReplacement.enabled && " [General Replacement]"}
           </button>
         </div>
       </div>
