@@ -60,7 +60,7 @@ export default function ProductForm({
     setParentProductId(productId);
     setParentProductName(productName);
 
-    // Auto-fill logic when product is selected
+    // Auto-fill logic when product is selected - ONLY SUGGESTIONS, NO AUTO-FILL
     if (productId && piecesPerPackage) {
       const parentProduct = availableParentProducts.find(
         (p) => p.id === productId
@@ -72,24 +72,6 @@ export default function ProductForm({
           // UPDATED: Remove "Pack" suffix from auto-generated name
           const suggestedName = `${parentProduct.name}`;
           setName(suggestedName);
-        }
-
-        // Auto-calculate suggested price (10% discount) if price is empty
-        if (!price && parentProduct.price) {
-          const suggestedPrice = (
-            parentProduct.price *
-            piecesPerPackage *
-            0.9
-          ).toFixed(2);
-          setPrice(suggestedPrice);
-        }
-
-        // Auto-calculate cost price if costPrice is empty and parent has cost
-        if (!costPrice && parentProduct.costPrice) {
-          const suggestedCost = (
-            parentProduct.costPrice * piecesPerPackage
-          ).toFixed(2);
-          setCostPrice(suggestedCost);
         }
 
         // Auto-set category if empty
@@ -105,7 +87,7 @@ export default function ProductForm({
     }
   };
 
-  // NEW: Auto-fill bulk package details when pieces per package changes
+  // NEW: Auto-fill bulk package details when pieces per package changes - ONLY SUGGESTIONS
   useEffect(() => {
     if (packagingType === "bulk" && parentProductId && piecesPerPackage) {
       const parentProduct = availableParentProducts.find(
@@ -118,24 +100,6 @@ export default function ProductForm({
           // UPDATED: Remove "Pack" suffix from auto-generated name
           const suggestedName = `${parentProduct.name}`;
           setName(suggestedName);
-        }
-
-        // Auto-calculate suggested price (10% discount) if price is empty
-        if (!price && parentProduct.price) {
-          const suggestedPrice = (
-            parentProduct.price *
-            piecesPerPackage *
-            0.9
-          ).toFixed(2);
-          setPrice(suggestedPrice);
-        }
-
-        // Auto-calculate cost price if costPrice is empty and parent has cost
-        if (!costPrice && parentProduct.costPrice) {
-          const suggestedCost = (
-            parentProduct.costPrice * piecesPerPackage
-          ).toFixed(2);
-          setCostPrice(suggestedCost);
         }
 
         // Auto-set category if empty
@@ -155,8 +119,6 @@ export default function ProductForm({
     piecesPerPackage,
     availableParentProducts,
     name,
-    price,
-    costPrice,
     category,
     unit,
     isNameManuallySet, // Add this dependency
@@ -210,6 +172,23 @@ export default function ProductForm({
   };
 
   const parentProduct = getParentProductInfo();
+
+  // NEW: Calculate suggested prices for display only
+  const calculateSuggestedPrices = () => {
+    if (!parentProduct || !piecesPerPackage) return null;
+
+    const parentPrice = parentProduct.price || 0;
+    const parentCost = parentProduct.costPrice || 0;
+    const pieces = parseInt(piecesPerPackage) || 0;
+
+    return {
+      regularPrice: (parentPrice * pieces).toFixed(2),
+      discountedPrice: (parentPrice * pieces * 0.9).toFixed(2), // 10% discount
+      costPrice: parentCost ? (parentCost * pieces).toFixed(2) : null,
+    };
+  };
+
+  const suggestedPrices = calculateSuggestedPrices();
 
   useEffect(() => {
     const fetchDefaultThreshold = async () => {
@@ -734,18 +713,12 @@ export default function ProductForm({
               <small className="field-description">
                 The price you paid when buying this product
               </small>
-              {packagingType === "bulk" &&
-                parentProduct &&
-                parentProduct.costPrice && (
-                  <small className="field-hint">
-                    Auto-calculated: {parentProduct.costPrice} ×{" "}
-                    {piecesPerPackage} = ₱
-                    {(
-                      parentProduct.costPrice *
-                      (parseInt(piecesPerPackage) || 0)
-                    ).toFixed(2)}
-                  </small>
-                )}
+              {packagingType === "bulk" && suggestedPrices?.costPrice && (
+                <small className="field-hint suggestion">
+                  💡 Suggested: ₱{suggestedPrices.costPrice} (based on{" "}
+                  {parentProduct.costPrice} × {piecesPerPackage})
+                </small>
+              )}
             </div>
 
             <div className="form-group">
@@ -767,17 +740,16 @@ export default function ProductForm({
               <small className="field-description">
                 The price customers will pay
               </small>
-              {packagingType === "bulk" && parentProduct && (
-                <small className="field-hint">
-                  Suggested: {parentProduct.price} × {piecesPerPackage} × 0.9 =
-                  ₱
-                  {(
-                    parentProduct.price *
-                    (parseInt(piecesPerPackage) || 0) *
-                    0.9
-                  ).toFixed(2)}{" "}
-                  (10% discount)
-                </small>
+              {packagingType === "bulk" && suggestedPrices && (
+                <div className="price-suggestions">
+                  <small className="field-hint suggestion">
+                    💡 Regular price: ₱{suggestedPrices.regularPrice} (
+                    {parentProduct.price} × {piecesPerPackage})
+                  </small>
+                  <small className="field-hint suggestion">
+                    💡 With 10% discount: ₱{suggestedPrices.discountedPrice}
+                  </small>
+                </div>
               )}
 
               {/* NEW: Price per piece display for bulk items */}
@@ -837,11 +809,7 @@ export default function ProductForm({
               />
               {packagingType === "bulk" && piecesPerPackage && (
                 <small className="field-description">
-                  Equivalent to{" "}
-                  <strong>
-                    {stock * (parseInt(piecesPerPackage) || 0)} individual
-                    pieces
-                  </strong>
+                  Each package contains {piecesPerPackage} individual pieces
                 </small>
               )}
             </div>
@@ -910,25 +878,23 @@ export default function ProductForm({
                   </div>
                 </div>
                 <div className="summary-card">
-                  <div className="summary-label">Total Value</div>
+                  <div className="summary-label">Individual Price</div>
                   <div className="summary-value">
-                    ₱{(parentProduct.price * piecesPerPackage).toFixed(2)}
+                    ₱{parentProduct.price} per piece
                   </div>
                 </div>
                 <div className="summary-card">
-                  <div className="summary-label">Your Discount</div>
-                  <div className="summary-value discount">
-                    {price
-                      ? `${(
-                          (1 -
-                            parseFloat(price) /
-                              (parentProduct.price * piecesPerPackage)) *
-                          100
-                        ).toFixed(1)}%`
-                      : "10%"}{" "}
-                    off
+                  <div className="summary-label">Total Value</div>
+                  <div className="summary-value">
+                    ₱{suggestedPrices?.regularPrice}
                   </div>
                 </div>
+              </div>
+              <div className="pricing-note">
+                <small>
+                  💡 Set your selling price above. Consider offering a discount
+                  for bulk purchases.
+                </small>
               </div>
             </div>
           )}

@@ -268,6 +268,11 @@ export default function Analytics() {
         range
       );
 
+      // Create a Set of current product names for quick lookup
+      const currentProductNames = new Set(
+        products.map((product) => getItemName(product))
+      );
+
       const productPerformance = {};
 
       // Calculate performance for each product
@@ -279,6 +284,12 @@ export default function Analytics() {
 
           const productId = getItemProductId(item);
           const productName = getItemName(item);
+
+          // Skip if product doesn't exist in current catalog
+          if (!currentProductNames.has(productName)) {
+            return;
+          }
+
           const quantity = getItemQuantity(item);
           const price = getItemPrice(item);
           const date =
@@ -429,6 +440,11 @@ export default function Analytics() {
         range
       );
 
+      // Create a Set of current product names for quick lookup
+      const currentProductNames = new Set(
+        products.map((product) => getItemName(product))
+      );
+
       const productSales = {};
       filteredTransactions.forEach((transaction) => {
         const items = safeArray(transaction?.items);
@@ -436,6 +452,12 @@ export default function Analytics() {
           if (!item || typeof item !== "object") return;
 
           const productName = getItemName(item);
+
+          // Skip if product doesn't exist in current catalog
+          if (!currentProductNames.has(productName)) {
+            return;
+          }
+
           const quantity = getItemQuantity(item);
           const price = getItemPrice(item);
 

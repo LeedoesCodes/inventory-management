@@ -10,6 +10,7 @@ import { useAssociationRules } from "../hooks/useAssociationRules";
 import Chatbot from "../components/Chatbot/Chatbot";
 import ChatbotToggle from "../components/Chatbot/ChatbotToggle";
 import CSVUploader from "../components/CSVUploader";
+import { StockConverter } from "../components/products/utils/stockConverter"; // ADD THIS IMPORT
 
 // FontAwesome imports
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -74,6 +75,7 @@ export default function Dashboard() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [showCSVUpload, setShowCSVUpload] = useState(false);
   const [uploadedResults, setUploadedResults] = useState([]);
+  const [currentProducts, setCurrentProducts] = useState([]); // NEW: Store current products for filtering
 
   // Fetch user settings
   useEffect(() => {
@@ -102,20 +104,43 @@ export default function Dashboard() {
     return () => unsubscribe();
   }, [user]);
 
-  // Generate recommendations based on popular items
+  // Generate recommendations based on popular items - FIXED: Filter out deleted products
   useEffect(() => {
     if (dashboardData.popularItems.length > 0 && associationRules.length > 0) {
       const popularItemNames = dashboardData.popularItems
         .slice(0, 3)
         .map((item) => item.name);
 
+      // Get recommendations
       const recs = getRecommendations(popularItemNames);
-      console.log("Generated recommendations:", recs);
-      setRecommendations(recs);
+
+      // Filter recommendations to only include products that exist in current catalog
+      const filteredRecs = recs.filter((rec) => {
+        if (!rec.consequent || !Array.isArray(rec.consequent)) return false;
+
+        // Check if ALL consequent products exist in current catalog
+        return rec.consequent.every((productName) =>
+          currentProducts.some(
+            (product) => getItemName(product) === productName
+          )
+        );
+      });
+
+      console.log("Generated recommendations:", {
+        original: recs.length,
+        filtered: filteredRecs.length,
+        filteredRecs,
+      });
+      setRecommendations(filteredRecs);
     } else {
       setRecommendations([]);
     }
-  }, [dashboardData.popularItems, associationRules, getRecommendations]);
+  }, [
+    dashboardData.popularItems,
+    associationRules,
+    getRecommendations,
+    currentProducts,
+  ]);
 
   // Debug useEffect to see what's happening
   useEffect(() => {
@@ -127,12 +152,20 @@ export default function Dashboard() {
       confidence: userSettings.minConfidence,
       lift: userSettings.minLift,
     });
+    console.log("Current Products Count:", currentProducts.length);
   }, [
     associationRules,
     dashboardData.popularItems,
     recommendations,
     userSettings,
+    currentProducts,
   ]);
+
+  // Safe data accessor functions
+  const getItemName = (item) => {
+    if (!item || typeof item !== "object") return "Unknown Product";
+    return item.name || item.productName || "Unknown Product";
+  };
 
   const fetchDashboardData = useCallback(async () => {
     try {
@@ -147,20 +180,27 @@ export default function Dashboard() {
         ...doc.data(),
       }));
 
+      // NEW: Store current products for filtering
+      setCurrentProducts(products);
+
       const orders = ordersSnap.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
 
-      // UPDATED: Calculate low stock count considering both custom and global thresholds
+      // 🔥 UPDATED: Calculate low stock count considering BOTH custom thresholds AND bulk packages
       const lowStockCount = products.filter((p) => {
+        // Calculate available stock including bulk packages
+        const availableStock = StockConverter.getAvailableStock(p, products);
+
         // Use custom threshold if set, otherwise use global threshold
         const threshold =
           p.lowStockThreshold !== null && p.lowStockThreshold !== undefined
             ? p.lowStockThreshold
             : userSettings.lowStockThreshold;
 
-        return p.stock <= threshold;
+        // Only flag as low stock if available stock is below threshold
+        return availableStock <= threshold;
       }).length;
 
       let totalRevenue = 0;
@@ -169,17 +209,28 @@ export default function Dashboard() {
       orders.forEach((order) => {
         totalRevenue += order.totalAmount || order.total || 0;
         order.items?.forEach((item) => {
-          const itemName =
-            item.name || item.productName || item.itemName || "Unknown Item";
-          itemCounts[itemName] =
-            (itemCounts[itemName] || 0) + (item.quantity || 1);
+          const itemName = getItemName(item);
+
+          // NEW: Only count items that exist in current products catalog
+          const productExists = products.some(
+            (product) => getItemName(product) === itemName
+          );
+
+          if (productExists) {
+            itemCounts[itemName] =
+              (itemCounts[itemName] || 0) + (item.quantity || 1);
+          }
         });
       });
 
+      // NEW: Filter popular items to only include existing products
       const sortedItems = Object.entries(itemCounts)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)
-        .map(([name, sold]) => ({ name, sold }));
+        .map(([name, sold]) => ({ name, sold }))
+        .filter((item) =>
+          products.some((product) => getItemName(product) === item.name)
+        );
 
       setDashboardData({
         totalProducts: products.length,
@@ -201,6 +252,30 @@ export default function Dashboard() {
         ).length
       );
       console.log("Total low stock items:", lowStockCount);
+
+      // NEW: Debug bulk package information
+      console.log("📦 BULK PACKAGE ANALYSIS:");
+      products.forEach((p) => {
+        if (p.packagingType === "single") {
+          const availableStock = StockConverter.getAvailableStock(p, products);
+          const currentStock = p.stock || 0;
+          const threshold =
+            p.lowStockThreshold !== null && p.lowStockThreshold !== undefined
+              ? p.lowStockThreshold
+              : userSettings.lowStockThreshold;
+
+          if (currentStock <= threshold && availableStock > threshold) {
+            console.log(
+              `✅ ${p.name}: Current stock ${currentStock} but available ${availableStock} (has bulk packages)`
+            );
+          } else if (availableStock <= threshold) {
+            console.log(
+              `⚠️ ${p.name}: Low stock - available ${availableStock} <= threshold ${threshold}`
+            );
+          }
+        }
+      });
+      console.log("Filtered popular items:", sortedItems.length);
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
       setError("Failed to load dashboard data");
@@ -404,7 +479,7 @@ export default function Dashboard() {
               <h2>{dashboardData.lowStock}</h2>
               <p>Low Stock Items</p>
               <span className="stock-warning">
-                Below threshold (Global + Custom)
+                Below threshold (Includes bulk packages)
               </span>
             </div>
           </div>
@@ -551,7 +626,8 @@ export default function Dashboard() {
                   >
                     Debug: {associationRules.length} rules loaded,{" "}
                     {dashboardData.popularItems.length} popular items,{" "}
-                    {dashboardData.totalOrders} total orders
+                    {dashboardData.totalOrders} total orders,{" "}
+                    {currentProducts.length} current products
                   </div>
                 </div>
               )}
@@ -609,7 +685,7 @@ export default function Dashboard() {
             <div className="popular-items side-section">
               <div className="section-header">
                 <h2>Most Popular Products</h2>
-                <span>Top 5 best sellers</span>
+                <span>Top 5 best sellers (Active products only)</span>
               </div>
               <div className="items-list">
                 {dashboardData.popularItems.length > 0 ? (
