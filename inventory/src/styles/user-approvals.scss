@@ -15,7 +15,7 @@
 
 .user-approvals-content {
   padding: 2rem;
-  background: #f9f9f9; // Light theme background
+  background: #f9f9f9;
   min-height: 100vh;
   margin-top: 70px;
   transition: all 0.3s ease;
@@ -84,13 +84,33 @@
           }
         }
 
-        &.approved {
+        &.customers {
           background: #d1ecf1;
           border: 1px solid #bee5eb;
           color: #0c5460;
 
           &::before {
             background: linear-gradient(135deg, #17a2b8, transparent);
+          }
+        }
+
+        &.workers {
+          background: #d4edda;
+          border: 1px solid #c3e6cb;
+          color: #155724;
+
+          &::before {
+            background: linear-gradient(135deg, #28a745, transparent);
+          }
+        }
+
+        &.approved {
+          background: #e2e3e5;
+          border: 1px solid #d6d8db;
+          color: #383d41;
+
+          &::before {
+            background: linear-gradient(135deg, #6c757d, transparent);
           }
         }
 
@@ -137,9 +157,43 @@
     }
   }
 
+  .tabs-container {
+    margin-bottom: 2rem;
+    animation: fadeInUp 0.5s ease-out 0.3s both;
+
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 0.5rem;
+
+      .tab {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        background: transparent;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        color: #666;
+
+        &:hover {
+          background: #f8f9fa;
+          color: #333;
+        }
+
+        &.active {
+          background: #007bff;
+          color: white;
+          box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+        }
+      }
+    }
+  }
+
   .users-section {
     margin-bottom: 3rem;
-    animation: fadeInUp 0.5s ease-out 0.3s both;
+    animation: fadeInUp 0.5s ease-out 0.4s both;
 
     h2 {
       margin: 0 0 1.5rem 0;
@@ -256,10 +310,50 @@
           }
 
           .user-date {
-            margin: 0;
+            margin: 0 0 0.5rem 0;
             color: #999;
             font-size: 0.8rem;
             transition: color 0.3s ease;
+          }
+
+          .user-role {
+            margin: 0;
+            color: #666;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+
+            .role-badge {
+              background: #e9ecef;
+              color: #495057;
+              padding: 0.25rem 0.5rem;
+              border-radius: 4px;
+              font-size: 0.8rem;
+              font-weight: 600;
+              text-transform: capitalize;
+            }
+          }
+
+          .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: capitalize;
+
+            &.pending {
+              background: #fff3cd;
+              color: #856404;
+            }
+
+            &.approved {
+              background: #d1edf1;
+              color: #0c5460;
+            }
+
+            &.admin {
+              background: #f8d7da;
+              color: #721c24;
+            }
           }
         }
       }
@@ -343,8 +437,9 @@
 
     .approved-user-item {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      padding: 1rem;
+      padding: 1rem 1.5rem;
       background: white;
       border-radius: 8px;
       border-left: 4px solid #28a745;
@@ -356,19 +451,10 @@
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       }
 
-      .user-avatar.small {
-        width: 40px;
-        height: 40px;
-        font-size: 1rem;
-        margin-right: 1rem;
-        background: linear-gradient(135deg, #28a745, #20c997);
-        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
-      }
-
       .user-details {
-        flex: 1;
         display: flex;
-        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
 
         .user-name {
           font-weight: 600;
@@ -380,6 +466,16 @@
           font-size: 0.9rem;
           color: #666;
           transition: color 0.3s ease;
+        }
+
+        .user-role-tag {
+          background: #e9ecef;
+          color: #495057;
+          padding: 0.25rem 0.75rem;
+          border-radius: 12px;
+          font-size: 0.8rem;
+          font-weight: 600;
+          text-transform: capitalize;
         }
       }
 
@@ -419,25 +515,24 @@
             background: rgba(245, 158, 11, 0.2);
             border: 1px solid rgba(245, 158, 11, 0.3);
             color: #f6ad55;
-
-            &::before {
-              background: linear-gradient(135deg, #f59e0b, transparent);
-            }
           }
 
-          &.approved {
+          &.customers {
+            background: rgba(66, 153, 225, 0.2);
+            border: 1px solid rgba(66, 153, 225, 0.3);
+            color: #63b3ed;
+          }
+
+          &.workers {
             background: rgba(72, 187, 120, 0.2);
             border: 1px solid rgba(72, 187, 120, 0.3);
             color: #68d391;
-
-            &::before {
-              background: linear-gradient(135deg, #48bb78, transparent);
-            }
           }
 
-          .stat-number,
-          .stat-label {
-            color: inherit;
+          &.approved {
+            background: rgba(160, 174, 192, 0.2);
+            border: 1px solid rgba(160, 174, 192, 0.3);
+            color: #cbd5e0;
           }
         }
       }
@@ -456,6 +551,27 @@
 
         &::placeholder {
           color: #a0aec0;
+        }
+      }
+    }
+
+    .tabs-container {
+      .tabs {
+        border-bottom-color: #4a5568;
+
+        .tab {
+          color: #a0aec0;
+
+          &:hover {
+            background: #4a5568;
+            color: #f7fafc;
+          }
+
+          &.active {
+            background: #63b3ed;
+            color: #1a202c;
+            box-shadow: 0 2px 8px rgba(99, 179, 237, 0.4);
+          }
         }
       }
     }
@@ -511,24 +627,30 @@
             .user-date {
               color: #a0aec0;
             }
-          }
-        }
 
-        .user-actions {
-          button {
-            &.btn-approve {
-              background: linear-gradient(135deg, #48bb78, #38a169);
+            .user-role {
+              color: #cbd5e0;
 
-              &:hover:not(:disabled) {
-                background: linear-gradient(135deg, #38a169, #2f855a);
+              .role-badge {
+                background: #4a5568;
+                color: #e2e8f0;
               }
             }
 
-            &.btn-reject {
-              background: linear-gradient(135deg, #fc8181, #f56565);
+            .status-badge {
+              &.pending {
+                background: rgba(245, 158, 11, 0.2);
+                color: #f6ad55;
+              }
 
-              &:hover:not(:disabled) {
-                background: linear-gradient(135deg, #f56565, #e53e3e);
+              &.approved {
+                background: rgba(72, 187, 120, 0.2);
+                color: #68d391;
+              }
+
+              &.admin {
+                background: rgba(245, 101, 101, 0.2);
+                color: #fc8181;
               }
             }
           }
@@ -541,11 +663,6 @@
         background: #2d3748;
         border-left-color: #48bb78;
 
-        .user-avatar.small {
-          background: linear-gradient(135deg, #48bb78, #38a169);
-          box-shadow: 0 2px 8px rgba(72, 187, 120, 0.4);
-        }
-
         .user-details {
           .user-name {
             color: #f7fafc;
@@ -553,6 +670,11 @@
 
           .user-email {
             color: #cbd5e0;
+          }
+
+          .user-role-tag {
+            background: #4a5568;
+            color: #e2e8f0;
           }
         }
 
@@ -590,18 +712,6 @@
   }
 }
 
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
 // ==============================
 // RESPONSIVE DESIGN
 // ==============================
@@ -625,6 +735,25 @@
       .stats {
         width: 100%;
         justify-content: space-between;
+        flex-wrap: wrap;
+
+        .stat-card {
+          min-width: calc(50% - 0.5rem);
+          padding: 0.75rem 1rem;
+        }
+      }
+    }
+
+    .tabs-container {
+      .tabs {
+        flex-wrap: wrap;
+
+        .tab {
+          flex: 1;
+          min-width: calc(50% - 0.5rem);
+          padding: 0.5rem 1rem;
+          font-size: 0.9rem;
+        }
       }
     }
 
@@ -644,6 +773,20 @@
 
         .user-actions {
           flex-direction: column;
+        }
+      }
+    }
+
+    .approved-users-list {
+      .approved-user-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+
+        .user-details {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.5rem;
         }
       }
     }

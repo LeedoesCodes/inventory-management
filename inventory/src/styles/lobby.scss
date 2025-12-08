@@ -26,30 +26,58 @@
     }
   }
 
-  button {
+  .lobby-actions {
+    display: flex;
+    gap: 1rem;
     margin-top: 20px;
-    padding: 10px 20px;
-    background-color: #e74c3c;
-    color: #fff;
-    font-weight: 600;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.2s ease;
 
-    &:hover {
-      background-color: #c0392b;
-    }
+    button {
+      padding: 10px 20px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s ease;
 
-    &:active {
-      transform: scale(0.97);
+      &:hover {
+        transform: translateY(-1px);
+      }
+
+      &:active {
+        transform: scale(0.97);
+      }
+
+      &.primary-action {
+        background-color: #007bff;
+        color: #fff;
+
+        &:hover {
+          background-color: #0056b3;
+        }
+      }
+
+      &:not(.primary-action) {
+        background-color: #e74c3c;
+        color: #fff;
+
+        &:hover {
+          background-color: #c0392b;
+        }
+      }
     }
   }
 }
-.hourglass-emoji {
+
+// Emoji styles
+.hourglass-emoji,
+.success-emoji,
+.warning-emoji {
   font-size: 3rem;
   margin-bottom: 20px;
   display: inline-block;
+}
+
+.hourglass-emoji {
   animation: spin 2s linear infinite;
 }
 

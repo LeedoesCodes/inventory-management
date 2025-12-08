@@ -1,4 +1,4 @@
-// components/UI/Headers.jsx - STAFF ONLY VERSION
+// components/UI/CustomerHeader.jsx - UPDATED TO MATCH Header.jsx STRUCTURE
 import React, { useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext.jsx";
@@ -10,7 +10,7 @@ import { faBars } from "@fortawesome/free-solid-svg-icons";
 import avatar from "../../assets/images/avatar-default.png";
 import "../../styles/header.scss";
 
-export default function Header() {
+export default function CustomerHeader() {
   const { user, role, isLoggedIn } = useContext(AuthContext);
   const { isCollapsed, isMobile, toggleSidebar } = useSidebar();
   const location = useLocation();
@@ -44,44 +44,36 @@ export default function Header() {
     return () => unsubscribe();
   }, [user?.uid]);
 
-  // Handle profile click - FOR STAFF ONLY
+  // Handle profile click - FOR CUSTOMER ONLY
   const handleProfileClick = () => {
     if (!isLoggedIn) {
       navigate("/");
       return;
     }
 
-    console.log("👔 Header.jsx: Staff profile clicked, role:", role);
+    console.log("🛒 CustomerHeader.jsx: Customer profile clicked, role:", role);
 
-    // IMPORTANT: Only staff should use this header
-    if (role === "customer") {
-      console.log(
-        "❌ Customer in staff header! Redirecting to /customer-profile"
-      );
-      navigate("/customer-profile");
+    // IMPORTANT: Only customers should use this header
+    if (role !== "customer") {
+      console.log("❌ Staff in customer header! Redirecting to /profile");
+      navigate("/profile");
       return;
     }
 
-    // Staff go to /profile
-    navigate("/profile");
+    // Customers go to /customer-profile
+    navigate("/customer-profile");
   };
 
+  // Customer-specific page titles
   const pageTitles = {
-    "/dashboard": "Dashboard",
-    "/analytics": "Analytics",
-    "/products": "Products",
-    "/settings": "Settings",
-    "/orderspage": "Orders",
-    "/user-approvals": "User Approvals",
-    "/profile": "My Profile",
-    "/transactionHistory": "Transaction History",
-    "/customer-management": "Customer Management",
-    "/user-management": "User Management",
-    "/low-stock": "Low Stock Items",
-    "/lobby": "Waiting for Approval",
+    "/customer-dashboard": "Dashboard",
+    "/customer-orders": "Place Order",
+    "/customer-transactions": "My Orders",
+    "/customer-settings": "Settings",
+    "/customer-profile": "My Profile",
   };
 
-  const title = pageTitles[location.pathname] || "Staff Portal";
+  const title = pageTitles[location.pathname] || "Customer Portal";
 
   // Get profile picture
   const getProfilePicture = () => {
@@ -95,23 +87,19 @@ export default function Header() {
   // Get role display name
   const getRoleDisplayName = (role) => {
     switch (role) {
-      case "admin":
-        return "Administrator";
-      case "approved":
-        return "Employee";
-      case "pending":
-        return "Pending Approval";
+      case "customer":
+        return "Customer";
       default:
-        return "Staff";
+        return "User";
     }
   };
 
-  // If user is customer, don't show this header at all
-  if (role === "customer") {
+  // If user is not customer, don't show this header at all
+  if (role !== "customer") {
     console.log(
-      "⚠️ Header.jsx: Customer detected, this header should not be shown!"
+      "⚠️ CustomerHeader.jsx: Non-customer detected, this header should not be shown!"
     );
-    return null; // Or redirect to customer header
+    return null;
   }
 
   return (
@@ -151,7 +139,7 @@ export default function Header() {
               <p className="display-name">
                 {loading
                   ? "Loading..."
-                  : userData?.displayName || user?.displayName || "Staff User"}
+                  : userData?.displayName || user?.displayName || "Customer"}
               </p>
               <p className="role">
                 {loading ? "..." : getRoleDisplayName(role)}

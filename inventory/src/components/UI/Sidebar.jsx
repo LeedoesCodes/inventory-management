@@ -36,6 +36,9 @@ export default function Sidebar() {
     }
   };
 
+  // Check if user is a customer (based on role or intendedRole)
+  const isCustomer = role === "customer" || role === "pending";
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -78,54 +81,55 @@ export default function Sidebar() {
             </button>
           )}
         </div>
-        {/*       <div className="sidebar-brand">
-        <h1 className="app-title" aria-label="Freddie's Goodies">
-          FREDDIE'S GOODIES 
-        </h1> */}
 
         <nav aria-label="Sidebar menu">
           <ul className="menu">
-            <li>
-              <NavLink
-                to="/dashboard"
-                className={({ isActive }) =>
-                  isActive ? "nav-link active" : "nav-link"
-                }
-                onClick={handleNavClick}
-                end
-              >
-                <FontAwesomeIcon icon={faHouse} aria-hidden="true" />
-                <span className="menu-text">Dashboard</span>
-              </NavLink>
-            </li>
+            {/* Show Dashboard and Analytics only for non-customers (admin, approved, etc.) */}
+            {!isCustomer && (
+              <>
+                <li>
+                  <NavLink
+                    to="/dashboard"
+                    className={({ isActive }) =>
+                      isActive ? "nav-link active" : "nav-link"
+                    }
+                    onClick={handleNavClick}
+                    end
+                  >
+                    <FontAwesomeIcon icon={faHouse} aria-hidden="true" />
+                    <span className="menu-text">Dashboard</span>
+                  </NavLink>
+                </li>
 
-            {/* NEW Analytics Link */}
-            <li>
-              <NavLink
-                to="/analytics"
-                className={({ isActive }) =>
-                  isActive ? "nav-link active" : "nav-link"
-                }
-                onClick={handleNavClick}
-              >
-                <FontAwesomeIcon icon={faChartLine} aria-hidden="true" />
-                <span className="menu-text">Analytics</span>
-              </NavLink>
-            </li>
+                <li>
+                  <NavLink
+                    to="/analytics"
+                    className={({ isActive }) =>
+                      isActive ? "nav-link active" : "nav-link"
+                    }
+                    onClick={handleNavClick}
+                  >
+                    <FontAwesomeIcon icon={faChartLine} aria-hidden="true" />
+                    <span className="menu-text">Analytics</span>
+                  </NavLink>
+                </li>
 
-            <li>
-              <NavLink
-                to="/products"
-                className={({ isActive }) =>
-                  isActive ? "nav-link active" : "nav-link"
-                }
-                onClick={handleNavClick}
-              >
-                <FontAwesomeIcon icon={faBoxOpen} aria-hidden="true" />
-                <span className="menu-text">Products</span>
-              </NavLink>
-            </li>
+                <li>
+                  <NavLink
+                    to="/products"
+                    className={({ isActive }) =>
+                      isActive ? "nav-link active" : "nav-link"
+                    }
+                    onClick={handleNavClick}
+                  >
+                    <FontAwesomeIcon icon={faBoxOpen} aria-hidden="true" />
+                    <span className="menu-text">Products</span>
+                  </NavLink>
+                </li>
+              </>
+            )}
 
+            {/* Show Orders and Transactions for ALL users */}
             <li>
               <NavLink
                 to="/orderspage"
@@ -152,6 +156,7 @@ export default function Sidebar() {
               </NavLink>
             </li>
 
+            {/* Admin-only sections - only show for admin/owner roles */}
             {(role === "admin" || role === "owner") && (
               <>
                 <li className="menu-section" role="separator">
@@ -199,6 +204,7 @@ export default function Sidebar() {
               </>
             )}
 
+            {/* Settings section - show for ALL users */}
             <li className="menu-section" role="separator">
               <span className="section-label">PREFERENCES</span>
             </li>

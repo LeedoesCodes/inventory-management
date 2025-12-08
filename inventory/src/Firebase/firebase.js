@@ -5,26 +5,29 @@ import { getStorage } from "firebase/storage";
 
 let analytics;
 
+// Your NEW web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyD30eN40VyYMxTkXzI6IGVLaxAtEU1u9v8",
-  authDomain: "inventory-management-eb8f4.firebaseapp.com",
-  projectId: "inventory-management-eb8f4",
-  storageBucket: "inventory-management-eb8f4.firebasestorage.app",
-  messagingSenderId: "427942968184",
-  appId: "1:427942968184:web:803fc9c71bfe6feecca68d",
-  measurementId: "G-8FP8X3DPEW",
+  apiKey: "AIzaSyAu2ptqVY9HP7p_InOBwIpZ6iShxRtBajs",
+  authDomain: "inventory-management-bb525.firebaseapp.com",
+  projectId: "inventory-management-bb525",
+  storageBucket: "inventory-management-bb525.firebasestorage.app",
+  messagingSenderId: "632078673003",
+  appId: "1:632078673003:web:a9ea2bf660a30d9c9dfd2e",
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
+// Initialize Analytics (optional - only if you need it)
 if (typeof window !== "undefined") {
   import("firebase/analytics").then(({ getAnalytics }) => {
     analytics = getAnalytics(app);
   });
 }
 
-// Services
+// Initialize Services
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-export { firebaseConfig };
 export const storage = getStorage(app);
+export { firebaseConfig };
+export default app;

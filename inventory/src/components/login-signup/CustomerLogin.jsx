@@ -1,22 +1,15 @@
-// components/login-signup/Login.jsx
+// components/login-signup/CustomerLogin.jsx
 import React, { useState } from "react";
 import { auth, db } from "../../Firebase/firebase";
-import {
-  signInWithEmailAndPassword,
-  GoogleAuthProvider,
-  FacebookAuthProvider,
-  signInWithPopup,
-} from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 import { useNavigate, Link, useLocation } from "react-router-dom";
-import googleLogo from "../../assets/images/google-logo.png";
-import facebookLogo from "../../assets/images/Facebook-logo.png";
 import "../../styles/login.scss";
 import freddieLogo from "../../assets/images/freddie-logo.png";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 
-export default function Login() {
+export default function CustomerLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordReveal, setPasswordReveal] = useState(false);
@@ -26,7 +19,7 @@ export default function Login() {
   const location = useLocation();
   const successMessage = location.state?.successMessage;
 
-  // Back button handler
+  // Back button handler - goes back to role selection
   const handleBackToRoleSelection = () => {
     navigate("/");
   };
@@ -37,21 +30,15 @@ export default function Login() {
 
     if (userSnap.exists()) {
       const data = userSnap.data();
-      if (data.role === "admin") navigate("/user-approvals");
-      else if (data.role === "approved") navigate("/dashboard");
-      else navigate("/lobby");
+      // Customers go directly to orders page
+      navigate("/orderspage");
     } else {
-      await setDoc(userRef, {
-        email: user.email,
-        role: "pending",
-        permissions: [],
-        createdAt: new Date(),
-      });
-      navigate("/lobby");
+      // This shouldn't happen for customers, but just in case
+      navigate("/orderspage");
     }
   };
 
-  const handleLogin = async (e) => {
+  const handleCustomerLogin = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -64,42 +51,23 @@ export default function Login() {
       );
       await handleUserRedirect(userCredential.user);
     } catch (err) {
+      let errorMessage = "Login failed. Please try again.";
+
       if (err.code === "auth/user-not-found") {
-        setError("No account found with this email.");
+        errorMessage = "No account found with this email.";
       } else if (err.code === "auth/wrong-password") {
-        setError("Incorrect password. Please try again.");
+        errorMessage = "Incorrect password. Please try again.";
       } else if (err.code === "auth/invalid-credential") {
-        setError(
-          "Invalid login credentials. Please check your email and password."
-        );
-      } else {
-        setError(err.message);
+        errorMessage =
+          "Invalid login credentials. Please check your email and password.";
+      } else if (err.code === "auth/too-many-requests") {
+        errorMessage = "Too many failed attempts. Please try again later.";
+      } else if (err.code === "auth/user-disabled") {
+        errorMessage = "This account has been disabled.";
       }
+
+      setError(errorMessage);
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    try {
-      setLoading(true);
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      await handleUserRedirect(result.user);
-    } catch (err) {
-      setError(err.message);
-      setLoading(false);
-    }
-  };
-
-  const handleFacebookLogin = async () => {
-    try {
-      setLoading(true);
-      const provider = new FacebookAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      await handleUserRedirect(result.user);
-    } catch (err) {
-      setError(err.message);
       setLoading(false);
     }
   };
@@ -121,8 +89,13 @@ export default function Login() {
         </div>
 
         <div className="form-side">
-          <form onSubmit={handleLogin}>
-            <h1>Login</h1>
+          <form onSubmit={handleCustomerLogin}>
+            <h1>Customer Login</h1>
+
+            {/* Customer badge */}
+            <div className="customer-badge">
+              <span>Customer</span>
+            </div>
 
             {successMessage && (
               <p className="prompt success">{successMessage}</p>
@@ -163,33 +136,17 @@ export default function Login() {
 
             <p className="or-text">or</p>
 
-            <div className="social-login-container">
-              <button
-                type="button"
-                className="google-login"
-                onClick={handleGoogleLogin}
-                disabled={loading}
-              >
-                <img src={googleLogo} alt="Google Logo" />
-                Google
-              </button>
-
-              <button
-                type="button"
-                className="facebook-login"
-                onClick={handleFacebookLogin}
-                disabled={loading}
-              >
-                <img src={facebookLogo} alt="Facebook Logo" />
-                Facebook
-              </button>
+            {/* Links section */}
+            <div className="customer-links">
+              <Link to="/customer-register" className="register-link">
+                Create An Account
+              </Link>
+              <Link to="/forgot-password" className="forgot-password">
+                Forgot Password?
+              </Link>
             </div>
 
             {error && <p className="prompt error">{error}</p>}
-
-            <div className="redirect">
-              Don't have an account? <Link to="/register">Register here</Link>
-            </div>
           </form>
         </div>
       </div>

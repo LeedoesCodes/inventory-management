@@ -1,4 +1,4 @@
-// components/login-signup/Register.jsx
+// components/login-signup/CustomerRegister.jsx
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -6,12 +6,11 @@ import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import "../../styles/register.scss";
 import freddieLogo from "../../assets/images/freddie-logo.png";
 
-import { auth } from "../../Firebase/firebase";
-import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import { auth, db } from "../../Firebase/firebase";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import { db } from "../../Firebase/firebase";
 
-export default function Register() {
+export default function CustomerRegister() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -26,11 +25,12 @@ export default function Register() {
     navigate("/");
   };
 
-  async function handleRegister(e) {
+  async function handleCustomerRegister(e) {
     e.preventDefault();
     setPrompt("");
     setLoading(true);
 
+    // Validation
     if (!email || !password || !confirmPassword || !displayName.trim()) {
       setPrompt("Please fill in all fields.");
       setLoading(false);
@@ -64,6 +64,7 @@ export default function Register() {
     }
 
     try {
+      // Create user with email and password
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -71,35 +72,42 @@ export default function Register() {
       );
       const user = userCredential.user;
 
-      console.log("User registered:", user);
+      console.log("Customer registered:", user);
 
+      // Create customer profile in Firestore with customer role
       await setDoc(doc(db, "users", user.uid), {
-        email: user.email,
+        email: user.email.toLowerCase(),
         displayName: displayName.trim(),
-        role: "pending",
-        permissions: [],
+        role: "customer", // Direct customer role, no approval needed
+        userType: "customer",
+        isActive: true,
         createdAt: new Date(),
+        lastLogin: new Date(),
+        customerProfile: {
+          bookingCount: 0,
+          preferences: {},
+        },
       });
 
-      await signOut(auth);
-
-      navigate("/login", {
+      // Auto-login after registration and redirect to orders page
+      navigate("/orderspage", {
         state: {
           successMessage:
-            "Account created! Please login and wait for admin approval.",
+            "Welcome! Your customer account has been created successfully.",
+          isNewCustomer: true,
         },
       });
     } catch (err) {
-      console.error("Error:", err.message);
+      console.error("Registration error:", err);
 
       let errorMessage = "Registration failed. Please try again.";
 
       if (err.code === "auth/email-already-in-use") {
-        errorMessage = "This email is already in use.";
+        errorMessage = "This email is already registered.";
       } else if (err.code === "auth/invalid-email") {
-        errorMessage = "Invalid email format.";
+        errorMessage = "Please enter a valid email address.";
       } else if (err.code === "auth/weak-password") {
-        errorMessage = "Password is too weak (min 6 characters).";
+        errorMessage = "Password should be at least 6 characters.";
       } else if (err.code === "auth/network-request-failed") {
         errorMessage = "Network error. Please check your connection.";
       }
@@ -127,11 +135,13 @@ export default function Register() {
         </div>
 
         <div className="form-side">
-          <form onSubmit={handleRegister}>
-            <h1>Employee Registration</h1>
+          <form onSubmit={handleCustomerRegister}>
+            <h1>Customer Registration</h1>
 
-            {/* Employee badge */}
-            <div className="employee-badge"></div>
+            {/* Customer badge */}
+            <div className="customer-badge">
+              <span>Customer</span>
+            </div>
 
             <input
               type="text"
@@ -185,23 +195,22 @@ export default function Register() {
               {loading ? "Creating Account..." : "Create Account"}
             </button>
 
-            <div className="employee-links">
+            <div className="customer-links">
               <p className="login-redirect">
-                Already have an account? <Link to="/login">Login here</Link>
+                Already have an account?{" "}
+                <Link to="/customer-login">Login here</Link>
               </p>
             </div>
 
             {prompt && (
               <p
                 className={`prompt ${
-                  prompt.includes("created") ? "success" : "error"
+                  prompt.includes("Welcome") ? "success" : "error"
                 }`}
               >
                 {prompt}
               </p>
             )}
-
-            <div className="employee-footer"></div>
           </form>
         </div>
       </div>

@@ -1,1998 +1,545 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc } from "firebase/firestore";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  updateDoc,
+  doc,
+} from "firebase/firestore";
 import { firebaseConfig } from "./src/Firebase/firebase.js";
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const products = [
-  // LARGE category
-  {
-    name: "Fish Cracker 100/24g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Fish Cracker [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Crackling Salt & Vinegar 100/24g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Crackling Salt & Vinegar [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Crispy Patata 100/24g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Crispy Patata [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Crispy Patata Cheese 100/24g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Crispy Patata Cheese [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi Fisda Fish Kropeck 100/22g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi Fisda Fish Kropeck [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Cheez on Chips 100/22g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Cheez on Chips [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Rinbee Cheese Stick 100/24g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Rinbee Cheese Stick [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Onion Ring 100/16g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Onion Ring [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Boogyman Crunch 100/24g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Boogyman Crunch [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Kirei Yummy Flakes 100/24g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Kirei Yummy Flakes [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Kirei Yummy Flakes Spicy Shrimp 100/20g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Kirei Yummy Flakes Spicy Shrimp [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Spicy Seafood Curls 100/24g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Spicy Seafood Curls [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi Chokulot Choco Curls 100/22g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi Chokulot Choco Curls 100/22g",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Choco Lo 100/32g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Choco Lo [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi OHEYA Multi Grain Cheese 100/28g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi OHEYA Multi Grain Cheese [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Potato Fries Cheese 100/21g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Potato Fries Cheese [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Potato Fries Plain Salted 100/21g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Potato Fries Plain Salted [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Potato Fries Barbecue Flavor 100/21g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Potato Fries Barbecue Flavor [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Potato Fries Tomato Ketchup 100/21g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Potato Fries Tomato Ketchup [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi Prawn Cracker Spicy 100g/24g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi Prawn Cracker Spicy [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi Prawn Cracker Sweet&Extra Hot 24g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi Prawn Cracker Sweet&Extra Hot [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi Prawn Cracker Plain 100/24g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi Prawn Cracker Plain [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Marty's Cracklin' Spicy Flavor 100/26g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Marty's Cracklin' Spicy Flavor [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Martyrs Plain Salted 100/26g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Martyrs Plain Salted [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Marty's Salted and Vinegar 100/26g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Marty's Salted and Vinegar [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Marty's Chicken Inasal 100/26g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Marty's Chicken Inasal [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Choco Pillows 100/24g",
-    price: 670,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Choco Pillows [by pcs]",
-    price: 6.7,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Ube Pillows 100/24g",
-    price: 670,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Ube Pillows [by pcs]",
-    price: 6.7,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Choco Pillows 100/38g",
-    price: 890,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Choco Pillows [by pcs]",
-    price: 8.9,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Ube Pillows 100/38g",
-    price: 890,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Ube Pillows [by pcs]",
-    price: 8.9,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi Chocolate Popcorn 50/60g",
-    price: 850,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi Chocolate Popcorn [by pcs]",
-    price: 17,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi Caramel Popcorn 50/60g",
-    price: 850,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi Caramel Popcorn [by pcs]",
-    price: 17,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi Tater Thins Potato Snack 100g/18g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi Tater Thins Potato Snack [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Pods Vegetarian Pea Snack 100/28g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Pods Vegetarian Pea Snack [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi Shripon Shrimp Kropeck 100/20g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi Shripon Shrimp Kropeck [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Corn Ole' 100/22g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Corn Ole' [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Cheese Clubs 100/23g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Cheese Clubs [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi Crackle Nets BBQ 100/24g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi Crackle Nets BBQ [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi KARLS Corn Cheese 100/35g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi KARLS Corn Cheese [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi Miggos Sweetcorn 100/28g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi Miggos Sweetcorn [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi Miggos Nacho Cheese 100/28g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "Oishi Miggos Nacho Cheese [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "4X Corn Snack Cheddar Cheese 100/24g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "4X Corn Snack Cheddar Cheese [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "4X Corn Snack BBQ 100/24g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "4X Corn Snack BBQ [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "4X Corn Snack Sweet Corn 100/24g",
-    price: 680,
-    stock: 100,
-    category: "LARGE",
-    image: "",
-  },
-  {
-    name: "4X Corn Snack Sweet Corn [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "LARGE",
-    image: "",
+// Product data with both single and bulk versions
+const productTemplates = [
+  // LARGE Category - 100 pieces bulk packages
+  {
+    single: {
+      name: "Fish Cracker",
+      basePrice: 6.8,
+      category: "LARGE",
+      unit: "piece",
+    },
+    bulk: {
+      pieces: 100,
+      bulkPrice: 680, // 6.8 * 100
+      unit: "pack",
+    },
+  },
+  {
+    single: {
+      name: "Crackling Salt & Vinegar",
+      basePrice: 6.8,
+      category: "LARGE",
+      unit: "piece",
+    },
+    bulk: {
+      pieces: 100,
+      bulkPrice: 680,
+      unit: "pack",
+    },
+  },
+  {
+    single: {
+      name: "Crispy Patata",
+      basePrice: 6.8,
+      category: "LARGE",
+      unit: "piece",
+    },
+    bulk: {
+      pieces: 100,
+      bulkPrice: 680,
+      unit: "pack",
+    },
+  },
+  {
+    single: {
+      name: "Crispy Patata Cheese",
+      basePrice: 6.8,
+      category: "LARGE",
+      unit: "piece",
+    },
+    bulk: {
+      pieces: 100,
+      bulkPrice: 680,
+      unit: "pack",
+    },
+  },
+  {
+    single: {
+      name: "Oishi Fisda Fish Kropeck",
+      basePrice: 6.8,
+      category: "LARGE",
+      unit: "piece",
+    },
+    bulk: {
+      pieces: 100,
+      bulkPrice: 680,
+      unit: "pack",
+    },
   },
 
-  // EXTRA SIZE (UA) category
+  // EXTRA SIZE (UA) Category - 30 pieces bulk packages
   {
-    name: "Fish Cracker 30/90g.",
-    price: 750,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
+    single: {
+      name: "Fish Cracker",
+      basePrice: 25,
+      category: "EXTRA SIZE (UA)",
+      unit: "piece",
+    },
+    bulk: {
+      pieces: 30,
+      bulkPrice: 750, // 25 * 30
+      unit: "pack",
+    },
   },
   {
-    name: "Fish Cracker [by pcs]",
-    price: 25,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
+    single: {
+      name: "Crackling Salt & Vinegar",
+      basePrice: 25,
+      category: "EXTRA SIZE (UA)",
+      unit: "piece",
+    },
+    bulk: {
+      pieces: 30,
+      bulkPrice: 750,
+      unit: "pack",
+    },
   },
   {
-    name: "Crackling Salt & Vinegar 30/90g",
-    price: 750,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Crackling Salt & Vinegar [by pcs]",
-    price: 25,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Crispy Patata 30/85g",
-    price: 750,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Crispy Patata [by pcs]",
-    price: 25,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Crispy Patata Cheese 30/85g",
-    price: 750,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Crispy Patata Cheese [by pcs]",
-    price: 25,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Fisda Fish Kropek 15/80g",
-    price: 350,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Fisda Fish Kropek [by pcs]",
-    price: 23.34,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Rinbee Cheese Stick 30/85g",
-    price: 750,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Rinbee Cheese Stick [by pcs]",
-    price: 25,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Kirei Yummy Flakes 30/60g",
-    price: 750,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Kirei Yummy Flakes [by pcs]",
-    price: 25,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Spicy Sea Food Curls 30/90g",
-    price: 750,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Spicy Sea Food Curls [by pcs]",
-    price: 25,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Potato Fries Cheese 30/90g",
-    price: 750,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Potato Fries Cheese [by pcs]",
-    price: 25,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Potato Fries Plain Salted 30/90g",
-    price: 750,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Potato Fries Plain Salted [by pcs]",
-    price: 25,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Oishi Prawn Crackers Spicy 30/100g",
-    price: 750,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Oishi Prawn Crackers Spicy [by pcs]",
-    price: 25,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Oishi Prawn Crackers Extra Hot 30/100g",
-    price: 750,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Oishi Prawn Crackers Extra Hot [by pcs]",
-    price: 25,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Oishi Prawn Crackers Plain 30/100g",
-    price: 750,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Oishi Prawn Crackers Plain [by pcs]",
-    price: 25,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Marty's Cracklin' Spicy Flavor 30/90g",
-    price: 670,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Marty's Cracklin' Spicy Flavor [by pcs]",
-    price: 22.34,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Martyrs Plain 30/90g",
-    price: 670,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Martyrs Plain [by pcs]",
-    price: 22.34,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Marty's Salt and Vinegar 30/90g",
-    price: 670,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Marty's Salt and Vinegar [by pcs]",
-    price: 22.34,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Marty's Chicken Inasal 30/90g",
-    price: 670,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Marty's Chicken Inasal [by pcs]",
-    price: 22.34,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Marty's Cracklin' Baconette 30/90g",
-    price: 800,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Marty's Cracklin' Baconette [by pcs]",
-    price: 27,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Oishi Tater Thins Potato Snack 30/75g",
-    price: 750,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Oishi Tater Thins Potato Snack [by pcs]",
-    price: 25,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "O-Pusit Sweet Spicy 30/80g",
-    price: 750,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "O-Pusit Sweet Spicy [by pcs]",
-    price: 25,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Shripon Shrimp Kropeck 15/65g",
-    price: 750,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
-  },
-  {
-    name: "Shripon Shrimp Kropeck [by pcs]",
-    price: 25,
-    stock: 100,
-    category: "EXTRA SIZE (UA)",
-    image: "",
+    single: {
+      name: "Crispy Patata",
+      basePrice: 25,
+      category: "EXTRA SIZE (UA)",
+      unit: "piece",
+    },
+    bulk: {
+      pieces: 30,
+      bulkPrice: 750,
+      unit: "pack",
+    },
   },
 
-  // FAMILY category
+  // FAMILY Category - 50 pieces bulk packages
   {
-    name: "Oishi Prawn Cracker Spicy 50/60g",
-    price: 830,
-    stock: 100,
-    category: "FAMILY",
-    image: "",
+    single: {
+      name: "Oishi Prawn Cracker Spicy",
+      basePrice: 16.6,
+      category: "FAMILY",
+      unit: "piece",
+    },
+    bulk: {
+      pieces: 50,
+      bulkPrice: 830, // 16.6 * 50
+      unit: "pack",
+    },
   },
   {
-    name: "Oishi Prawn Cracker Spicy [by pcs]",
-    price: 16.6,
-    stock: 100,
-    category: "FAMILY",
-    image: "",
-  },
-  {
-    name: "Oishi Prawn Cracker Sweet 50/60g",
-    price: 830,
-    stock: 100,
-    category: "FAMILY",
-    image: "",
-  },
-  {
-    name: "Oishi Prawn Cracker Sweet [by pcs]",
-    price: 16.6,
-    stock: 100,
-    category: "FAMILY",
-    image: "",
-  },
-  {
-    name: "Oishi Prawn Cracker Plain 50/60g",
-    price: 830,
-    stock: 100,
-    category: "FAMILY",
-    image: "",
-  },
-  {
-    name: "Oishi Prawn Cracker Plain [by pcs]",
-    price: 16.6,
-    stock: 100,
-    category: "FAMILY",
-    image: "",
-  },
-  {
-    name: "Oishi Prawn Cracker Salted Egg 30/60g",
-    price: 850,
-    stock: 100,
-    category: "FAMILY",
-    image: "",
-  },
-  {
-    name: "Oishi Prawn Cracker Salted Egg [by pcs]",
-    price: 17,
-    stock: 100,
-    category: "FAMILY",
-    image: "",
-  },
-  {
-    name: "Kire Yummy Flakes 50/45g",
-    price: 830,
-    stock: 100,
-    category: "FAMILY",
-    image: "",
-  },
-  {
-    name: "Kire Yummy Flakes [by pcs]",
-    price: 16.6,
-    stock: 100,
-    category: "FAMILY",
-    image: "",
-  },
-  {
-    name: "Pods Vegetarian Pea Snacks 50/60g",
-    price: 830,
-    stock: 100,
-    category: "FAMILY",
-    image: "",
-  },
-  {
-    name: "Pods Vegetarian Pea Snacks [by pcs]",
-    price: 16.6,
-    stock: 100,
-    category: "FAMILY",
-    image: "",
+    single: {
+      name: "Oishi Prawn Cracker Sweet",
+      basePrice: 16.6,
+      category: "FAMILY",
+      unit: "piece",
+    },
+    bulk: {
+      pieces: 50,
+      bulkPrice: 830,
+      unit: "pack",
+    },
   },
 
-  // BEERMATCH category
+  // BEERMATCH Category - 50 pieces bulk packages
   {
-    name: "Potato Fries Cheese 50/50g",
-    price: 755,
-    stock: 100,
-    category: "BEERMATCH",
-    image: "",
+    single: {
+      name: "Potato Fries Cheese",
+      basePrice: 15.1,
+      category: "BEERMATCH",
+      unit: "piece",
+    },
+    bulk: {
+      pieces: 50,
+      bulkPrice: 755, // 15.1 * 50
+      unit: "pack",
+    },
   },
   {
-    name: "Potato Fries Cheese [by pcs]",
-    price: 15.1,
-    stock: 100,
-    category: "BEERMATCH",
-    image: "",
-  },
-  {
-    name: "Potato Fries Plain Salted 50/50g",
-    price: 755,
-    stock: 100,
-    category: "BEERMATCH",
-    image: "",
-  },
-  {
-    name: "Potato Fries Plain Salted [by pcs]",
-    price: 15.1,
-    stock: 100,
-    category: "BEERMATCH",
-    image: "",
-  },
-  {
-    name: "Potato Fries Barbecue 50/50g",
-    price: 755,
-    stock: 100,
-    category: "BEERMATCH",
-    image: "",
-  },
-  {
-    name: "Potato Fries Barbecue [by pcs]",
-    price: 15.1,
-    stock: 100,
-    category: "BEERMATCH",
-    image: "",
-  },
-  {
-    name: "Potato Fries Tomato Ketchup 50/50g",
-    price: 755,
-    stock: 100,
-    category: "BEERMATCH",
-    image: "",
-  },
-  {
-    name: "Potato Fries Tomato Ketchup [by pcs]",
-    price: 15.1,
-    stock: 100,
-    category: "BEERMATCH",
-    image: "",
-  },
-  {
-    name: "Crackling Salt & Vinegar 50/50g",
-    price: 755,
-    stock: 100,
-    category: "BEERMATCH",
-    image: "",
-  },
-  {
-    name: "Crackling Salt & Vinegar [by pcs]",
-    price: 15.1,
-    stock: 100,
-    category: "BEERMATCH",
-    image: "",
-  },
-  {
-    name: "Kire Yummy Flakes Spicy 50/60",
-    price: 755,
-    stock: 100,
-    category: "BEERMATCH",
-    image: "",
-  },
-  {
-    name: "Kire Yummy Flakes Spicy [by pcs]",
-    price: 15.1,
-    stock: 100,
-    category: "BEERMATCH",
-    image: "",
+    single: {
+      name: "Potato Fries Plain Salted",
+      basePrice: 15.1,
+      category: "BEERMATCH",
+      unit: "piece",
+    },
+    bulk: {
+      pieces: 50,
+      bulkPrice: 755,
+      unit: "pack",
+    },
   },
 
-  // SUNDAYS category
+  // BREADPAN Category
   {
-    name: "Sundays Orange 120/35g",
-    price: 2200,
-    stock: 100,
-    category: "SUNDAYS",
-    image: "",
+    single: {
+      name: "Breadpan Cheese & Onion",
+      basePrice: 6.8,
+      category: "BREADPAN",
+      unit: "piece",
+    },
+    bulk: {
+      pieces: 100,
+      bulkPrice: 680,
+      unit: "pack",
+    },
   },
   {
-    name: "Sundays Melon 120/35g",
-    price: 2200,
-    stock: 100,
-    category: "SUNDAYS",
-    image: "",
-  },
-  {
-    name: "Sundays Mango 120/35g",
-    price: 2200,
-    stock: 100,
-    category: "SUNDAYS",
-    image: "",
-  },
-  {
-    name: "Sundays Pineapple 120/35g",
-    price: 2200,
-    stock: 100,
-    category: "SUNDAYS",
-    image: "",
-  },
-  {
-    name: "Sundays Orange Mango 120/35g",
-    price: 2200,
-    stock: 100,
-    category: "SUNDAYS",
-    image: "",
+    single: {
+      name: "Breadpan Garlic Toast",
+      basePrice: 6.8,
+      category: "BREADPAN",
+      unit: "piece",
+    },
+    bulk: {
+      pieces: 100,
+      bulkPrice: 680,
+      unit: "pack",
+    },
   },
 
-  // MARSHMALLOW category
+  // DKFPI Category - 15 pieces bulk packages
   {
-    name: "O'Puff Marshmallow Ube 30/84g",
-    price: 870,
-    stock: 100,
-    category: "MARSHMALLOW",
-    image: "",
+    single: {
+      name: "Alibaba",
+      basePrice: 19,
+      category: "DKFPI",
+      unit: "piece",
+    },
+    bulk: {
+      pieces: 15,
+      bulkPrice: 285, // 19 * 15
+      unit: "pack",
+    },
   },
   {
-    name: "O'Puff Marshmallow Chocolate 30/84g",
-    price: 870,
-    stock: 100,
-    category: "MARSHMALLOW",
-    image: "",
-  },
-  {
-    name: "O'Puff Marshmallow Mango 30/84g",
-    price: 870,
-    stock: 100,
-    category: "MARSHMALLOW",
-    image: "",
-  },
-  {
-    name: "O'Puff Marshmallow Matcha Green Tea 30/84g",
-    price: 870,
-    stock: 100,
-    category: "MARSHMALLOW",
-    image: "",
+    single: {
+      name: "Cheezeball",
+      basePrice: 19,
+      category: "DKFPI",
+      unit: "piece",
+    },
+    bulk: {
+      pieces: 15,
+      bulkPrice: 285,
+      unit: "pack",
+    },
   },
 
-  // BREADPAN category
+  // NUTRI 25x100 Category - 25 pieces bulk packages
   {
-    name: "Breadpan Cheese & Onion",
-    price: 680,
-    stock: 100,
-    category: "BREADPAN",
-    image: "",
+    single: {
+      name: "Peewe BBQ",
+      basePrice: 8.1,
+      category: "NUTRI 25x100",
+      unit: "piece",
+    },
+    bulk: {
+      pieces: 25,
+      bulkPrice: 202.5, // 8.1 * 25
+      unit: "pack",
+    },
   },
   {
-    name: "Breadpan Cheese & Onion [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "BREADPAN",
-    image: "",
+    single: {
+      name: "Peewe Salt & Vinegar",
+      basePrice: 8.1,
+      category: "NUTRI 25x100",
+      unit: "piece",
+    },
+    bulk: {
+      pieces: 25,
+      bulkPrice: 202.5,
+      unit: "pack",
+    },
   },
   {
-    name: "Breadpan Garlic Toast",
-    price: 680,
-    stock: 100,
-    category: "BREADPAN",
-    image: "",
-  },
-  {
-    name: "Breadpan Garlic Toast [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "BREADPAN",
-    image: "",
-  },
-  {
-    name: "Breadpan Butter Toast",
-    price: 680,
-    stock: 100,
-    category: "BREADPAN",
-    image: "",
-  },
-  {
-    name: "Breadpan Butter Toast [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "BREADPAN",
-    image: "",
-  },
-  {
-    name: "Breadpan White Cheddar Cheese",
-    price: 680,
-    stock: 100,
-    category: "BREADPAN",
-    image: "",
-  },
-  {
-    name: "Breadpan White Cheddar Cheese [by pcs]",
-    price: 6.8,
-    stock: 100,
-    category: "BREADPAN",
-    image: "",
+    single: {
+      name: "Peewe Cheese",
+      basePrice: 8.1,
+      category: "NUTRI 25x100",
+      unit: "piece",
+    },
+    bulk: {
+      pieces: 25,
+      bulkPrice: 202.5,
+      unit: "pack",
+    },
   },
 
-  // PINATSU category
+  // LOADED 32x100 Category - 32 pieces bulk packages
   {
-    name: "Pinatsu Garlic & Salt 100/32g",
-    price: 680,
-    stock: 100,
-    category: "PINATSU",
-    image: "",
-  },
-  {
-    name: "Pinatsu Seaweed 100/32g",
-    price: 680,
-    stock: 100,
-    category: "PINATSU",
-    image: "",
-  },
-
-  // FROOZE category
-  {
-    name: "Frooze Pineapple 24/230ml",
-    price: 500,
-    stock: 100,
-    category: "FROOZE",
-    image: "",
-  },
-  {
-    name: "Frooze Orange 24/230ml",
-    price: 500,
-    stock: 100,
-    category: "FROOZE",
-    image: "",
-  },
-  {
-    name: "Frooze Apple 24/230ml",
-    price: 500,
-    stock: 100,
-    category: "FROOZE",
-    image: "",
+    single: {
+      name: "Loaded Chips",
+      basePrice: 28.75,
+      category: "LOADED 32x100",
+      unit: "piece",
+    },
+    bulk: {
+      pieces: 32,
+      bulkPrice: 920, // 28.75 * 32
+      unit: "pack",
+    },
   },
 
-  // SMART C+ category
+  // PILLOWS Category
   {
-    name: "Smart C+ Dalandan 24/350ml",
-    price: 580,
-    stock: 100,
-    category: "SMART C+",
-    image: "",
+    single: {
+      name: "Choco Pillows",
+      basePrice: 6.7,
+      category: "PILLOWS",
+      unit: "piece",
+    },
+    bulk: {
+      pieces: 100,
+      bulkPrice: 670,
+      unit: "pack",
+    },
   },
   {
-    name: "Smart C+ Lemon Squeeze 24/350ml",
-    price: 580,
-    stock: 100,
-    category: "SMART C+",
-    image: "",
-  },
-  {
-    name: "Smart C+ Orange Crush 24/350ml",
-    price: 580,
-    stock: 100,
-    category: "SMART C+",
-    image: "",
-  },
-  {
-    name: "Smart C+ Pomelo Grapefruit 24/350ml",
-    price: 580,
-    stock: 100,
-    category: "SMART C+",
-    image: "",
-  },
-  {
-    name: "Smart C+ Calamansi Splash 24/350ml",
-    price: 580,
-    stock: 100,
-    category: "SMART C+",
-    image: "",
+    single: {
+      name: "Ube Pillows",
+      basePrice: 6.7,
+      category: "PILLOWS",
+      unit: "piece",
+    },
+    bulk: {
+      pieces: 100,
+      bulkPrice: 670,
+      unit: "pack",
+    },
   },
 
-  // SMART C+ 500ml category
+  // MARSHMALLOW Category
   {
-    name: "Smart C+ Dalandan 24/500ml",
-    price: 735,
-    stock: 100,
-    category: "SMART C+ 500ml",
-    image: "",
+    single: {
+      name: "O'Puff Marshmallow Ube",
+      basePrice: 29,
+      category: "MARSHMALLOW",
+      unit: "piece",
+    },
+    bulk: {
+      pieces: 30,
+      bulkPrice: 870,
+      unit: "pack",
+    },
   },
   {
-    name: "Smart C+ Lemon Squeeze 24/500ml",
-    price: 735,
-    stock: 100,
-    category: "SMART C+ 500ml",
-    image: "",
-  },
-  {
-    name: "Smart C+ Orange Crush 24/500ml",
-    price: 735,
-    stock: 100,
-    category: "SMART C+ 500ml",
-    image: "",
-  },
-  {
-    name: "Smart C+ Pomelo Grapefruit 24/500ml",
-    price: 735,
-    stock: 100,
-    category: "SMART C+ 500ml",
-    image: "",
-  },
-  {
-    name: "Smart C+ Calamansi Splash 24/500ml",
-    price: 735,
-    stock: 100,
-    category: "SMART C+ 500ml",
-    image: "",
-  },
-  {
-    name: "Smart C+ Cranberry Dew 24/500ml",
-    price: 735,
-    stock: 100,
-    category: "SMART C+ 500ml",
-    image: "",
-  },
-  {
-    name: "Smart C+ Honey Calamansi 24/500ml",
-    price: 735,
-    stock: 100,
-    category: "SMART C+ 500ml",
-    image: "",
+    single: {
+      name: "O'Puff Marshmallow Chocolate",
+      basePrice: 29,
+      category: "MARSHMALLOW",
+      unit: "piece",
+    },
+    bulk: {
+      pieces: 30,
+      bulkPrice: 870,
+      unit: "pack",
+    },
   },
 
-  // SMART C+ Liter category
+  // FROOZE Category
   {
-    name: "Smart C+ Lemon Squeeze 12/1 Liter",
-    price: 610,
-    stock: 100,
-    category: "SMART C+ Liter",
-    image: "",
+    single: {
+      name: "Frooze Pineapple",
+      basePrice: 20.83,
+      category: "FROOZE",
+      unit: "bottle",
+    },
+    bulk: {
+      pieces: 24,
+      bulkPrice: 500,
+      unit: "case",
+    },
   },
   {
-    name: "Smart C+ Orange Crush 12/1 Liter",
-    price: 610,
-    stock: 100,
-    category: "SMART C+ Liter",
-    image: "",
-  },
-  {
-    name: "Smart C+ Pomelo Grapefruit 12/1 Liter",
-    price: 610,
-    stock: 100,
-    category: "SMART C+ Liter",
-    image: "",
-  },
-
-  // ROYAL DAICHI category
-  {
-    name: "Pritong Manok",
-    price: 305,
-    stock: 100,
-    category: "ROYAL DAICHI",
-    image: "",
-  },
-  {
-    name: "Pritong Manok [by pcs]",
-    price: 6.1,
-    stock: 100,
-    category: "ROYAL DAICHI",
-    image: "",
-  },
-  {
-    name: "Kropeck",
-    price: 305,
-    stock: 100,
-    category: "ROYAL DAICHI",
-    image: "",
-  },
-  {
-    name: "Kropeck [by pcs]",
-    price: 6.1,
-    stock: 100,
-    category: "ROYAL DAICHI",
-    image: "",
+    single: {
+      name: "Frooze Orange",
+      basePrice: 20.83,
+      category: "FROOZE",
+      unit: "bottle",
+    },
+    bulk: {
+      pieces: 24,
+      bulkPrice: 500,
+      unit: "case",
+    },
   },
 
-  // DKFPI category
-  {
-    name: "Alibaba 15x20",
-    price: 285,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Alibaba [by pcs]",
-    price: 19,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Cheezeball 15x20",
-    price: 285,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Cheezeball [by pcs]",
-    price: 19,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Gulay 2 in 1 15x20",
-    price: 285,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Gulay 2 in 1 [by pcs]",
-    price: 19,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Lumpia 2 in1 15x20",
-    price: 285,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Lumpia 2 in1 [by pcs]",
-    price: 19,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Chocoroll 2 in 1 15x20",
-    price: 285,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Chocoroll 2 in 1 [by pcs]",
-    price: 19,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee BBQ 15x20",
-    price: 285,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee BBQ [by pcs]",
-    price: 19,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Salt & Vinegar 15x20",
-    price: 285,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Salt & Vinegar [by pcs]",
-    price: 19,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Cheese 15x20",
-    price: 285,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Cheese [by pcs]",
-    price: 19,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Spicy 15x20",
-    price: 285,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Spicy [by pcs]",
-    price: 19,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Plain 15x20",
-    price: 285,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Plain [by pcs]",
-    price: 19,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Sampalok 15x20",
-    price: 285,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Sampalok [by pcs]",
-    price: 19,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Mangga 15x20",
-    price: 285,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Mangga [by pcs]",
-    price: 19,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Pineapple 15x20",
-    price: 285,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Pineapple [by pcs]",
-    price: 19,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Strawberry 15x20",
-    price: 285,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Strawberry [by pcs]",
-    price: 19,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Blueberry 15x20",
-    price: 285,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Blueberry [by pcs]",
-    price: 19,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Grapes 15x20",
-    price: 285,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Grapes [by pcs]",
-    price: 19,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Green Apple 15x20",
-    price: 285,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Green Apple [by pcs]",
-    price: 19,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Orange 15x20",
-    price: 285,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Orange [by pcs]",
-    price: 19,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Melon 15x20",
-    price: 285,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-  {
-    name: "Pee Wee Melon [by pcs]",
-    price: 19,
-    stock: 100,
-    category: "DKFPI",
-    image: "",
-  },
-
-  // NUTRI category
-  {
-    name: "Peewe BBQ [by pcs]",
-    price: 29.6,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Salt & Vinegar [by pcs]",
-    price: 29.6,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Cheese [by pcs]",
-    price: 29.6,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Spicy [by pcs]",
-    price: 29.6,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Plain [by pcs]",
-    price: 29.6,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Sampalok [by pcs]",
-    price: 29.6,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Mangga [by pcs]",
-    price: 29.6,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Pineapple [by pcs]",
-    price: 29.6,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Strawberry [by pcs]",
-    price: 29.6,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Blueberry [by pcs]",
-    price: 29.6,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Grapes [by pcs]",
-    price: 29.6,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Green Apple [by pcs]",
-    price: 29.6,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Orange [by pcs]",
-    price: 29.6,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Melon [by pcs]",
-    price: 29.6,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe BBQ 15x20",
-    price: 444,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Salt & Vinegar 15x20",
-    price: 444,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Cheese 15x20",
-    price: 444,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Spicy 15x20",
-    price: 444,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Plain 15x20",
-    price: 444,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Sampalok 15x20",
-    price: 444,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Mangga 15x20",
-    price: 444,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Pineapple 15x20",
-    price: 444,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Strawberry 15x20",
-    price: 444,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Blueberry 15x20",
-    price: 444,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Grapes 15x20",
-    price: 444,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Green Apple 15x20",
-    price: 444,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Orange 15x20",
-    price: 444,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Melon 15x20",
-    price: 444,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe BBQ 20x20",
-    price: 592,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Salt & Vinegar 20x20",
-    price: 592,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Cheese 20x20",
-    price: 592,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Spicy 20x20",
-    price: 592,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Plain 20x20",
-    price: 592,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Sampalok 20x20",
-    price: 592,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Mangga 20x20",
-    price: 592,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Pineapple 20x20",
-    price: 592,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Strawberry 20x20",
-    price: 592,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Blueberry 20x20",
-    price: 592,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Grapes 20x20",
-    price: 592,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Green Apple 20x20",
-    price: 592,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Orange 20x20",
-    price: 592,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
-  },
-  {
-    name: "Peewe Melon 20x20",
-    price: 592,
-    stock: 100,
-    category: "NUTRI",
-    image: "",
+  // LONBISCO Category
+  {
+    single: {
+      name: "Lonbisco Crackers",
+      basePrice: 9,
+      category: "LONBISCO",
+      unit: "piece",
+    },
+    bulk: {
+      pieces: 50,
+      bulkPrice: 450,
+      unit: "pack",
+    },
   },
 ];
 
-async function seedProducts() {
+// Generate product data with proper structure
+function generateProducts() {
+  const allProducts = [];
+  const singleProducts = [];
+  const bulkProducts = [];
+
+  productTemplates.forEach((template) => {
+    const { single, bulk } = template;
+
+    // Create single product
+    const singleProduct = {
+      name: `${single.name} [by pcs]`,
+      price: single.basePrice,
+      costPrice: parseFloat((single.basePrice * 0.7).toFixed(2)),
+      stock: 100,
+      category: single.category,
+      barcode: "",
+      imageUrl: "",
+      sold: 0,
+      lowStockThreshold: null,
+      packagingType: "single",
+      piecesPerPackage: 1,
+      parentProductId: null,
+      isBulkPackage: false,
+      unit: single.unit,
+      createdAt: {
+        seconds: Math.floor(Date.now() / 1000),
+        nanoseconds: 0,
+      },
+      updatedAt: {
+        seconds: Math.floor(Date.now() / 1000),
+        nanoseconds: 0,
+      },
+    };
+
+    singleProducts.push(singleProduct);
+    allProducts.push(singleProduct);
+
+    // Create bulk product (will be linked after creation)
+    const bulkProduct = {
+      name: `${single.name} ${bulk.pieces}/${
+        bulk.pieces * (single.category.includes("NUTRI") ? 4 : 1)
+      }g`,
+      price: bulk.bulkPrice,
+      costPrice: parseFloat((bulk.bulkPrice * 0.7).toFixed(2)),
+      stock: 50,
+      category: single.category,
+      barcode: "",
+      imageUrl: "",
+      sold: 0,
+      lowStockThreshold: null,
+      packagingType: "bulk",
+      piecesPerPackage: bulk.pieces,
+      parentProductId: null, // Will be updated after single product is created
+      isBulkPackage: true,
+      unit: bulk.unit,
+      createdAt: {
+        seconds: Math.floor(Date.now() / 1000),
+        nanoseconds: 0,
+      },
+      updatedAt: {
+        seconds: Math.floor(Date.now() / 1000),
+        nanoseconds: 0,
+      },
+      // Store reference for linking
+      correspondingSingleName: singleProduct.name,
+    };
+
+    bulkProducts.push(bulkProduct);
+    allProducts.push(bulkProduct);
+  });
+
+  return { allProducts, singleProducts, bulkProducts };
+}
+
+async function seedProductsWithRelationships() {
   let successCount = 0;
   let errorCount = 0;
+  const productIds = new Map();
 
   // Add delay function to avoid rate limiting
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  for (let i = 0; i < products.length; i++) {
+  console.log("🟡 Generating products with relationships...");
+  const { allProducts, singleProducts, bulkProducts } = generateProducts();
+
+  console.log(
+    `📊 Generated ${singleProducts.length} single products and ${bulkProducts.length} bulk packages`
+  );
+
+  // First pass: Create all products and store their IDs
+  console.log("🟡 Creating products in Firestore...");
+
+  for (let i = 0; i < allProducts.length; i++) {
+    const product = allProducts[i];
     try {
-      await addDoc(collection(db, "products"), products[i]);
-      console.log(`Added ${products[i].name}`);
+      const docRef = await addDoc(collection(db, "products"), product);
+      productIds.set(product.name, docRef.id);
+      console.log(`✅ Added ${product.name} (ID: ${docRef.id})`);
       successCount++;
 
-      // Add a small delay every 50 products to avoid rate limiting
-      if (i % 50 === 0 && i > 0) {
-        console.log("Taking a brief pause to avoid rate limiting...");
-        await delay(1000); // 1 second delay
+      // Add a small delay every 10 products to avoid rate limiting
+      if (i % 10 === 0 && i > 0) {
+        console.log("⏳ Taking a brief pause...");
+        await delay(500);
       }
     } catch (error) {
-      console.error(`Error adding ${products[i].name}:`, error);
+      console.error(`❌ Error adding ${product.name}:`, error);
       errorCount++;
-
-      // Longer delay on error
-      await delay(2000);
+      await delay(1000);
     }
   }
 
-  console.log(
-    `Seeding complete! Success: ${successCount}, Errors: ${errorCount}`
-  );
+  // Second pass: Link bulk packages to their single products
+  console.log("🟡 Linking bulk packages to single products...");
+  let linkCount = 0;
+
+  for (const bulkProduct of bulkProducts) {
+    const singleProductId = productIds.get(bulkProduct.correspondingSingleName);
+
+    if (singleProductId) {
+      try {
+        const bulkProductId = productIds.get(bulkProduct.name);
+        await updateDoc(doc(db, "products", bulkProductId), {
+          parentProductId: singleProductId,
+        });
+        console.log(
+          `🔗 Linked ${bulkProduct.name} to ${bulkProduct.correspondingSingleName}`
+        );
+        linkCount++;
+        await delay(200); // Small delay between updates
+      } catch (error) {
+        console.error(`❌ Error linking ${bulkProduct.name}:`, error);
+      }
+    } else {
+      console.log(
+        `⚠️ Could not find single product for: ${bulkProduct.correspondingSingleName}`
+      );
+    }
+  }
+
+  console.log(`🎉 Seeding complete!`);
+  console.log(`✅ Successfully created: ${successCount} products`);
+  console.log(`❌ Errors: ${errorCount}`);
+  console.log(`🔗 Successfully linked: ${linkCount} bulk packages`);
+  console.log(`📦 Final breakdown:`);
+  console.log(`   Single items: ${singleProducts.length}`);
+  console.log(`   Bulk packages: ${bulkProducts.length}`);
+  console.log(`   Total products: ${allProducts.length}`);
 }
 
-seedProducts().catch(console.error);
+// Run the enhanced seeder
+seedProductsWithRelationships().catch(console.error);

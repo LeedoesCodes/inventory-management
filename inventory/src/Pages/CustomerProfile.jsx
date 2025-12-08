@@ -1,10 +1,9 @@
-// Pages/Profile.jsx - UPDATED WITH CUSTOMER INFO FOR ORDERS
 import React, { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { db } from "../Firebase/firebase";
+import { db } from "../Firebase/firebase.js";
 import avatar from "../assets/images/avatar-default.png";
-import "../styles/profile.scss";
+import "../styles/CustomerProfile.scss";
 import ConfirmModal from "../components/UI/ConfirmModal.jsx";
 import { AuthContext } from "../context/AuthContext.jsx";
 
