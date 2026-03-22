@@ -2145,3 +2145,62 @@
     }
   }
 }
+/* Add these animations to your orders.scss or a separate animations file */
+
+// Animation for when a product is selected
+@keyframes productSelected {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+// Apply to selected products
+.product-card.selected {
+  animation: productSelected 0.3s ease-out;
+}
+
+// Animation for selection order badge
+@keyframes badgePulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+  }
+  70% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
+.selection-order-badge {
+  animation: badgePulse 2s infinite;
+}
+
+// Hover animation for item order numbers
+@keyframes numberHover {
+  0% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-10deg);
+  }
+  75% {
+    transform: rotate(10deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+.item-order-number:hover {
+  animation: numberHover 0.5s ease;
+}

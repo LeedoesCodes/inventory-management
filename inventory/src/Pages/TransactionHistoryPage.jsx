@@ -24,8 +24,14 @@ import { usePaymentTracking } from "../components/TransactionHistory/Hooks/usePa
 // Import Utils
 import { printReceipt } from "../components/TransactionHistory/utils/receiptUtils";
 
-// Import Firestore
-import { collection, getDocs } from "firebase/firestore";
+// Import Firestore - Added runTransaction, doc, increment
+import {
+  collection,
+  getDocs,
+  doc,
+  runTransaction,
+  increment,
+} from "firebase/firestore";
 import { db } from "../Firebase/firebase";
 
 import "../styles/transaction.scss";
@@ -469,6 +475,67 @@ export default function TransactionHistory() {
     }
   };
 
+  // ===============================================
+  // 🔥 RESTORE ORDER FUNCTIONALITY
+  // ===============================================
+  const handleRestoreOrder = async (order) => {
+    if (
+      !window.confirm(
+        "Are you sure you want to restore this order? Stock will be deducted and sales stats updated."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await runTransaction(db, async (transaction) => {
+        // 1. Check Stock Availability first
+        for (const item of order.items) {
+          const productRef = doc(db, "products", item.id);
+          const productDoc = await transaction.get(productRef);
+
+          if (!productDoc.exists()) {
+            throw new Error(`Product ${item.name} no longer exists.`);
+          }
+
+          const currentStock = productDoc.data().stock || 0;
+          if (currentStock < item.quantity) {
+            throw new Error(
+              `Not enough stock to restore ${item.name}. Available: ${currentStock}, Required: ${item.quantity}`
+            );
+          }
+        }
+
+        // 2. Deduct Stock & Increase Sold count
+        for (const item of order.items) {
+          const productRef = doc(db, "products", item.id);
+          transaction.update(productRef, {
+            stock: increment(-item.quantity),
+            sold: increment(item.quantity),
+          });
+        }
+
+        // 3. Determine Status based on payment
+        let newStatus = "completed";
+        if (order.paymentMethod === "credit") {
+          newStatus = order.paymentStatus === "paid" ? "completed" : "pending";
+        }
+
+        // 4. Update Order Status
+        const orderRef = doc(db, "orders", order.id);
+        transaction.update(orderRef, {
+          status: newStatus,
+        });
+      });
+
+      handleSuccess("Order restored successfully!");
+      fetchOrders(); // Refresh list
+      setSelectedOrder(null); // Close modal
+    } catch (error) {
+      handleError(error);
+    }
+  };
+
   return (
     <div className="page-container">
       <Sidebar />
@@ -592,6 +659,8 @@ export default function TransactionHistory() {
               setSelectedOrder(null);
             }}
             onPrintReceipt={printReceipt}
+            // 🔥 PASS RESTORE FUNCTION HERE
+            onRestoreOrder={() => handleRestoreOrder(selectedOrder)}
             onBadOrder={() => {
               setBadOrderModal(selectedOrder);
               setSelectedOrder(null);

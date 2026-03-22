@@ -51,6 +51,7 @@ export default function OrdersPage() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [cart, setCart] = useState({});
+  const [itemSelectionOrder, setItemSelectionOrder] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedPackagingType, setSelectedPackagingType] = useState("");
@@ -235,6 +236,15 @@ export default function OrdersPage() {
         },
       }));
 
+      // Track selection order when item is added via barcode
+      // 🔥 FIX: Check include to prevent duplicates
+      setItemSelectionOrder((prevOrder) => {
+        if (!prevOrder.includes(product.id)) {
+          return [...prevOrder, product.id];
+        }
+        return prevOrder;
+      });
+
       console.log(
         `✅ Updated ${product.name} in cart. New quantity: ${newQty}`
       );
@@ -353,20 +363,37 @@ export default function OrdersPage() {
     }
   };
 
-  // Product selection and quantity functions
+  // ==========================================
+  // 🔥 FIXED: Product selection with duplicate prevention
+  // ==========================================
   const toggleProduct = (id) => {
     const product = products.find((p) => p.id === id);
     const availableStock = StockConverter.getAvailableStock(product, products);
     if (product && availableStock === 0) return;
 
+    // 1. Determine new status
+    const isCurrentlyChecked = cart[id]?.checked;
+    const willBeChecked = !isCurrentlyChecked;
+
+    // 2. Update Cart
     setCart((prev) => ({
       ...prev,
       [id]: {
         ...prev[id],
-        checked: !prev[id]?.checked,
+        checked: willBeChecked,
         quantity: prev[id]?.quantity || 1,
       },
     }));
+
+    // 3. Update Order History (Check for duplicates)
+    if (willBeChecked) {
+      setItemSelectionOrder((prev) => {
+        if (prev.includes(id)) return prev; // Don't add if already there
+        return [...prev, id];
+      });
+    } else {
+      setItemSelectionOrder((prev) => prev.filter((itemId) => itemId !== id));
+    }
   };
 
   const changeQuantity = (id, delta) => {
@@ -378,6 +405,14 @@ export default function OrdersPage() {
     if (product && newQty > availableStock) {
       alert(`Only ${availableStock} items available in stock`);
       return;
+    }
+
+    // If adding quantity and item isn't in selection order yet (edge case)
+    if (delta > 0 && cart[id]?.checked) {
+      setItemSelectionOrder((prevOrder) => {
+        if (!prevOrder.includes(id)) return [...prevOrder, id];
+        return prevOrder;
+      });
     }
 
     setCart((prev) => ({
@@ -402,13 +437,20 @@ export default function OrdersPage() {
     }));
   };
 
-  // Remove item from cart
+  // FIXED: Remove item from cart with order tracking
   const removeFromCart = (id) => {
     setCart((prev) => {
       const newCart = { ...prev };
       delete newCart[id];
       return newCart;
     });
+
+    // Remove from selection order
+    if (itemSelectionOrder.includes(id)) {
+      setItemSelectionOrder((prevOrder) =>
+        prevOrder.filter((itemId) => itemId !== id)
+      );
+    }
   };
 
   // Handle quantity changes from confirmation dialog
@@ -455,36 +497,66 @@ export default function OrdersPage() {
 
   const { totalItems, totalAmount } = getTotals();
 
-  // Simple cart items for FloatingCheckout
-  const cartItems = products
-    .filter((p) => cart[p.id]?.checked)
-    .map((p) => ({
-      id: p.id,
-      name: p.name,
-      price: p.price,
-      discountedPrice: getDiscountedPrice(p),
-      quantity: cart[p.id].quantity,
-      subtotal: getDiscountedPrice(p) * cart[p.id].quantity,
-      productId: p.id,
-      category: p.category,
-    }));
+  // FIXED: Get cart items in the order they were selected with correct display order
+  const cartItems = itemSelectionOrder
+    .filter((itemId) => cart[itemId]?.checked)
+    // De-duplicate in case ancient state had duplicates
+    .filter((value, index, self) => self.indexOf(value) === index)
+    .map((itemId, index) => {
+      const product = products.find((p) => p.id === itemId);
+      const cartItem = cart[itemId];
 
-  // Checkout functions
+      if (!product || !cartItem) return null;
+
+      return {
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        discountedPrice: getDiscountedPrice(product),
+        quantity: cartItem.quantity,
+        subtotal: getDiscountedPrice(product) * cartItem.quantity,
+        productId: product.id,
+        category: product.category,
+        // FIX: Use the current index in the filtered array, not the original position
+        displayOrder: index + 1,
+        originalOrder: itemSelectionOrder.indexOf(itemId) + 1, // Keep for reference
+      };
+    })
+    .filter((item) => item !== null);
+
+  // FIXED: Checkout functions with order preservation
   const handleCheckoutClick = () => {
     if (totalItems === 0) {
       alert("Please select some products first.");
       return;
     }
 
-    const orderItems = cartItems.map((item) => ({
-      id: item.productId,
-      name: item.name,
-      price: item.discountedPrice,
-      discountedPrice: item.discountedPrice,
-      quantity: item.quantity,
-      subtotal: item.subtotal,
-      category: item.category,
-    }));
+    // Get items in the order they were selected
+    const orderItems = itemSelectionOrder
+      .filter((itemId) => cart[itemId]?.checked)
+      // De-duplicate
+      .filter((value, index, self) => self.indexOf(value) === index)
+      .map((itemId, index) => {
+        const product = products.find((p) => p.id === itemId);
+        const cartItem = cart[itemId];
+
+        if (!product || !cartItem) return null;
+
+        return {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          discountedPrice: getDiscountedPrice(product),
+          quantity: cartItem.quantity,
+          subtotal: getDiscountedPrice(product) * cartItem.quantity,
+          category: product.category,
+          unit: product.unit || "pcs",
+          packagingType: product.packagingType || "single",
+          // FIX: Use the current display order
+          displayOrder: index + 1,
+        };
+      })
+      .filter((item) => item !== null);
 
     const finalCustomerName = customerName || "Walk-in Customer";
     const capitalizedCustomerName =
@@ -497,12 +569,13 @@ export default function OrdersPage() {
       customerName: capitalizedCustomerName,
       totalItems,
       totalAmount,
+      itemSelectionOrder: [...itemSelectionOrder], // Save the order array
     });
 
     setShowConfirmation(true);
   };
 
-  // Order confirmation with success animation
+  // FIXED: Order confirmation with order preservation
   const handleConfirmOrder = async (paymentMethod = "cash", dueDate = null) => {
     if (!pendingOrder) return;
 
@@ -667,7 +740,7 @@ export default function OrdersPage() {
       const orderData = {
         customerName: pendingOrder.customerName,
         customerNameLower: normalizeCustomerName(pendingOrder.customerName),
-        items: pendingOrder.items,
+        items: pendingOrder.items, // Items already have displayOrder
         totalItems: pendingOrder.totalItems,
         totalAmount: pendingOrder.totalAmount,
         paymentMethod: paymentMethod,
@@ -679,6 +752,8 @@ export default function OrdersPage() {
           paymentMethod === "credit" ? pendingOrder.totalAmount : 0,
         discountsApplied: customerDiscounts.length > 0,
         stockConversions: stockUpdates.length > 0 ? stockUpdates : null,
+        // Save the selection order explicitly
+        itemSelectionOrder: pendingOrder.itemSelectionOrder,
       };
 
       if (paymentMethod === "credit" && dueDate) {
@@ -765,6 +840,7 @@ export default function OrdersPage() {
   // Handle when success animation completes
   const handleSuccessAnimationComplete = () => {
     setCart({});
+    setItemSelectionOrder([]); // Clear selection order
     setCustomerName("");
     setCustomerDiscounts([]);
     setPendingOrder(null);
@@ -786,6 +862,7 @@ export default function OrdersPage() {
       )
     ) {
       setCart({});
+      setItemSelectionOrder([]); // Clear selection order
       setCustomerName("");
       setCustomerDiscounts([]);
       console.log("Order cancelled");
@@ -809,17 +886,29 @@ export default function OrdersPage() {
   // Update pending order when cart changes AND dialog is open
   useEffect(() => {
     if (showConfirmation) {
-      const orderItems = products
-        .filter((p) => cart[p.id]?.checked)
-        .map((p) => ({
-          id: p.id,
-          name: p.name,
-          price: getDiscountedPrice(p),
-          discountedPrice: getDiscountedPrice(p),
-          quantity: cart[p.id].quantity,
-          subtotal: getDiscountedPrice(p) * cart[p.id].quantity,
-          category: p.category,
-        }));
+      // Get items in the order they were selected
+      const orderItems = itemSelectionOrder
+        .filter((itemId) => cart[itemId]?.checked)
+        // Deduplicate
+        .filter((value, index, self) => self.indexOf(value) === index)
+        .map((itemId, index) => {
+          const product = products.find((p) => p.id === itemId);
+          const cartItem = cart[itemId];
+
+          if (!product || !cartItem) return null;
+
+          return {
+            id: product.id,
+            name: product.name,
+            price: getDiscountedPrice(product),
+            discountedPrice: getDiscountedPrice(product),
+            quantity: cartItem.quantity,
+            subtotal: getDiscountedPrice(product) * cartItem.quantity,
+            category: product.category,
+            displayOrder: index + 1, // FIX: Use current display order
+          };
+        })
+        .filter((item) => item !== null);
 
       const totals = getTotals();
       setPendingOrder((prev) => ({
@@ -827,9 +916,10 @@ export default function OrdersPage() {
         items: orderItems,
         totalItems: totals.totalItems,
         totalAmount: totals.totalAmount,
+        itemSelectionOrder: [...itemSelectionOrder],
       }));
     }
-  }, [cart, showConfirmation, products, customerDiscounts]);
+  }, [cart, showConfirmation, products, customerDiscounts, itemSelectionOrder]);
 
   // Filter and sort products
   const filteredAndSortedProducts = products
@@ -870,6 +960,25 @@ export default function OrdersPage() {
         return aValue < bValue ? 1 : -1;
       }
     });
+
+  // ============================================
+  // 🔥 FIX: Sequential Order Numbering (Duplicate Proof)
+  // ============================================
+  const orderNumberMap = {};
+  let currentOrderCount = 1;
+  const processedIds = new Set(); // keeps track of items we've already numbered
+
+  itemSelectionOrder.forEach((itemId) => {
+    // Check if item is:
+    // 1. In the cart
+    // 2. Checked
+    // 3. NOT already processed (Prevents the 2, 4, 6 issue)
+    if (cart[itemId]?.checked && !processedIds.has(itemId)) {
+      orderNumberMap[itemId] = currentOrderCount;
+      processedIds.add(itemId); // Mark as processed
+      currentOrderCount++;
+    }
+  });
 
   return (
     <div className="page-container">
@@ -999,6 +1108,10 @@ export default function OrdersPage() {
                   const discountedPrice = getDiscountedPrice(p);
                   const hasDiscount = discountedPrice < p.price;
 
+                  // 🔥 FIX START: Use sequential map
+                  const currentDisplayOrder = orderNumberMap[p.id];
+                  // 🔥 FIX END
+
                   return (
                     <div
                       key={p.id}
@@ -1019,6 +1132,12 @@ export default function OrdersPage() {
                             disabled={isOutOfStock}
                             onClick={(e) => e.stopPropagation()}
                           />
+                          {/* Show selection order if item is selected */}
+                          {isSelected && currentDisplayOrder && (
+                            <span className="selection-order-badge">
+                              #{currentDisplayOrder}
+                            </span>
+                          )}
                         </div>
                         <div className="product-info">
                           <span className="product-name">{p.name}</span>
@@ -1118,7 +1237,7 @@ export default function OrdersPage() {
         <FloatingCheckout
           totalItems={totalItems}
           totalAmount={totalAmount}
-          cartItems={cartItems}
+          cartItems={cartItems} // Now ordered correctly
           onCheckout={handleCheckoutClick}
           onCancelOrder={handleCancelEntireOrder}
           onQuantityChange={changeQuantity}

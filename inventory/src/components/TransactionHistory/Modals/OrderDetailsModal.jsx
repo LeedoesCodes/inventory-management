@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+// src/components/TransactionHistory/Modals/OrderDetailsModal.jsx
+import React, { useState, useMemo } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faTimesCircle,
@@ -25,8 +26,34 @@ import {
   faEye,
   faEyeSlash,
   faClock,
+  faHashtag,
 } from "@fortawesome/free-solid-svg-icons";
 import "./ordersDetails.scss";
+
+// Helper function to get ordered items
+const getOrderedItems = (order) => {
+  if (!order || !order.items) return [];
+
+  // If order has explicit itemSelectionOrder, use it
+  if (order.itemSelectionOrder && order.itemSelectionOrder.length > 0) {
+    const itemMap = {};
+    order.items.forEach((item) => {
+      itemMap[item.id] = item;
+    });
+
+    return order.itemSelectionOrder
+      .map((itemId) => itemMap[itemId])
+      .filter((item) => item !== undefined);
+  }
+
+  // Fallback: If items have displayOrder property, sort by it
+  if (order.items[0]?.displayOrder) {
+    return [...order.items].sort((a, b) => a.displayOrder - b.displayOrder);
+  }
+
+  // Default: return items as-is
+  return order.items;
+};
 
 const OrderDetailsModal = ({
   order,
@@ -36,6 +63,7 @@ const OrderDetailsModal = ({
   onCancelOrder,
   printReceipt,
   onBadOrder,
+  onRestoreOrder, // 🔥 ADDED PROP
 }) => {
   if (!order) return null;
 
@@ -50,12 +78,22 @@ const OrderDetailsModal = ({
   const isFullyPaid =
     order.paymentMethod === "credit" && order.paymentStatus === "paid";
 
-  // Calculate totals - use current items or bad order items if viewing history
-  const currentItems = selectedBadOrder ? selectedBadOrder.items : order.items;
+  // Get ordered items using helper function
+  const orderedItems = useMemo(() => {
+    const items = selectedBadOrder ? selectedBadOrder.items : order.items;
 
-  // Calculate subtotal based on actual items (not including bad order adjustments)
+    // For current order, use the ordering logic
+    if (!selectedBadOrder) {
+      return getOrderedItems(order);
+    }
+
+    // For bad orders, just return as-is (they should already be ordered)
+    return items || [];
+  }, [order, selectedBadOrder]);
+
+  // Calculate subtotal based on actual items
   const subtotal =
-    currentItems?.reduce((sum, item) => sum + item.price * item.quantity, 0) ||
+    orderedItems?.reduce((sum, item) => sum + item.price * item.quantity, 0) ||
     0;
 
   const discount = order.discount || 0;
@@ -591,24 +629,28 @@ const OrderDetailsModal = ({
             )}
           </div>
 
-          {/* Ordered Items */}
+          {/* Ordered Items - UPDATED with order numbers */}
           <div className="items-section">
             <h4 className="section-title">
               <FontAwesomeIcon icon={faList} />
               {selectedBadOrder ? "Bad Order Items" : "Ordered Items"} (
-              {currentItems?.length || 0})
+              {orderedItems?.length || 0})
               {selectedBadOrder && (
                 <span className="historical-badge">Historical View</span>
               )}
             </h4>
             <div className="items-list">
-              {currentItems?.map((item, index) => (
+              {orderedItems.map((item, index) => (
                 <div
-                  key={index}
+                  key={item.id || index}
                   className={`item-row ${
                     item.badPieces > 0 ? "bad-order-item" : ""
                   }`}
                 >
+                  <div className="item-order-number">
+                    <FontAwesomeIcon icon={faHashtag} />
+                    {index + 1}
+                  </div>
                   <div className="item-name">
                     <FontAwesomeIcon icon={faBox} />
                     {item.name}
@@ -838,8 +880,9 @@ const OrderDetailsModal = ({
             Print Receipt
           </button>
 
+          {/* 🔥 RESTORE ORDER BUTTON */}
           {order.status === "cancelled" && (
-            <button className="btn btn-success">
+            <button className="btn btn-success" onClick={onRestoreOrder}>
               <FontAwesomeIcon icon={faCheckCircle} />
               Restore Order
             </button>

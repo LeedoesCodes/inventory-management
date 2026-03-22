@@ -1,4 +1,30 @@
+// src/components/TransactionHistory/utils/receiptUtils.js
 import { getPaymentMethodInfo, getPaymentProgress } from "./paymentUtils";
+
+// Helper function to get ordered items for receipts
+const getOrderedItemsForReceipt = (order) => {
+  if (!order || !order.items) return [];
+
+  // If order has explicit itemSelectionOrder, use it
+  if (order.itemSelectionOrder && order.itemSelectionOrder.length > 0) {
+    const itemMap = {};
+    order.items.forEach((item) => {
+      itemMap[item.id] = item;
+    });
+
+    return order.itemSelectionOrder
+      .map((itemId) => itemMap[itemId])
+      .filter((item) => item !== undefined);
+  }
+
+  // Fallback: If items have displayOrder property, sort by it
+  if (order.items[0]?.displayOrder) {
+    return [...order.items].sort((a, b) => a.displayOrder - b.displayOrder);
+  }
+
+  // Default: return items as-is
+  return order.items;
+};
 
 /**
  * Print receipt for an order
@@ -42,9 +68,12 @@ const generateReceiptHTML = (order, paymentMethod, paymentProgress) => {
     order.paymentMethod === "credit" && order.paymentStatus === "partial";
   const isFullyPaid = order.paymentStatus === "paid";
 
+  // Get ordered items
+  const displayItems = getOrderedItemsForReceipt(order);
+
   // Calculate totals considering bad orders
   const subtotal =
-    order.items?.reduce((sum, item) => sum + item.price * item.quantity, 0) ||
+    displayItems?.reduce((sum, item) => sum + item.price * item.quantity, 0) ||
     0;
   const discount = order.discount || 0;
   const tax = order.tax || 0;
@@ -221,6 +250,18 @@ const generateReceiptHTML = (order, paymentMethod, paymentProgress) => {
           .items-table td {
             padding: 3px 0;
             border-bottom: 1px dashed #ddd;
+            vertical-align: top;
+          }
+          
+          .items-table .item-number {
+            text-align: center;
+            width: 25px;
+            font-weight: bold;
+            color: #666;
+          }
+          
+          .items-table .item-name {
+            text-align: left;
           }
           
           .items-table .quantity {
@@ -232,6 +273,18 @@ const generateReceiptHTML = (order, paymentMethod, paymentProgress) => {
           .items-table .subtotal {
             text-align: right;
             width: 60px;
+          }
+          
+          .bad-order-item {
+            color: #dc3545;
+            font-style: italic;
+          }
+          
+          .bad-pieces-note {
+            font-size: 9px;
+            color: #dc3545;
+            display: block;
+            margin-top: 2px;
           }
           
           .totals {
@@ -369,7 +422,7 @@ const generateReceiptHTML = (order, paymentMethod, paymentProgress) => {
             adjustedGrandTotal,
             balanceDue
           )}
-          ${generateItemsTable(order)}
+          ${generateItemsTable(displayItems)}
           ${generateTotals(
             order,
             isPartiallyPaid,
@@ -590,10 +643,10 @@ const generatePaymentInfo = (
 };
 
 /**
- * Generate items table
+ * Generate items table with order numbers
  */
-const generateItemsTable = (order) => {
-  if (!order.items || !Array.isArray(order.items)) {
+const generateItemsTable = (displayItems) => {
+  if (!displayItems || !Array.isArray(displayItems)) {
     return "<div>No items found</div>";
   }
 
@@ -601,19 +654,32 @@ const generateItemsTable = (order) => {
     <table class="items-table">
       <thead>
         <tr>
-          <th>Item</th>
+          <th class="item-number">#</th>
+          <th class="item-name">Item</th>
           <th class="quantity">Qty</th>
           <th class="price">Price</th>
           <th class="subtotal">Total</th>
         </tr>
       </thead>
       <tbody>
-        ${order.items
+        ${displayItems
           .map(
             (item, index) => `
-            <tr>
-              <td>${item.name || `Item ${index + 1}`}</td>
-              <td class="quantity">${item.quantity || 0}</td>
+            <tr class="${item.badPieces > 0 ? "bad-order-item" : ""}">
+              <td class="item-number">${index + 1}</td>
+              <td class="item-name">
+                ${item.name || `Item ${index + 1}`}
+                ${
+                  item.badPieces > 0
+                    ? `
+                  <span class="bad-pieces-note">(${item.badPieces} bad pieces)</span>
+                `
+                    : ""
+                }
+              </td>
+              <td class="quantity">${item.quantity || 0} ${
+              item.unit || "pcs"
+            }</td>
               <td class="price">₱${(item.price || 0).toFixed(2)}</td>
               <td class="subtotal">₱${(
                 (item.price || 0) * (item.quantity || 0)
@@ -866,6 +932,9 @@ export const printQuickReceipt = (order) => {
   const printWindow = window.open("", "_blank");
   const paymentMethod = getPaymentMethodInfo(order.paymentMethod);
 
+  // Get ordered items
+  const displayItems = getOrderedItemsForReceipt(order);
+
   // Calculate adjusted total for quick receipt
   const totalBadOrderRefund =
     order.badOrders?.reduce((total, badOrder) => {
@@ -884,6 +953,7 @@ export const printQuickReceipt = (order) => {
           .header { text-align: center; margin-bottom: 10px; }
           .items { width: 100%; border-collapse: collapse; margin: 10px 0; }
           .items td { padding: 2px 0; }
+          .item-number { width: 25px; text-align: center; font-weight: bold; color: #666; }
           .total { font-weight: bold; margin-top: 10px; border-top: 1px dashed #000; padding-top: 5px; }
           .bad-order-note { color: #dc3545; font-size: 10px; margin-top: 5px; }
           @media print { body { margin: 0; } }
@@ -900,10 +970,11 @@ export const printQuickReceipt = (order) => {
           }
         </div>
         <table class="items">
-          ${(order.items || [])
+          ${displayItems
             .map(
-              (item) => `
+              (item, index) => `
             <tr>
+              <td class="item-number">${index + 1}</td>
               <td>${item.name || "Item"}</td>
               <td>×${item.quantity || 0}</td>
               <td>₱${((item.price || 0) * (item.quantity || 0)).toFixed(2)}</td>

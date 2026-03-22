@@ -170,11 +170,20 @@
       }
     }
 
+    // ============================================
+    // 🔥 FIXED: Edit Form Layout Logic
+    // ============================================
+    // Inside .profile-card
+
     .edit-form {
       text-align: left;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
 
       .form-group {
         margin-bottom: 1.5rem;
+        width: 100%;
 
         label {
           display: block;
@@ -186,6 +195,9 @@
         input,
         textarea {
           width: 100%;
+          // 🔥 FIX: Add this line to prevent inputs from stretching too wide
+          box-sizing: border-box;
+
           padding: 0.75rem;
           border: 1px solid var(--border-color);
           border-radius: 6px;
@@ -219,6 +231,9 @@
 
       .save-btn {
         width: 100%;
+        // 🔥 FIX: Add this here as well for the button
+        box-sizing: border-box;
+
         padding: 1rem;
         background: var(--success-color);
         color: white;
@@ -232,6 +247,7 @@
         align-items: center;
         justify-content: center;
         gap: 0.5rem;
+        margin-top: 0.5rem;
 
         &:hover:not(:disabled) {
           background: var(--success-hover);
@@ -246,7 +262,6 @@
         }
       }
     }
-
     .profile-info {
       .profile-name {
         font-size: 1.5rem;
@@ -557,6 +572,7 @@
   --danger-color: #f56565;
   --danger-hover: #e55353;
 }
+
 // Back Button Styles for Light and Dark Mode
 .back-btn {
   display: flex;
@@ -666,6 +682,12 @@
       font-size: 1.8rem;
       font-weight: 700;
     }
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
   }
 }
 

@@ -104,43 +104,59 @@ export default function Dashboard() {
     return () => unsubscribe();
   }, [user]);
 
-  // Generate recommendations based on popular items - FIXED: Filter out deleted products
+  // Generate recommendations based on top association rules
   useEffect(() => {
-    if (dashboardData.popularItems.length > 0 && associationRules.length > 0) {
-      const popularItemNames = dashboardData.popularItems
-        .slice(0, 3)
-        .map((item) => item.name);
+    if (associationRules.length > 0 && currentProducts.length > 0) {
+      // Helper for strength (mirroring getRecommendationStrength)
+      const getStrength = (confidence, lift) => {
+        const conf = confidence || 0;
+        const liftValue = lift || 0;
+        if (conf >= 0.7 && liftValue >= 2.0) return "very-high";
+        if (conf >= 0.7 && liftValue >= 1.5) return "high";
+        if (conf >= 0.5 && liftValue >= 1.2) return "medium";
+        if (conf >= 0.3 && liftValue >= 1.0) return "low";
+        return "very-low";
+      };
 
-      // Get recommendations
-      const recs = getRecommendations(popularItemNames);
+      // Map all active rules to the recommendation format
+      const formattedRules = associationRules.map((rule) => ({
+        ...rule,
+        strength: getStrength(rule.confidence, rule.lift),
+        products: rule.consequent?.map((itemName) => ({
+          id: itemName,
+          name: itemName,
+        })) || [],
+      }));
 
-      // Filter recommendations to only include products that exist in current catalog
-      const filteredRecs = recs.filter((rec) => {
+      // Filter recommendations to ensure items exist in current catalog
+      const validRules = formattedRules.filter((rec) => {
         if (!rec.consequent || !Array.isArray(rec.consequent)) return false;
+        if (!rec.antecedent || !Array.isArray(rec.antecedent)) return false;
 
-        // Check if ALL consequent products exist in current catalog
-        return rec.consequent.every((productName) =>
-          currentProducts.some(
-            (product) => getItemName(product) === productName
-          )
+        // Check if ALL consequent AND antecedent products exist in current catalog
+        const consequentsExist = rec.consequent.every((productName) =>
+          currentProducts.some((product) => getItemName(product) === productName)
         );
+        const antecedentsExist = rec.antecedent.every((productName) =>
+          currentProducts.some((product) => getItemName(product) === productName)
+        );
+
+        return consequentsExist && antecedentsExist;
       });
 
-      console.log("Generated recommendations:", {
-        original: recs.length,
-        filtered: filteredRecs.length,
-        filteredRecs,
+      const topRecommendations = validRules.slice(0, 5);
+
+      console.log("Generated dashboard recommendations:", {
+        totalRules: associationRules.length,
+        validRules: validRules.length,
+        topRecommendations,
       });
-      setRecommendations(filteredRecs);
+      
+      setRecommendations(topRecommendations);
     } else {
       setRecommendations([]);
     }
-  }, [
-    dashboardData.popularItems,
-    associationRules,
-    getRecommendations,
-    currentProducts,
-  ]);
+  }, [associationRules, currentProducts]);
 
   // Debug useEffect to see what's happening
   useEffect(() => {
@@ -207,20 +223,27 @@ export default function Dashboard() {
       const itemCounts = {};
 
       orders.forEach((order) => {
-        totalRevenue += order.totalAmount || order.total || 0;
-        order.items?.forEach((item) => {
-          const itemName = getItemName(item);
+        // Only calculate revenue for non-cancelled and paid orders, matching StatisticsCards.jsx
+        if (order.status !== "cancelled" && order.paymentStatus === "paid") {
+          totalRevenue += order.totalAmount || order.total || 0;
+        }
 
-          // NEW: Only count items that exist in current products catalog
-          const productExists = products.some(
-            (product) => getItemName(product) === itemName
-          );
+        // Only count items sold for non-cancelled orders
+        if (order.status !== "cancelled") {
+          order.items?.forEach((item) => {
+            const itemName = getItemName(item);
 
-          if (productExists) {
-            itemCounts[itemName] =
-              (itemCounts[itemName] || 0) + (item.quantity || 1);
-          }
-        });
+            // NEW: Only count items that exist in current products catalog
+            const productExists = products.some(
+              (product) => getItemName(product) === itemName
+            );
+
+            if (productExists) {
+              itemCounts[itemName] =
+                (itemCounts[itemName] || 0) + (item.quantity || 1);
+            }
+          });
+        }
       });
 
       // NEW: Filter popular items to only include existing products
