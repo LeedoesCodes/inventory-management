@@ -7,6 +7,7 @@ import {
   faBox,
   faLink,
   faBoxOpen,
+  faHistory,
 } from "@fortawesome/free-solid-svg-icons";
 import "./products-list.scss";
 
@@ -14,6 +15,7 @@ export default function ProductList({
   products,
   onEdit,
   onDelete,
+  onViewHistory,
   onQuickCreateBulk,
   onViewRelated,
   highlightedProductId,
@@ -24,7 +26,7 @@ export default function ProductList({
   useEffect(() => {
     if (highlightedProductId) {
       const highlightedProduct = products.find(
-        (p) => p.id === highlightedProductId
+        (p) => p.id === highlightedProductId,
       );
 
       if (highlightedProduct && highlightedRef.current) {
@@ -41,7 +43,7 @@ export default function ProductList({
   // Helper function to get bulk packages count for a single item
   const getBulkPackagesCount = (productId) => {
     return allProducts.filter(
-      (p) => p.packagingType === "bulk" && p.parentProductId === productId
+      (p) => p.packagingType === "bulk" && p.parentProductId === productId,
     ).length;
   };
 
@@ -52,7 +54,7 @@ export default function ProductList({
   };
 
   const highlightedProduct = products.find(
-    (p) => p.id === highlightedProductId
+    (p) => p.id === highlightedProductId,
   );
 
   return (
@@ -193,6 +195,13 @@ export default function ProductList({
                 <div className="product-actions enhanced-actions">
                   {/* Standard Actions */}
                   <div className="standard-actions">
+                    <button
+                      onClick={() => onViewHistory?.(p)}
+                      className="icon-btn history-btn"
+                      title="View Stock History"
+                    >
+                      <FontAwesomeIcon icon={faHistory} />
+                    </button>
                     <button
                       onClick={() => onEdit(p)}
                       className="icon-btn edit-btn"

@@ -50,10 +50,25 @@ const StatisticsCards = ({ orders, customers = [], dateFilter }) => {
     );
   };
 
+  // Helper function to check if date is in current week (Sunday to Saturday)
+  const isCurrentWeek = (date) => {
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    const orderDate = new Date(date);
+    return orderDate >= startOfWeek && orderDate <= endOfWeek;
+  };
+
   // Calculate all statistics from the FILTERED orders
   const totalRevenue = orders
     .filter(
-      (order) => order.status !== "cancelled" && order.paymentStatus === "paid"
+      (order) => order.status !== "cancelled" && order.paymentStatus === "paid",
     )
     .reduce((sum, order) => sum + order.totalAmount, 0);
 
@@ -61,27 +76,27 @@ const StatisticsCards = ({ orders, customers = [], dateFilter }) => {
     (order) =>
       (order.paymentMethod === "credit" ||
         order.paymentMethod === "pay_later") &&
-      (order.paymentStatus === "pending" || order.paymentStatus === "partial")
+      (order.paymentStatus === "pending" || order.paymentStatus === "partial"),
   );
 
   const totalPendingAmount = pendingPayments.reduce(
     (sum, order) => sum + (order.remainingBalance || order.totalAmount),
-    0
+    0,
   );
 
   const totalPaidAmount = orders.reduce(
     (sum, order) => sum + (order.paidAmount || 0),
-    0
+    0,
   );
 
   const creditOrders = orders.filter(
     (order) =>
-      order.paymentMethod === "credit" || order.paymentMethod === "pay_later"
+      order.paymentMethod === "credit" || order.paymentMethod === "pay_later",
   );
 
   const totalCreditAmount = creditOrders.reduce(
     (sum, order) => sum + order.totalAmount,
-    0
+    0,
   );
 
   const overduePayments = pendingPayments.filter((order) => {
@@ -94,19 +109,19 @@ const StatisticsCards = ({ orders, customers = [], dateFilter }) => {
 
   const totalOverdueAmount = overduePayments.reduce(
     (sum, order) => sum + (order.remainingBalance || order.totalAmount),
-    0
+    0,
   );
 
   const averageOrderValue =
     orders.length > 0 ? totalRevenue / orders.length : 0;
 
   const cancelledOrders = orders.filter(
-    (order) => order.status === "cancelled"
+    (order) => order.status === "cancelled",
   ).length;
 
   // NEW: Bad Orders Statistics
   const badOrders = orders.filter(
-    (order) => order.hasBadOrder || order.badOrders?.length > 0
+    (order) => order.hasBadOrder || order.badOrders?.length > 0,
   );
   const totalBadOrders = badOrders.length;
 
@@ -138,7 +153,7 @@ const StatisticsCards = ({ orders, customers = [], dateFilter }) => {
       (order) =>
         order.status !== "cancelled" &&
         order.paymentStatus === "paid" &&
-        isToday(getOrderDate(order))
+        isToday(getOrderDate(order)),
     )
     .reduce((sum, order) => sum + order.totalAmount, 0);
 
@@ -148,7 +163,17 @@ const StatisticsCards = ({ orders, customers = [], dateFilter }) => {
       (order) =>
         order.status !== "cancelled" &&
         order.paymentStatus === "paid" &&
-        isCurrentMonth(getOrderDate(order))
+        isCurrentMonth(getOrderDate(order)),
+    )
+    .reduce((sum, order) => sum + order.totalAmount, 0);
+
+  // Weekly revenue - only paid and non-cancelled orders from current week
+  const weeklyRevenue = orders
+    .filter(
+      (order) =>
+        order.status !== "cancelled" &&
+        order.paymentStatus === "paid" &&
+        isCurrentWeek(getOrderDate(order)),
     )
     .reduce((sum, order) => sum + order.totalAmount, 0);
 
@@ -161,14 +186,14 @@ const StatisticsCards = ({ orders, customers = [], dateFilter }) => {
   ].length;
 
   const refundedOrders = orders.filter(
-    (order) => order.status === "refunded"
+    (order) => order.status === "refunded",
   ).length;
   const totalRefundAmount = orders
     .filter((order) => order.status === "refunded")
     .reduce((sum, order) => sum + order.totalAmount, 0);
 
   const partialPayments = orders.filter(
-    (order) => order.paymentStatus === "partial"
+    (order) => order.paymentStatus === "partial",
   ).length;
 
   const collectionRate =
@@ -208,13 +233,13 @@ const StatisticsCards = ({ orders, customers = [], dateFilter }) => {
     },
     {
       icon: faMoneyCheck,
-      value: `₱${totalPaidAmount.toLocaleString("en-US", {
+      value: `₱${weeklyRevenue.toLocaleString("en-US", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })}`,
-      label: "Total Collected",
-      description: `Actual cash collected (${dateContext})`,
-      className: "collected-revenue",
+      label: "Weekly Revenue",
+      description: "Paid revenue from current week",
+      className: "weekly-revenue",
       trend: "up",
       priority: 1,
     },
@@ -249,7 +274,7 @@ const StatisticsCards = ({ orders, customers = [], dateFilter }) => {
       value: totalBadOrders.toLocaleString(),
       label: "Bad Orders",
       description: `${badOrderRate.toFixed(
-        1
+        1,
       )}% of total orders (${dateContext})`,
       className: "bad-orders",
       trend: totalBadOrders > 0 ? "warning" : "neutral",
@@ -376,7 +401,7 @@ const StatisticsCards = ({ orders, customers = [], dateFilter }) => {
       value: cancelledOrders.toLocaleString(),
       label: "Cancelled Orders",
       description: `${((cancelledOrders / orders.length) * 100 || 0).toFixed(
-        1
+        1,
       )}% cancellation rate (${dateContext})`,
       className: "cancelled-orders",
       trend: "down",
@@ -387,7 +412,7 @@ const StatisticsCards = ({ orders, customers = [], dateFilter }) => {
       value: refundedOrders.toLocaleString(),
       label: "Refunded Orders",
       description: `₱${totalRefundAmount.toFixed(
-        2
+        2,
       )} total refunded (${dateContext})`,
       className: "refunded-orders",
       trend: "down",
@@ -429,9 +454,9 @@ const StatisticsCards = ({ orders, customers = [], dateFilter }) => {
               dateFilter.startDate &&
               dateFilter.endDate &&
               ` (${new Date(
-                dateFilter.startDate
+                dateFilter.startDate,
               ).toLocaleDateString()} - ${new Date(
-                dateFilter.endDate
+                dateFilter.endDate,
               ).toLocaleDateString()})`}
           </span>
         </div>

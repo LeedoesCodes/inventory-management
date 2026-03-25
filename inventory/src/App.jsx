@@ -14,6 +14,7 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import Sidebar from "./components/UI/Sidebar.jsx";
 import { SidebarProvider, SidebarContext } from "./context/SidebarContext.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
+import { TransactionCacheProvider } from "./context/TransactionCacheContext.jsx";
 import "./fixProducts";
 
 import Register from "./components/login-signup/register.jsx";
@@ -25,6 +26,7 @@ import UserApprovals from "./Pages/UserApprovals.jsx";
 import ProductPage from "./Pages/ProductsPage.jsx";
 import OrdersPage from "./Pages/OrdersPage.jsx";
 import TransactionHistory from "./Pages/TransactionHistoryPage.jsx";
+import AuditLogPage from "./Pages/AuditLogPage.jsx";
 import LowStockPage from "./components/products/LowStockPage.jsx";
 import CustomerManagement from "./Pages/CustomerManagement.jsx";
 import UserManagement from "./Pages/UserManagement.jsx";
@@ -72,12 +74,12 @@ function HomeRedirect() {
   if (currentPath === "/login" || currentPath === "/register") {
     if (role === "admin" || role === "approved") {
       console.log(
-        "HomeRedirect: On auth page as admin/approved, redirecting to dashboard"
+        "HomeRedirect: On auth page as admin/approved, redirecting to dashboard",
       );
       return <Navigate to="/dashboard" replace />;
     } else {
       console.log(
-        "HomeRedirect: On auth page as regular user, redirecting to lobby"
+        "HomeRedirect: On auth page as regular user, redirecting to lobby",
       );
       return <Navigate to="/lobby" replace />;
     }
@@ -87,12 +89,12 @@ function HomeRedirect() {
   if (currentPath === "/") {
     if (role === "admin" || role === "approved") {
       console.log(
-        "HomeRedirect: Root path as admin/approved, redirecting to dashboard"
+        "HomeRedirect: Root path as admin/approved, redirecting to dashboard",
       );
       return <Navigate to="/dashboard" replace />;
     } else {
       console.log(
-        "HomeRedirect: Root path as regular user, redirecting to lobby"
+        "HomeRedirect: Root path as regular user, redirecting to lobby",
       );
       return <Navigate to="/lobby" replace />;
     }
@@ -140,70 +142,73 @@ function App() {
 
   return (
     <ThemeProvider>
-      <BrowserRouter>
-        <SidebarProvider>
-          <Routes>
-            {/* Root: do a single declarative redirect once */}
-            <Route path="/" element={<HomeRedirect />} />
+      <TransactionCacheProvider>
+        <BrowserRouter>
+          <SidebarProvider>
+            <Routes>
+              {/* Root: do a single declarative redirect once */}
+              <Route path="/" element={<HomeRedirect />} />
 
-            {/* Public routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+              {/* Public routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
 
-            {/* Lobby - accessible to all logged-in users */}
-            <Route
-              path="/lobby"
-              element={
-                <ProtectedRoute>
-                  <Lobby />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Protected area with sidebar - for approved users and admins */}
-            <Route
-              element={
-                <ProtectedRoute allowedRoles={["approved", "admin"]}>
-                  <SidebarLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/analytics" element={<Analytics />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/products" element={<ProductPage />} />
-              <Route path="/orderspage" element={<OrdersPage />} />
-              <Route path="/low-stock" element={<LowStockPage />} />
-
-              <Route path="/profile/:userId" element={<Profile />} />
+              {/* Lobby - accessible to all logged-in users */}
               <Route
-                path="/transactionHistory"
-                element={<TransactionHistory />}
+                path="/lobby"
+                element={
+                  <ProtectedRoute>
+                    <Lobby />
+                  </ProtectedRoute>
+                }
               />
-              <Route path="/settings" element={<SettingsPage />} />
 
-              {/* Admin-only routes */}
+              {/* Protected area with sidebar - for approved users and admins */}
               <Route
                 element={
-                  <ProtectedRoute allowedRoles={["admin"]}>
-                    <Outlet />
+                  <ProtectedRoute allowedRoles={["approved", "admin"]}>
+                    <SidebarLayout />
                   </ProtectedRoute>
                 }
               >
-                <Route path="/user-approvals" element={<UserApprovals />} />
-                <Route
-                  path="/customer-management"
-                  element={<CustomerManagement />}
-                />
-                <Route path="/user-management" element={<UserManagement />} />
-              </Route>
-            </Route>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/analytics" element={<Analytics />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/products" element={<ProductPage />} />
+                <Route path="/orderspage" element={<OrdersPage />} />
+                <Route path="/low-stock" element={<LowStockPage />} />
 
-            {/* Fallback for unknown routes */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </SidebarProvider>
-      </BrowserRouter>
+                <Route path="/profile/:userId" element={<Profile />} />
+                <Route
+                  path="/transactionHistory"
+                  element={<TransactionHistory />}
+                />
+                <Route path="/auditlog" element={<AuditLogPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+
+                {/* Admin-only routes */}
+                <Route
+                  element={
+                    <ProtectedRoute allowedRoles={["admin"]}>
+                      <Outlet />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route path="/user-approvals" element={<UserApprovals />} />
+                  <Route
+                    path="/customer-management"
+                    element={<CustomerManagement />}
+                  />
+                  <Route path="/user-management" element={<UserManagement />} />
+                </Route>
+              </Route>
+
+              {/* Fallback for unknown routes */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </SidebarProvider>
+        </BrowserRouter>
+      </TransactionCacheProvider>
     </ThemeProvider>
   );
 }

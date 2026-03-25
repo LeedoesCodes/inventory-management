@@ -15,6 +15,7 @@ import {
   faTimes,
   faChartLine, // Add analytics icon
   faChartBar, // Alternative analytics icon
+  faHistory, // Audit log icon
 } from "@fortawesome/free-solid-svg-icons";
 import { AuthContext } from "../../context/AuthContext.jsx";
 import { useSidebar } from "../../context/SidebarContext.jsx";
@@ -149,6 +150,19 @@ export default function Sidebar() {
               >
                 <FontAwesomeIcon icon={faMoneyBill} aria-hidden="true" />
                 <span className="menu-text">Transactions</span>
+              </NavLink>
+            </li>
+
+            <li>
+              <NavLink
+                to="/auditlog"
+                className={({ isActive }) =>
+                  isActive ? "nav-link active" : "nav-link"
+                }
+                onClick={handleNavClick}
+              >
+                <FontAwesomeIcon icon={faHistory} aria-hidden="true" />
+                <span className="menu-text">Audit Log</span>
               </NavLink>
             </li>
 

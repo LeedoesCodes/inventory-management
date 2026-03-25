@@ -1,5 +1,5 @@
 // src/Pages/ProductsPage.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   collection,
@@ -17,7 +17,11 @@ import {
   faBox,
   faBoxOpen,
   faLink,
+  faHistory,
 } from "@fortawesome/free-solid-svg-icons";
+import { AuthContext } from "../context/AuthContext";
+import { logProductChange } from "../utils/productAuditUtils";
+import ProductAuditHistory from "../components/ProductAuditHistory/ProductAuditHistory";
 
 import ProductList from "../components/products/ProductsList";
 import ProductForm from "../components/products/ProductForm/ProductForm";
@@ -32,6 +36,7 @@ import "../styles/products.scss";
 export default function ProductsPage() {
   const { isCollapsed } = useSidebar();
   const { isMigrating } = useCategoryMigration();
+  const { user } = useContext(AuthContext);
 
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -40,6 +45,7 @@ export default function ProductsPage() {
   const [categories, setCategories] = useState([]);
   const [units, setUnits] = useState([]);
   const [highlightedProductId, setHighlightedProductId] = useState(null);
+  const [auditHistoryProduct, setAuditHistoryProduct] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -108,16 +114,16 @@ export default function ProductsPage() {
   useEffect(() => {
     if (products.length > 0) {
       const singleItems = products.filter(
-        (p) => p.packagingType === "single"
+        (p) => p.packagingType === "single",
       ).length;
       const bulkPackages = products.filter(
-        (p) => p.packagingType === "bulk"
+        (p) => p.packagingType === "bulk",
       ).length;
 
       const withRelationships = products.filter(
         (p) =>
           p.packagingType === "single" &&
-          products.some((bp) => bp.parentProductId === p.id)
+          products.some((bp) => bp.parentProductId === p.id),
       ).length;
 
       setPackagingStats({
@@ -259,7 +265,7 @@ export default function ProductsPage() {
 
     console.log(
       "🟡 FILTERING: Final filtered products count:",
-      filtered.length
+      filtered.length,
     );
     setFilteredProducts(filtered);
   };
@@ -274,7 +280,7 @@ export default function ProductsPage() {
       "Unit:",
       unit,
       "Packaging:",
-      packagingType
+      packagingType,
     );
     setSearchTerm(term);
     setSelectedCategory(category);
@@ -347,7 +353,7 @@ export default function ProductsPage() {
         console.log("🟡 Uploading image...");
         const storageRef = ref(
           storage,
-          `products/${imageFile.name}_${Date.now()}`
+          `products/${imageFile.name}_${Date.now()}`,
         );
         await uploadBytes(storageRef, imageFile);
         imageUrl = await getDownloadURL(storageRef);
@@ -360,12 +366,12 @@ export default function ProductsPage() {
       ) {
         try {
           const categoriesSnapshot = await getDocs(
-            collection(db, "categories")
+            collection(db, "categories"),
           );
           const existingCategory = categoriesSnapshot.docs.find(
             (catDoc) =>
               catDoc.data().name.toLowerCase() ===
-              productData.category.toLowerCase()
+              productData.category.toLowerCase(),
           );
 
           if (!existingCategory) {
@@ -376,7 +382,7 @@ export default function ProductsPage() {
               autoCreated: true,
             });
             console.log(
-              `✅ Auto-created new category: ${productData.category}`
+              `✅ Auto-created new category: ${productData.category}`,
             );
           } else {
             console.log(`ℹ️ Category already exists: ${productData.category}`);
@@ -416,17 +422,60 @@ export default function ProductsPage() {
       if (selectedProduct) {
         console.log("🟡 UPDATING EXISTING PRODUCT:", selectedProduct.id);
         productPayload.sold = selectedProduct.sold || 0;
+
+        // Log stock change if stock was modified
+        if (selectedProduct.stock !== productPayload.stock && user) {
+          try {
+            await logProductChange({
+              productId: selectedProduct.id,
+              productName: productData.name,
+              action: "stock_edit",
+              changes: {
+                before: selectedProduct.stock,
+                after: productPayload.stock,
+              },
+              userId: user.uid,
+              userName: user.displayName || user.email || "Unknown User",
+              notes: "", // Can be enhanced to accept user notes
+            });
+          } catch (auditError) {
+            console.error("❌ Failed to log stock change:", auditError);
+            // Don't fail the product update if audit log fails
+          }
+        }
+
         await updateDoc(
           doc(db, "products", selectedProduct.id),
-          productPayload
+          productPayload,
         );
         console.log("🟢 PRODUCT UPDATED IN FIREBASE");
       } else {
         console.log("🟡 CREATING NEW PRODUCT");
         productPayload.createdAt = new Date();
         productPayload.sold = 0;
-        await addDoc(collection(db, "products"), productPayload);
+        const newRef = await addDoc(collection(db, "products"), productPayload);
         console.log("🟢 PRODUCT CREATED IN FIREBASE");
+
+        // Log initial stock for new products
+        if (productPayload.stock > 0 && user) {
+          try {
+            await logProductChange({
+              productId: newRef.id,
+              productName: productData.name,
+              action: "stock_add",
+              changes: {
+                before: 0,
+                after: productPayload.stock,
+              },
+              userId: user.uid,
+              userName: user.displayName || user.email || "Unknown User",
+              notes: "Initial stock",
+            });
+          } catch (auditError) {
+            console.error("❌ Failed to log initial stock:", auditError);
+            // Don't fail the product creation if audit log fails
+          }
+        }
       }
 
       console.log("🟡 REFRESHING PRODUCTS LIST...");
@@ -444,6 +493,14 @@ export default function ProductsPage() {
   const handleCloseForm = () => {
     setShowForm(false);
     setSelectedProduct(null);
+  };
+
+  const handleViewAuditHistory = (product) => {
+    setAuditHistoryProduct(product);
+  };
+
+  const handleCloseAuditHistory = () => {
+    setAuditHistoryProduct(null);
   };
 
   return (
@@ -636,6 +693,7 @@ export default function ProductsPage() {
                 }))}
                 onEdit={handleEditProduct}
                 onDelete={handleDeleteProduct}
+                onViewHistory={handleViewAuditHistory}
                 highlightedProductId={highlightedProductId}
                 allProducts={products}
               />
@@ -647,6 +705,17 @@ export default function ProductsPage() {
           </div>
         )}
       </div>
+
+      {/* Audit History Modal - Outside products-page for proper z-index*/}
+      {auditHistoryProduct && (
+        <div className="modal-overlay">
+          <ProductAuditHistory
+            productId={auditHistoryProduct.id}
+            productName={auditHistoryProduct.name}
+            onClose={handleCloseAuditHistory}
+          />
+        </div>
+      )}
     </div>
   );
 }

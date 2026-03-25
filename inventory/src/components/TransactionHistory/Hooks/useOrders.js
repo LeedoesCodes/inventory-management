@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   collection,
   getDocs,
-  orderBy,
+  limit,
   query,
   deleteDoc,
   doc,
@@ -13,6 +13,7 @@ import {
   getDoc,
   arrayUnion,
   where,
+  orderBy,
 } from "firebase/firestore";
 import { db } from "../../../Firebase/firebase";
 
@@ -124,7 +125,7 @@ export const useOrders = () => {
           const badOrdersFromField = orderData.badOrders || [];
           const badOrdersRootQuery = query(
             collection(db, "badOrders"),
-            where("orderId", "==", doc.id)
+            where("orderId", "==", doc.id),
           );
           const badOrdersRootSnapshot = await getDocs(badOrdersRootQuery);
           const badOrdersFromRoot = badOrdersRootSnapshot.docs.map((bDoc) => ({
@@ -146,13 +147,13 @@ export const useOrders = () => {
           order.hasBadOrder = order.badOrders.length > 0;
 
           return order;
-        })
+        }),
       );
 
       // Final summary
       console.log("\n📋 FINAL ORDERS SUMMARY:");
       const creditOrders = ordersData.filter(
-        (order) => order.paymentMethod === "credit"
+        (order) => order.paymentMethod === "credit",
       );
       creditOrders.forEach((order) => {
         console.log(`💰 CREDIT ORDER ${order.id}:`, {
@@ -166,7 +167,7 @@ export const useOrders = () => {
       });
 
       console.log(
-        `\n📊 STATS: ${creditOrders.length} credit orders out of ${ordersData.length} total orders`
+        `\n📊 STATS: ${creditOrders.length} credit orders out of ${ordersData.length} total orders`,
       );
 
       setOrders(ordersData);
@@ -197,8 +198,8 @@ export const useOrders = () => {
         orders.map((o) =>
           o.id === order.id
             ? { ...o, status: "cancelled", cancelledAt: new Date() }
-            : o
-        )
+            : o,
+        ),
       );
       return true;
     } catch (err) {
@@ -244,7 +245,7 @@ export const useOrders = () => {
       console.log("Saving bad order to Firestore:", badOrderRecord);
       const badOrderRef = await addDoc(
         collection(db, "badOrders"),
-        badOrderRecord
+        badOrderRecord,
       );
       console.log("Bad order saved with ID:", badOrderRef.id);
 
@@ -298,7 +299,7 @@ export const useOrders = () => {
         } catch (error) {
           console.error(
             `Error updating product ${item.selectedProductId}:`,
-            error
+            error,
           );
           throw error;
         }

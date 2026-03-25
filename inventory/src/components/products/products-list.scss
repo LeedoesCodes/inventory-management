@@ -553,6 +553,21 @@
             transform: translateY(0);
           }
         }
+
+        &.history-btn {
+          background: #667eea;
+          box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+
+          &:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+          }
+
+          &:active {
+            transform: translateY(0);
+          }
+        }
       }
     }
   }

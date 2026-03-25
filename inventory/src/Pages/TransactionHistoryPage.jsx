@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Sidebar from "../components/UI/Sidebar";
 import Header from "../components/UI/Headers";
 import { useSidebar } from "../context/SidebarContext";
@@ -21,6 +21,10 @@ import MarkAsPaidModal from "../components/TransactionHistory/Modals/MarkAsPaidM
 import { useOrders } from "../components/TransactionHistory/Hooks/useOrders";
 import { usePaymentTracking } from "../components/TransactionHistory/Hooks/usePaymentTracking";
 
+// Import Cache and Pagination
+import { useTransactionCache } from "../context/TransactionCacheContext";
+import { usePagination } from "../hooks/usePagination";
+
 // Import Utils
 import { printReceipt } from "../components/TransactionHistory/utils/receiptUtils";
 
@@ -40,9 +44,14 @@ export default function TransactionHistory() {
   const { isCollapsed } = useSidebar();
   const location = useLocation();
 
+  // Cache Context
+  const { setCacheData } = useTransactionCache();
+
   // Add products state
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(false);
+
+  const ITEMS_PER_PAGE = 20;
 
   // Use custom hooks
   const {
@@ -96,6 +105,13 @@ export default function TransactionHistory() {
     fetchOrders();
     fetchProducts();
   }, []);
+
+  // Save to cache whenever data changes
+  useEffect(() => {
+    if (orders.length > 0 && products.length > 0) {
+      setCacheData(orders, products);
+    }
+  }, [orders, products, setCacheData]);
 
   // Add this function to fetch products
   const fetchProducts = async () => {
@@ -328,7 +344,7 @@ export default function TransactionHistory() {
         (order) =>
           order.customerName?.toLowerCase().includes(searchLower) ||
           order.id?.toLowerCase().includes(searchLower) ||
-          order.paymentMethod?.toLowerCase().includes(searchLower)
+          order.paymentMethod?.toLowerCase().includes(searchLower),
       );
     }
 
@@ -376,7 +392,25 @@ export default function TransactionHistory() {
   };
 
   // Final filtered orders
-  const finalFilteredOrders = getFilteredOrders();
+  const finalFilteredOrders = useMemo(
+    () => getFilteredOrders(),
+    [
+      orders,
+      dateFilter,
+      filterPayment,
+      filterStatus,
+      searchTerm,
+      sortBy,
+      sortOrder,
+    ],
+  );
+
+  const pagination = usePagination(finalFilteredOrders, ITEMS_PER_PAGE);
+
+  // Reset to page 1 only when filters change
+  useEffect(() => {
+    pagination.resetPagination();
+  }, [filterPayment, filterStatus, searchTerm, sortBy, sortOrder, dateFilter]);
 
   // Calculate overdue count for statistics
   const overdueCount = orders.filter((order) => isOrderOverdue(order)).length;
@@ -481,7 +515,7 @@ export default function TransactionHistory() {
   const handleRestoreOrder = async (order) => {
     if (
       !window.confirm(
-        "Are you sure you want to restore this order? Stock will be deducted and sales stats updated."
+        "Are you sure you want to restore this order? Stock will be deducted and sales stats updated.",
       )
     ) {
       return;
@@ -501,7 +535,7 @@ export default function TransactionHistory() {
           const currentStock = productDoc.data().stock || 0;
           if (currentStock < item.quantity) {
             throw new Error(
-              `Not enough stock to restore ${item.name}. Available: ${currentStock}, Required: ${item.quantity}`
+              `Not enough stock to restore ${item.name}. Available: ${currentStock}, Required: ${item.quantity}`,
             );
           }
         }
@@ -626,7 +660,7 @@ export default function TransactionHistory() {
 
           {/* Transaction List - Pass final filtered orders */}
           <TransactionList
-            orders={finalFilteredOrders}
+            orders={pagination.paginatedItems}
             loading={loading}
             searchTerm={searchTerm}
             filterStatus={filterStatus}
@@ -641,6 +675,39 @@ export default function TransactionHistory() {
             onCancelOrder={setCancelModal}
             onDeleteOrder={setDeleteModal}
           />
+
+          {/* Pagination Controls */}
+          {pagination.totalPages > 1 && (
+            <div className="pagination-controls">
+              <div className="pagination-info">
+                Showing {(pagination.currentPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
+                {Math.min(
+                  pagination.currentPage * ITEMS_PER_PAGE,
+                  finalFilteredOrders.length,
+                )}{" "}
+                of {finalFilteredOrders.length} orders
+              </div>
+              <div className="pagination-buttons">
+                <button
+                  onClick={pagination.prevPage}
+                  disabled={!pagination.hasPrevPage}
+                  className="pagination-btn"
+                >
+                  ← Previous
+                </button>
+                <div className="page-indicator">
+                  Page {pagination.currentPage} of {pagination.totalPages}
+                </div>
+                <button
+                  onClick={pagination.nextPage}
+                  disabled={!pagination.hasNextPage}
+                  className="pagination-btn"
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Modals */}
           <OrderDetailsModal
