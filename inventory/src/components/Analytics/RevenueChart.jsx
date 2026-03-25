@@ -12,25 +12,19 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faDollarSign } from "@fortawesome/free-solid-svg-icons";
 
-// Custom hooks
-import { useChartResize } from "../../hooks/useChartResize";
-
 const RevenueChart = memo(
-  ({ data }) => {
-    // Use resize hook with throttling
-    const { containerRef, dimensions } = useChartResize(150);
-
+  ({ data, enableAnimation = true }) => {
     // Memoize the empty state to prevent unnecessary re-renders
     const emptyState = useMemo(
       () => (
-        <div className="chart-container" ref={containerRef}>
+        <div className="chart-container">
           <div className="empty-state">
             <FontAwesomeIcon icon={faDollarSign} size="2x" />
             <p>No revenue data available</p>
           </div>
         </div>
       ),
-      []
+      [],
     );
 
     if (!data || data.length === 0) {
@@ -64,7 +58,7 @@ const RevenueChart = memo(
           day: "numeric",
         });
       },
-      [data.length]
+      [data.length],
     );
 
     // Memoize Y-axis formatter
@@ -103,16 +97,12 @@ const RevenueChart = memo(
           <span>End: {data[data.length - 1]?.date}</span>
         </div>
       ),
-      [data]
+      [data],
     );
 
     return (
-      <div className="chart-container" ref={containerRef}>
-        <ResponsiveContainer
-          width="100%"
-          height={300}
-          key={dimensions.width} // Force re-render on resize
-        >
+      <div className="chart-container">
+        <ResponsiveContainer width="100%" height={300}>
           <LineChart data={data} margin={chartConfig.margin}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
             <XAxis
@@ -136,6 +126,8 @@ const RevenueChart = memo(
               dataKey="revenue"
               stroke="#8884d8"
               strokeWidth={2}
+              isAnimationActive={enableAnimation}
+              animationDuration={350}
               dot={chartConfig.lineConfig.dot}
               activeDot={chartConfig.lineConfig.activeDot}
               name="Revenue"
@@ -159,7 +151,7 @@ const RevenueChart = memo(
 
     // Deep compare data arrays
     return JSON.stringify(prevProps.data) === JSON.stringify(nextProps.data);
-  }
+  },
 );
 
 // Add display name for better debugging

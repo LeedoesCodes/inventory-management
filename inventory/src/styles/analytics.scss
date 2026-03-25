@@ -41,8 +41,9 @@
 .analytics-page {
   flex: 1;
   margin-left: 230px;
-  transition: margin-left 0.3s ease;
+  transition: margin-left 0.22s ease-out;
   overflow-x: hidden;
+  will-change: margin-left;
 
   &.collapsed {
     margin-left: 60px;

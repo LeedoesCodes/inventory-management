@@ -11,22 +11,19 @@ import {
 } from "recharts";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faShoppingCart } from "@fortawesome/free-solid-svg-icons";
-import { useChartResize } from "../../hooks/useChartResize";
 
 const SalesTrendChart = memo(
-  ({ data }) => {
-    const { containerRef, dimensions } = useChartResize(150);
-
+  ({ data, enableAnimation = true }) => {
     const emptyState = useMemo(
       () => (
-        <div className="chart-container" ref={containerRef}>
+        <div className="chart-container">
           <div className="empty-state">
             <FontAwesomeIcon icon={faShoppingCart} size="2x" />
             <p>No sales trend data available</p>
           </div>
         </div>
       ),
-      []
+      [],
     );
 
     if (!data || data.length === 0) {
@@ -55,8 +52,8 @@ const SalesTrendChart = memo(
     }, []);
 
     return (
-      <div className="chart-container" ref={containerRef}>
-        <ResponsiveContainer width="100%" height={300} key={dimensions.width}>
+      <div className="chart-container">
+        <ResponsiveContainer width="100%" height={300}>
           <BarChart
             data={displayData}
             margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
@@ -78,7 +75,13 @@ const SalesTrendChart = memo(
             <YAxis tick={{ fontSize: 12 }} width={40} />
             <Tooltip content={<CustomTooltip />} />
             <Legend />
-            <Bar dataKey="orders" fill="#82ca9d" radius={[4, 4, 0, 0]} />
+            <Bar
+              dataKey="orders"
+              fill="#82ca9d"
+              radius={[4, 4, 0, 0]}
+              isAnimationActive={enableAnimation}
+              animationDuration={350}
+            />
           </BarChart>
         </ResponsiveContainer>
 
@@ -90,7 +93,7 @@ const SalesTrendChart = memo(
   },
   (prevProps, nextProps) => {
     return JSON.stringify(prevProps.data) === JSON.stringify(nextProps.data);
-  }
+  },
 );
 
 SalesTrendChart.displayName = "SalesTrendChart";

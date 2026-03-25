@@ -1,71 +1,30 @@
-/*
-form {
-  background: #f8f9fa;
-  padding: 2rem;
-  border-radius: 10px;
-
-  width: 100%;
-  max-width: 400px;
-  text-align: center;
-
-  h1 {
-    margin-bottom: 1.5rem;
-    color: #2c3e50;
-  }
-
-  input {
-    width: 100%;
-    padding: 1em;
-    margin-bottom: 5px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    outline: none;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    &:focus {
-      border-color: #3498db;
-    }
-  }
-
-  .show-password {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-
-    input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
-      cursor: pointer;
-      margin-top: 15px;
-    }
-
-    label {
-      cursor: pointer;
-      font-size: 0.9rem;
-      color: #000000;
-    }
-  }
-
-  .prompt {
-    margin-top: 0.5rem;
-    font-weight: bold;
-    color: red;
-  }
-
-  .redirect {
-    margin-top: 1rem;
-    font-size: 0.9rem;
-
-    a {
-      color: #3498db;
-      text-decoration: none;
-
-      &:hover {
-        text-decoration: underline;
-      }
-    }
-  }
+* {
+  box-sizing: border-box;
 }
-*/
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--bg-primary, #f9f9f9);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+.app-layout {
+  min-height: 100vh;
+  background: var(--bg-primary, #f9f9f9);
+}
+
+.main-content {
+  min-height: 100vh;
+  background: var(--bg-primary, #f9f9f9);
+}

@@ -24,9 +24,6 @@ import {
   faCompress,
 } from "@fortawesome/free-solid-svg-icons";
 
-// Custom hooks
-import { useChartResize } from "../../hooks/useChartResize";
-
 // Safe data accessor functions
 const getProductName = (product) => {
   if (!product || typeof product !== "object") return "Unknown Product";
@@ -49,16 +46,13 @@ const getProductComparisonData = (product) => {
 };
 
 const ProductComparisonChart = memo(
-  ({ products, timeRange }) => {
+  ({ products, timeRange, enableAnimation = true }) => {
     const [selectedProducts, setSelectedProducts] = useState([]);
     const [metricType, setMetricType] = useState("sales");
     const [isSelectionOpen, setIsSelectionOpen] = useState(false);
     const [isLocked, setIsLocked] = useState(false);
     const [savedCombinations, setSavedCombinations] = useState([]);
     const [isChartMinimized, setIsChartMinimized] = useState(false);
-
-    // Use resize hook
-    const { containerRef, dimensions } = useChartResize(200);
 
     // Auto-minimize chart when no products are selected
     useEffect(() => {
@@ -107,7 +101,7 @@ const ProductComparisonChart = memo(
 
       localStorage.setItem(
         "productComparisonSelections",
-        JSON.stringify(updatedCombinations)
+        JSON.stringify(updatedCombinations),
       );
       setIsLocked(true);
     }, [selectedProducts, savedCombinations.length, metricType, products]);
@@ -126,10 +120,10 @@ const ProductComparisonChart = memo(
         setSavedCombinations(updated);
         localStorage.setItem(
           "productComparisonSelections",
-          JSON.stringify(updated)
+          JSON.stringify(updated),
         );
       },
-      [savedCombinations]
+      [savedCombinations],
     );
 
     const toggleProduct = useCallback(
@@ -145,7 +139,7 @@ const ProductComparisonChart = memo(
           return prev;
         });
       },
-      [isLocked]
+      [isLocked],
     );
 
     const removeProduct = useCallback(
@@ -153,7 +147,7 @@ const ProductComparisonChart = memo(
         if (isLocked) return;
         setSelectedProducts((prev) => prev.filter((id) => id !== productId));
       },
-      [isLocked]
+      [isLocked],
     );
 
     const clearAllProducts = useCallback(() => {
@@ -253,13 +247,13 @@ const ProductComparisonChart = memo(
           activeDot: isChartMinimized ? false : { r: 6 },
         },
       }),
-      [isChartMinimized]
+      [isChartMinimized],
     );
 
     // Memoized chart colors
     const chartColors = useMemo(
       () => ["#8884d8", "#82ca9d", "#ffc658", "#ff8042"],
-      []
+      [],
     );
 
     // Memoized Custom Tooltip
@@ -285,7 +279,7 @@ const ProductComparisonChart = memo(
         }
         return null;
       },
-      [metricType]
+      [metricType],
     );
 
     // Memoized empty state
@@ -297,7 +291,7 @@ const ProductComparisonChart = memo(
           <small>Choose up to 4 products from the selection panel</small>
         </div>
       ),
-      []
+      [],
     );
 
     // Memoized selected products tags
@@ -427,7 +421,7 @@ const ProductComparisonChart = memo(
     ]);
 
     return (
-      <div className="product-comparison-chart" ref={containerRef}>
+      <div className="product-comparison-chart">
         {/* Header with controls */}
         <div className="comparison-header">
           <div className="header-left">
@@ -573,7 +567,6 @@ const ProductComparisonChart = memo(
               <ResponsiveContainer
                 width="100%"
                 height={isChartMinimized ? 200 : 400}
-                key={dimensions.width}
               >
                 <LineChart data={comparisonData} margin={chartConfig.margin}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -622,6 +615,8 @@ const ProductComparisonChart = memo(
                         type="monotone"
                         dataKey={productName}
                         stroke={chartColors[index]}
+                        isAnimationActive={enableAnimation}
+                        animationDuration={350}
                         strokeWidth={chartConfig.line.strokeWidth}
                         dot={chartConfig.line.dot}
                         activeDot={chartConfig.line.activeDot}
@@ -654,7 +649,7 @@ const ProductComparisonChart = memo(
     return (
       JSON.stringify(prevProps.products) === JSON.stringify(nextProps.products)
     );
-  }
+  },
 );
 
 ProductComparisonChart.displayName = "ProductComparisonChart";

@@ -99,21 +99,29 @@ class ChartErrorBoundary extends React.Component {
 }
 
 // Safe chart wrapper components
-const SafeRevenueChart = ({ data }) => (
+const SafeRevenueChart = ({ data, enableAnimation }) => (
   <ChartErrorBoundary chartName="Revenue Chart">
-    <RevenueChart data={data || []} />
+    <RevenueChart data={data || []} enableAnimation={enableAnimation} />
   </ChartErrorBoundary>
 );
 
-const SafeProductComparisonChart = ({ products, timeRange }) => (
+const SafeProductComparisonChart = ({
+  products,
+  timeRange,
+  enableAnimation,
+}) => (
   <ChartErrorBoundary chartName="Product Comparison Chart">
-    <ProductComparisonChart products={products || []} timeRange={timeRange} />
+    <ProductComparisonChart
+      products={products || []}
+      timeRange={timeRange}
+      enableAnimation={enableAnimation}
+    />
   </ChartErrorBoundary>
 );
 
-const SafeSalesTrendChart = ({ data }) => (
+const SafeSalesTrendChart = ({ data, enableAnimation }) => (
   <ChartErrorBoundary chartName="Sales Trends Chart">
-    <SalesTrendChart data={data || []} />
+    <SalesTrendChart data={data || []} enableAnimation={enableAnimation} />
   </ChartErrorBoundary>
 );
 
@@ -176,9 +184,16 @@ export default function Analytics() {
   const { isCollapsed } = useSidebar();
   const { user } = useContext(AuthContext);
   const [timeRange, setTimeRange] = useState("all");
+  const [isSidebarTransitioning, setIsSidebarTransitioning] = useState(false);
 
   // Debounce sidebar collapse to prevent excessive re-renders
   const debouncedIsCollapsed = useDebounce(isCollapsed, 300);
+
+  useEffect(() => {
+    setIsSidebarTransitioning(true);
+    const timer = setTimeout(() => setIsSidebarTransitioning(false), 380);
+    return () => clearTimeout(timer);
+  }, [isCollapsed]);
 
   const [analyticsData, setAnalyticsData] = useState({
     revenueData: [],
@@ -194,6 +209,8 @@ export default function Analytics() {
     setTimeRange(e.target.value);
   }, []);
 
+  const enableChartAnimation = !isSidebarTransitioning;
+
   const fetchAnalyticsData = async () => {
     try {
       setAnalyticsData((prev) => ({ ...prev, loading: true, error: null }));
@@ -201,7 +218,7 @@ export default function Analytics() {
       // Fetch transactions (orders)
       const transactionsQuery = query(
         collection(db, "orders"),
-        orderBy("createdAt", "desc")
+        orderBy("createdAt", "desc"),
       );
       const transactionsSnapshot = await getDocs(transactionsQuery);
 
@@ -265,12 +282,12 @@ export default function Analytics() {
     try {
       const filteredTransactions = filterTransactionsByTimeRange(
         transactions,
-        range
+        range,
       );
 
       // Create a Set of current product names for quick lookup
       const currentProductNames = new Set(
-        products.map((product) => getItemName(product))
+        products.map((product) => getItemName(product)),
       );
 
       const productPerformance = {};
@@ -366,7 +383,7 @@ export default function Analytics() {
 
       return transactions.filter(
         (transaction) =>
-          transaction && getTransactionDate(transaction) >= startDate
+          transaction && getTransactionDate(transaction) >= startDate,
       );
     } catch (error) {
       console.error("Error in filterTransactionsByTimeRange:", error);
@@ -378,7 +395,7 @@ export default function Analytics() {
     try {
       const filteredTransactions = filterTransactionsByTimeRange(
         transactions,
-        range
+        range,
       );
 
       const dailyRevenue = {};
@@ -410,7 +427,7 @@ export default function Analytics() {
     try {
       const filteredTransactions = filterTransactionsByTimeRange(
         transactions,
-        range
+        range,
       );
 
       const dailyOrders = {};
@@ -437,12 +454,12 @@ export default function Analytics() {
     try {
       const filteredTransactions = filterTransactionsByTimeRange(
         transactions,
-        range
+        range,
       );
 
       // Create a Set of current product names for quick lookup
       const currentProductNames = new Set(
-        products.map((product) => getItemName(product))
+        products.map((product) => getItemName(product)),
       );
 
       const productSales = {};
@@ -493,11 +510,11 @@ export default function Analytics() {
 
       const totalRevenue = safeRevenueData.reduce(
         (sum, day) => sum + (day.revenue || 0),
-        0
+        0,
       );
       const totalOrders = safeSalesTrends.reduce(
         (sum, day) => sum + (day.orders || 0),
-        0
+        0,
       );
       const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
@@ -669,7 +686,10 @@ export default function Analytics() {
                 Revenue Over Time
               </h3>
             </div>
-            <SafeRevenueChart data={analyticsData.revenueData} />
+            <SafeRevenueChart
+              data={analyticsData.revenueData}
+              enableAnimation={enableChartAnimation}
+            />
           </div>
 
           {/* Product Comparison Chart */}
@@ -683,6 +703,7 @@ export default function Analytics() {
             <SafeProductComparisonChart
               products={analyticsData.allProducts}
               timeRange={timeRange}
+              enableAnimation={enableChartAnimation}
             />
           </div>
 
@@ -694,7 +715,10 @@ export default function Analytics() {
                 Daily Orders
               </h3>
             </div>
-            <SafeSalesTrendChart data={analyticsData.salesTrends} />
+            <SafeSalesTrendChart
+              data={analyticsData.salesTrends}
+              enableAnimation={enableChartAnimation}
+            />
           </div>
 
           {/* Product Performance */}
