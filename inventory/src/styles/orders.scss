@@ -1746,8 +1746,11 @@
 // Smooth transitions for theme switching
 .orders-page,
 .orders-page * {
-  transition: background-color 0.3s ease, color 0.3s ease,
-    border-color 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
 }
 // Update the product card styles in your existing orders.scss
 
@@ -2182,6 +2185,19 @@
 }
 
 .selection-order-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #0ea5e9;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
   animation: badgePulse 2s infinite;
 }
 
@@ -2203,4 +2219,117 @@
 
 .item-order-number:hover {
   animation: numberHover 0.5s ease;
+}
+
+// Compact product card layout for better space usage in Orders page
+.products-list {
+  .product-card {
+    .product-header {
+      display: grid;
+      grid-template-columns: auto auto 1fr auto;
+      align-items: start;
+      gap: 0.75rem;
+
+      .product-checkbox {
+        margin-top: 0.2rem;
+        width: 22px;
+        display: flex;
+        justify-content: center;
+
+        input[type="checkbox"] {
+          margin: 0;
+        }
+      }
+
+      .selection-order-slot {
+        width: 34px;
+        min-height: 22px;
+        margin-top: 0.1rem;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+      }
+
+      .product-info {
+        min-width: 0;
+        gap: 0.45rem;
+
+        .product-name {
+          margin: 0;
+          line-height: 1.2;
+          word-break: normal;
+          overflow-wrap: anywhere;
+        }
+
+        .product-badges {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 0.35rem;
+        }
+      }
+
+      .product-meta {
+        min-width: 138px;
+        align-items: flex-end;
+        text-align: right;
+        gap: 0.4rem;
+
+        .product-price {
+          white-space: nowrap;
+          line-height: 1;
+        }
+
+        .stock-badge {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          line-height: 1.2;
+          max-width: 160px;
+          white-space: normal;
+        }
+      }
+    }
+
+    .quantity-section {
+      margin-top: 0.75rem;
+      padding: 0.85rem;
+      gap: 1rem;
+      justify-content: space-between;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .products-list {
+    .product-card {
+      .product-header {
+        grid-template-columns: auto auto 1fr;
+
+        .selection-order-slot {
+          width: 30px;
+          min-height: 20px;
+
+          .selection-order-badge {
+            min-width: 24px;
+            height: 18px;
+            font-size: 0.66rem;
+          }
+        }
+
+        .product-meta {
+          grid-column: 2 / -1;
+          align-items: flex-start;
+          text-align: left;
+          min-width: 0;
+
+          .stock-badge {
+            max-width: none;
+            justify-content: flex-start;
+          }
+        }
+      }
+    }
+  }
 }

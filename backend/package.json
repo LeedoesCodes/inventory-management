@@ -4,7 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "backup:firestore": "node scripts/backupFirestore.js",
+    "backup:firestore:core": "node scripts/backupFirestore.js users orders products",
+    "backup:cleanup": "node scripts/cleanupBackups.js",
+    "restore:firestore": "node scripts/restoreFirestore.js"
   },
   "keywords": [],
   "author": "",

@@ -20,6 +20,10 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import "./Chatbot.scss";
 
+const CLIENT_GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
+const CLIENT_GEMINI_API_URL =
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+
 const Chatbot = ({ isOpen, onClose }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -56,7 +60,7 @@ const Chatbot = ({ isOpen, onClose }) => {
     const minLift = thresholds.minLift || 1.0;
 
     console.log(
-      `Generating rules with thresholds: Support=${minSupport}, Confidence=${minConfidence}, Lift=${minLift}`
+      `Generating rules with thresholds: Support=${minSupport}, Confidence=${minConfidence}, Lift=${minLift}`,
     );
 
     const pairCounts = {};
@@ -231,7 +235,7 @@ const Chatbot = ({ isOpen, onClose }) => {
     const strongestRec = recommendations[0];
     if (strongestRec.confidence > 0.7) {
       insights.push(
-        `• **Priority Focus:** ${strongestRec.antecedent[0]} and ${strongestRec.consequent[0]} - your strongest product relationship`
+        `• **Priority Focus:** ${strongestRec.antecedent[0]} and ${strongestRec.consequent[0]} - your strongest product relationship`,
       );
     }
 
@@ -239,7 +243,7 @@ const Chatbot = ({ isOpen, onClose }) => {
     const highLiftRecs = recommendations.filter((rec) => rec.lift > 2.0);
     if (highLiftRecs.length > 0) {
       insights.push(
-        `• **High-Impact Opportunities:** ${highLiftRecs.length} relationships with exceptional lift values`
+        `• **High-Impact Opportunities:** ${highLiftRecs.length} relationships with exceptional lift values`,
       );
     }
 
@@ -284,7 +288,7 @@ const Chatbot = ({ isOpen, onClose }) => {
       ).toFixed(1)}%\n• Confidence: ≥ ${(
         thresholds.minConfidence * 100
       ).toFixed(1)}%\n• Lift: ≥ ${thresholds.minLift.toFixed(
-        2
+        2,
       )}\n\n**Recommendations:**\n• Ensure you have sufficient order data with multiple items\n• The system needs more transaction history to identify patterns\n• Try lowering the thresholds in Settings if you have existing data`;
     }
 
@@ -296,10 +300,10 @@ const Chatbot = ({ isOpen, onClose }) => {
     const recommendations = rules
       .filter((rule) => {
         const antecedentMatch = rule.antecedent.every((item) =>
-          popularItemNames.includes(item)
+          popularItemNames.includes(item),
         );
         const consequentNotInCurrent = !rule.consequent.every((item) =>
-          popularItemNames.includes(item)
+          popularItemNames.includes(item),
         );
         return antecedentMatch && consequentNotInCurrent;
       })
@@ -316,7 +320,7 @@ const Chatbot = ({ isOpen, onClose }) => {
     if (recommendations.length === 0) {
       return `**Smart Recommendations**\n\n*No recommendations generated based on popular items.*\n\n**Popular Items:**\n${popularItems
         .map(
-          (item, index) => `${index + 1}. **${item.name}** - ${item.sold} sold`
+          (item, index) => `${index + 1}. **${item.name}** - ${item.sold} sold`,
         )
         .join("\n")}\n\n**Total Association Rules:** ${
         rules.length
@@ -329,23 +333,23 @@ const Chatbot = ({ isOpen, onClose }) => {
           `**${index + 1}. ${rec.antecedent[0]} → ${rec.consequent[0]}**\n` +
           `   • **Confidence:** ${(rec.confidence * 100).toFixed(1)}%\n` +
           `   • **Support:** ${(rec.support * 100).toFixed(
-            1
+            1,
           )}% of transactions\n` +
           `   • **Lift:** ${rec.lift.toFixed(2)} (${getLiftInterpretation(
-            rec.lift
+            rec.lift,
           )})\n` +
-          `   • **Strength:** ${rec.strength} confidence`
+          `   • **Strength:** ${rec.strength} confidence`,
       )
       .join("\n\n");
 
     const popularItemsList = popularItems
       .map(
-        (item, index) => `${index + 1}. **${item.name}** - ${item.sold} sold`
+        (item, index) => `${index + 1}. **${item.name}** - ${item.sold} sold`,
       )
       .join("\n");
 
     return `**Smart Recommendations**\n\n*Based on popular items and ${totalOrders} transactions*\n\n**Popular Items Used:**\n${popularItemsList}\n\n**Generated Recommendations:**\n\n${rulesList}\n\n**Actionable Insights:**\n${generateRecommendationInsights(
-      recommendations
+      recommendations,
     )}\n\n*Data updated: ${associationData.generatedAt}*`;
   };
 
@@ -354,6 +358,54 @@ const Chatbot = ({ isOpen, onClose }) => {
   // IMPROVED queryWithGemini function
   const queryWithGemini = async (userInput, businessContext) => {
     console.log("🔮 [DEBUG] queryWithGemini called");
+
+    const queryWithDirectGemini = async () => {
+      if (!CLIENT_GEMINI_API_KEY) {
+        throw new Error("VITE_GEMINI_API_KEY is not configured");
+      }
+
+      const payload = {
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                text: `User question: ${userInput}\n\nBusiness context:\n${businessContext}\n\nRespond with concise business insights and clear action items in markdown.`,
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1000,
+        },
+      };
+
+      const directResponse = await fetch(
+        `${CLIENT_GEMINI_API_URL}?key=${CLIENT_GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      if (!directResponse.ok) {
+        throw new Error(`Direct Gemini failed: ${directResponse.status}`);
+      }
+
+      const directData = await directResponse.json();
+      const directText = directData?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!directText) {
+        throw new Error("Direct Gemini returned empty response");
+      }
+
+      return directText;
+    };
+
     try {
       const functionUrl =
         "https://us-central1-inventory-management-eb8f4.cloudfunctions.net/geminiAnalysis";
@@ -385,14 +437,23 @@ const Chatbot = ({ isOpen, onClose }) => {
         return data.response;
       } else {
         console.log(
-          "🔄 [DEBUG] AI service returned failure, using manual analysis"
+          "🔄 [DEBUG] AI service returned failure, using manual analysis",
         );
         throw new Error("AI service returned failure");
       }
-    } catch (error) {
-      console.error("❌ [DEBUG] queryWithGemini failed:", error);
-      // Return the manual analysis result directly
-      return analyzeDataManually(userInput, businessContext);
+    } catch (functionError) {
+      console.error("❌ [DEBUG] Cloud Function AI failed:", functionError);
+
+      try {
+        console.log("🛟 [DEBUG] Trying direct Gemini fallback...");
+        const fallbackResponse = await queryWithDirectGemini();
+        console.log("✅ [DEBUG] Direct Gemini fallback succeeded");
+        return fallbackResponse;
+      } catch (directError) {
+        console.error("❌ [DEBUG] Direct Gemini fallback failed:", directError);
+        // Return the manual analysis result directly
+        return analyzeDataManually(userInput, businessContext);
+      }
     }
   };
 
@@ -402,7 +463,7 @@ const Chatbot = ({ isOpen, onClose }) => {
       const functions = getFunctions();
       const businessAnalysis = httpsCallable(
         functions,
-        "geminiBusinessAnalysis"
+        "geminiBusinessAnalysis",
       );
 
       const result = await businessAnalysis({
@@ -448,7 +509,7 @@ const Chatbot = ({ isOpen, onClose }) => {
     ].length;
     const repeatCustomers = orders.filter((order) => {
       const customerOrders = orders.filter(
-        (o) => o.customerName === order.customerName
+        (o) => o.customerName === order.customerName,
       );
       return customerOrders.length > 1;
     }).length;
@@ -477,27 +538,27 @@ const Chatbot = ({ isOpen, onClose }) => {
     if (ordersPerCustomer > 5) {
       specificInsights.push(
         `• **Loyal Customer Base** - ${ordersPerCustomer.toFixed(
-          1
-        )} orders per customer indicates strong repeat business`
+          1,
+        )} orders per customer indicates strong repeat business`,
       );
       specificRecommendations.push(
-        `• **Loyalty Program** - Reward your ${totalCustomers} frequent customers with exclusive offers`
+        `• **Loyalty Program** - Reward your ${totalCustomers} frequent customers with exclusive offers`,
       );
     } else if (ordersPerCustomer > 2) {
       specificInsights.push(
         `• **Growing Engagement** - ${ordersPerCustomer.toFixed(
-          1
-        )} orders per customer shows developing relationships`
+          1,
+        )} orders per customer shows developing relationships`,
       );
       specificRecommendations.push(
-        `• **Upsell Strategy** - Encourage existing customers to increase order frequency`
+        `• **Upsell Strategy** - Encourage existing customers to increase order frequency`,
       );
     } else {
       specificInsights.push(
-        `• **Customer Acquisition Phase** - Focus on converting ${totalCustomers} registered customers to repeat buyers`
+        `• **Customer Acquisition Phase** - Focus on converting ${totalCustomers} registered customers to repeat buyers`,
       );
       specificRecommendations.push(
-        `• **First-time Buyer Incentives** - Convert one-time purchasers to regular customers`
+        `• **First-time Buyer Incentives** - Convert one-time purchasers to regular customers`,
       );
     }
 
@@ -505,37 +566,37 @@ const Chatbot = ({ isOpen, onClose }) => {
     if (avgOrderValue > 5000) {
       specificInsights.push(
         `• **High-Value Transactions** - ₱${avgOrderValue.toFixed(
-          2
-        )} average order value indicates premium purchasing`
+          2,
+        )} average order value indicates premium purchasing`,
       );
       specificRecommendations.push(
-        `• **Premium Product Expansion** - Leverage high-value customer preferences`
+        `• **Premium Product Expansion** - Leverage high-value customer preferences`,
       );
     } else if (avgOrderValue > 1000) {
       specificInsights.push(
         `• **Healthy Transaction Size** - ₱${avgOrderValue.toFixed(
-          2
-        )} average order value supports business sustainability`
+          2,
+        )} average order value supports business sustainability`,
       );
       specificRecommendations.push(
-        `• **Bundle Opportunities** - Create product combinations to increase average order value`
+        `• **Bundle Opportunities** - Create product combinations to increase average order value`,
       );
     }
 
     // Inventory insights
     if (lowStockItems === 0) {
       specificInsights.push(
-        `• **Excellent Inventory Management** - All ${totalProducts} products are well-stocked`
+        `• **Excellent Inventory Management** - All ${totalProducts} products are well-stocked`,
       );
       specificRecommendations.push(
-        `• **Inventory Optimization** - Maintain current stock levels while monitoring sales trends`
+        `• **Inventory Optimization** - Maintain current stock levels while monitoring sales trends`,
       );
     } else {
       specificInsights.push(
-        `• **Proactive Restocking Needed** - ${lowStockItems} items require immediate attention`
+        `• **Proactive Restocking Needed** - ${lowStockItems} items require immediate attention`,
       );
       specificRecommendations.push(
-        `• **Priority Reordering** - Focus on the ${lowStockItems} low-stock products first`
+        `• **Priority Reordering** - Focus on the ${lowStockItems} low-stock products first`,
       );
     }
 
@@ -544,27 +605,27 @@ const Chatbot = ({ isOpen, onClose }) => {
       specificInsights.push(
         `• **Clear Product Leaders** - Top sellers: ${popularProducts
           .map((p) => p.name)
-          .join(", ")}`
+          .join(", ")}`,
       );
       specificRecommendations.push(
-        `• **Featured Product Promotion** - Highlight your best-performing items in marketing`
+        `• **Featured Product Promotion** - Highlight your best-performing items in marketing`,
       );
     }
 
     // Business scale insights
     if (totalOrders > 100) {
       specificInsights.push(
-        `• **Established Business** - ${totalOrders} orders demonstrates market presence`
+        `• **Established Business** - ${totalOrders} orders demonstrates market presence`,
       );
       specificRecommendations.push(
-        `• **Scale Operations** - Consider expanding product lines or services`
+        `• **Scale Operations** - Consider expanding product lines or services`,
       );
     } else if (totalOrders > 50) {
       specificInsights.push(
-        `• **Growth Trajectory** - ${totalOrders} orders shows positive business momentum`
+        `• **Growth Trajectory** - ${totalOrders} orders shows positive business momentum`,
       );
       specificRecommendations.push(
-        `• **Customer Retention Focus** - Strengthen relationships with your ${activeCustomers} active customers`
+        `• **Customer Retention Focus** - Strengthen relationships with your ${activeCustomers} active customers`,
       );
     }
 
@@ -573,7 +634,7 @@ const Chatbot = ({ isOpen, onClose }) => {
       specificInsights = [
         `• **Foundation Building** - ${totalOrders} orders across ${totalCustomers} customers provides a solid base`,
         `• **Revenue Generation** - ₱${totalRevenue.toFixed(
-          2
+          2,
         )} indicates active business operations`,
         `• **Product Diversity** - ${totalProducts} items offers good customer choice`,
       ];
@@ -590,13 +651,13 @@ const Chatbot = ({ isOpen, onClose }) => {
     }
 
     return `**Business Intelligence Analysis**\n\n**Your Business Snapshot:**\n• **Customers:** ${totalCustomers} registered, ${activeCustomers} active\n• **Orders:** ${totalOrders} totaling ₱${totalRevenue.toFixed(
-      2
+      2,
     )}\n• **Products:** ${totalProducts} items, ${lowStockItems} low-stock\n• **Performance:** ₱${avgOrderValue.toFixed(
-      2
+      2,
     )} average order value\n\n**Specific Insights for Your Business:**\n${specificInsights.join(
-      "\n"
+      "\n",
     )}\n\n**Actionable Recommendations:**\n${specificRecommendations.join(
-      "\n"
+      "\n",
     )}\n\n*Analysis based on ${totalOrders} real transactions and ${totalProducts} products*`;
   };
 
@@ -617,19 +678,19 @@ const Chatbot = ({ isOpen, onClose }) => {
       // Calculate key metrics for context
       const totalRevenue = orders.reduce(
         (sum, order) => sum + (order.totalAmount || 0),
-        0
+        0,
       );
       const totalCustomers = customers.length;
       const totalProducts = products.length;
       const lowStockProducts = products.filter(
-        (p) => (p.stock || 0) <= 10
+        (p) => (p.stock || 0) <= 10,
       ).length;
 
       // Get recent activity
       const recentOrders = orders
         .sort(
           (a, b) =>
-            (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)
+            (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0),
         )
         .slice(0, 3);
 
@@ -649,13 +710,13 @@ const Chatbot = ({ isOpen, onClose }) => {
                 order.totalAmount || 0
               ).toFixed(2)} on ${
                 order.createdAt?.toDate?.().toLocaleDateString() || "Unknown"
-              }`
+              }`,
           )
           .join("\n")}
         
         KEY METRICS:
         - Average Order Value: ₱${(totalRevenue / (orders.length || 1)).toFixed(
-          2
+          2,
         )}
         - Inventory Value: ₱${products
           .reduce((sum, p) => sum + (p.price || 0) * (p.stock || 0), 0)
@@ -692,7 +753,7 @@ const Chatbot = ({ isOpen, onClose }) => {
 
     // Check if this is an association rules query FIRST
     const isAssociationQuery = associationRulesQueries.some((pattern) =>
-      input.includes(pattern)
+      input.includes(pattern),
     );
 
     if (isAssociationQuery) {
@@ -762,10 +823,10 @@ const Chatbot = ({ isOpen, onClose }) => {
     ];
 
     const isAIQuery = aiQueryPatterns.some((pattern) =>
-      input.includes(pattern)
+      input.includes(pattern),
     );
     const isTraditionalQuery = traditionalQueryPatterns.some((pattern) =>
-      input.includes(pattern)
+      input.includes(pattern),
     );
 
     console.log("🤖 [DEBUG] Query analysis:", {
@@ -775,17 +836,20 @@ const Chatbot = ({ isOpen, onClose }) => {
       isAssociationQuery,
       aiMatches: aiQueryPatterns.filter((p) => input.includes(p)),
       traditionalMatches: traditionalQueryPatterns.filter((p) =>
-        input.includes(p)
+        input.includes(p),
       ),
     });
 
-    // DECISION LOGIC: Use AI for analytical questions
-    if (isAIQuery) {
+    const shouldUseAI = isAIQuery || !isTraditionalQuery;
+
+    // DECISION LOGIC: Use AI for analytical and ambiguous questions,
+    // keep strict traditional queries for deterministic count/list style requests.
+    if (shouldUseAI) {
       console.log("🚀 [DEBUG] Using AI analysis for analytical query");
       const businessContext = await getBusinessContext();
       console.log(
         "📊 [DEBUG] Business context length:",
-        businessContext.length
+        businessContext.length,
       );
 
       try {
@@ -885,10 +949,10 @@ const Chatbot = ({ isOpen, onClose }) => {
         .map(
           (c, index) =>
             `${index + 1}. **${c.name}** - ₱${c.totalSpent.toFixed(
-              2
+              2,
             )} spent - ${c.orderCount} orders - Last: ${
               c.lastOrder?.toLocaleDateString() || "Unknown"
-            }`
+            }`,
         )
         .join("\n");
 
@@ -915,11 +979,11 @@ const Chatbot = ({ isOpen, onClose }) => {
         // Calculate real totals from orders
         const totalRevenue = orders.reduce(
           (sum, order) => sum + (order.totalAmount || 0),
-          0
+          0,
         );
         const totalItemsSold = orders.reduce(
           (sum, order) => sum + (order.totalItems || 0),
-          0
+          0,
         );
 
         // Count unique customers who actually placed orders
@@ -956,7 +1020,7 @@ const Chatbot = ({ isOpen, onClose }) => {
             (c) =>
               `• **${c.name}** - ${c.phone || "No phone"} - Joined: ${
                 c.createdAT?.toDate?.().toLocaleDateString() || "Unknown"
-              }`
+              }`,
           )
           .join("\n");
 
@@ -974,7 +1038,7 @@ const Chatbot = ({ isOpen, onClose }) => {
   const queryOrders = async (intent) => {
     try {
       const ordersSnapshot = await getDocs(
-        query(collection(db, "orders"), orderBy("createdAt", "desc"))
+        query(collection(db, "orders"), orderBy("createdAt", "desc")),
       );
       const orders = ordersSnapshot.docs.map((doc) => ({
         id: doc.id,
@@ -984,7 +1048,7 @@ const Chatbot = ({ isOpen, onClose }) => {
       if (intent === "count") {
         const totalRevenue = orders.reduce(
           (sum, order) => sum + (order.totalAmount || 0),
-          0
+          0,
         );
         const avgOrderValue = totalRevenue / (orders.length || 1);
         const uniqueCustomers = [
@@ -999,7 +1063,7 @@ const Chatbot = ({ isOpen, onClose }) => {
           `**Average Order Value:** ₱${avgOrderValue.toFixed(2)}\n` +
           `**Total Items Sold:** ${orders.reduce(
             (sum, order) => sum + (order.totalItems || 0),
-            0
+            0,
           )}`
         );
       } else if (intent === "recent") {
@@ -1013,10 +1077,10 @@ const Chatbot = ({ isOpen, onClose }) => {
           .map(
             (o) =>
               `• **${o.customerName}** - ₱${(o.totalAmount || 0).toFixed(
-                2
+                2,
               )} - ${o.totalItems || 0} items - ${
                 o.createdAt?.toDate?.().toLocaleDateString() || "Unknown"
-              }`
+              }`,
           )
           .join("\n");
 
@@ -1030,15 +1094,15 @@ const Chatbot = ({ isOpen, onClose }) => {
         });
         const todayRevenue = todayOrders.reduce(
           (sum, order) => sum + (order.totalAmount || 0),
-          0
+          0,
         );
         const todayItems = todayOrders.reduce(
           (sum, order) => sum + (order.totalItems || 0),
-          0
+          0,
         );
         const todayCustomers = [
           ...new Set(
-            todayOrders.map((order) => order.customerName).filter(Boolean)
+            todayOrders.map((order) => order.customerName).filter(Boolean),
           ),
         ];
 
@@ -1073,7 +1137,7 @@ const Chatbot = ({ isOpen, onClose }) => {
         ];
         const totalValue = products.reduce(
           (sum, p) => sum + (p.price || 0) * (p.stock || 0),
-          0
+          0,
         );
 
         return (
@@ -1120,15 +1184,15 @@ const Chatbot = ({ isOpen, onClose }) => {
         const categorySummary = categories
           .map((category) => {
             const categoryProducts = products.filter(
-              (p) => p.category === category
+              (p) => p.category === category,
             );
             const totalStock = categoryProducts.reduce(
               (sum, p) => sum + (p.stock || 0),
-              0
+              0,
             );
             const totalValue = categoryProducts.reduce(
               (sum, p) => sum + (p.price || 0) * (p.stock || 0),
-              0
+              0,
             );
 
             return `• **${category}** - ${
@@ -1162,7 +1226,7 @@ const Chatbot = ({ isOpen, onClose }) => {
         const roleSummary = Object.entries(roles)
           .map(
             ([role, count]) =>
-              `• **${role.charAt(0).toUpperCase() + role.slice(1)}:** ${count}`
+              `• **${role.charAt(0).toUpperCase() + role.slice(1)}:** ${count}`,
           )
           .join("\n");
 
@@ -1170,7 +1234,7 @@ const Chatbot = ({ isOpen, onClose }) => {
       } else if (intent === "employees") {
         const employees = users.filter(
           (u) =>
-            u.role === "employee" || u.role === "admin" || u.role === "owner"
+            u.role === "employee" || u.role === "admin" || u.role === "owner",
         );
 
         const employeeList = employees

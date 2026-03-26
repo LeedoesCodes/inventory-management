@@ -80,7 +80,7 @@ export default function OrdersPage() {
       ];
 
       const sortedCategories = uniqueCategories.sort((a, b) =>
-        a.localeCompare(b)
+        a.localeCompare(b),
       );
 
       setCategories(sortedCategories);
@@ -117,7 +117,7 @@ export default function OrdersPage() {
 
       const ordersQuery = query(
         collection(db, "orders"),
-        where("createdAt", ">=", oneWeekAgo)
+        where("createdAt", ">=", oneWeekAgo),
       );
       const snapshot = await getDocs(ordersQuery);
 
@@ -155,7 +155,7 @@ export default function OrdersPage() {
       const normalizedName = normalizeCustomerName(customerName);
       const discountsQuery = query(
         collection(db, "customerDiscounts"),
-        where("customerNameLower", "==", normalizedName)
+        where("customerNameLower", "==", normalizedName),
       );
       const snapshot = await getDocs(discountsQuery);
 
@@ -176,7 +176,7 @@ export default function OrdersPage() {
 
     const activeDiscounts = customerDiscounts.filter((d) => d.active);
     const categoryDiscount = activeDiscounts.find(
-      (d) => d.category === product.category
+      (d) => d.category === product.category,
     );
 
     if (!categoryDiscount) return product.price;
@@ -216,14 +216,14 @@ export default function OrdersPage() {
     if (product) {
       const availableStock = StockConverter.getAvailableStock(
         product,
-        products
+        products,
       );
       const currentQty = cart[product.id]?.quantity || 0;
       const newQty = currentQty + 1;
 
       if (newQty > availableStock) {
         console.warn(
-          `❌ Not enough stock for ${product.name}. Only ${availableStock} available.`
+          `❌ Not enough stock for ${product.name}. Only ${availableStock} available.`,
         );
         return false;
       }
@@ -246,7 +246,7 @@ export default function OrdersPage() {
       });
 
       console.log(
-        `✅ Updated ${product.name} in cart. New quantity: ${newQty}`
+        `✅ Updated ${product.name} in cart. New quantity: ${newQty}`,
       );
       return true;
     } else {
@@ -289,7 +289,7 @@ export default function OrdersPage() {
         });
         console.log(
           "✅ New customer created with proper capitalization:",
-          capitalizedName
+          capitalizedName,
         );
       } else {
         const existingName = existingCustomer.data().name;
@@ -300,7 +300,7 @@ export default function OrdersPage() {
             name: capitalizedName,
           });
           console.log(
-            `🔄 Updated customer name from "${existingName}" to "${capitalizedName}"`
+            `🔄 Updated customer name from "${existingName}" to "${capitalizedName}"`,
           );
         }
       }
@@ -448,7 +448,7 @@ export default function OrdersPage() {
     // Remove from selection order
     if (itemSelectionOrder.includes(id)) {
       setItemSelectionOrder((prevOrder) =>
-        prevOrder.filter((itemId) => itemId !== id)
+        prevOrder.filter((itemId) => itemId !== id),
       );
     }
   };
@@ -603,10 +603,10 @@ export default function OrdersPage() {
 
         const availableStock = StockConverter.getAvailableStock(
           product,
-          updatedProducts
+          updatedProducts,
         );
         console.log(
-          `📊 Product: ${product.name}, Requested: ${item.quantity}, Available: ${availableStock}`
+          `📊 Product: ${product.name}, Requested: ${item.quantity}, Available: ${availableStock}`,
         );
 
         // For single items, check if we need to convert bulk packages
@@ -621,7 +621,7 @@ export default function OrdersPage() {
             const canConvert = StockConverter.canAutoConvert(
               updatedProducts,
               product.id,
-              neededQuantity
+              neededQuantity,
             );
 
             if (!canConvert) {
@@ -636,7 +636,7 @@ export default function OrdersPage() {
             const conversionResult = await StockConverter.convertBulkToSingle(
               updatedProducts,
               product.id,
-              neededQuantity - currentStock
+              neededQuantity - currentStock,
             );
 
             if (!conversionResult.success) {
@@ -653,7 +653,7 @@ export default function OrdersPage() {
             conversionResult.updates.forEach((update) => {
               const productRef = doc(db, "products", update.productId);
               const currentProduct = updatedProducts.find(
-                (p) => p.id === update.productId
+                (p) => p.id === update.productId,
               );
 
               if (currentProduct) {
@@ -665,7 +665,7 @@ export default function OrdersPage() {
                     (update.type === "single" ? update.quantity : 0),
                 });
                 console.log(
-                  `🔥 UPDATING FIREBASE: ${currentProduct.name} stock -> ${currentProduct.stock}`
+                  `🔥 UPDATING FIREBASE: ${currentProduct.name} stock -> ${currentProduct.stock}`,
                 );
               }
             });
@@ -700,7 +700,7 @@ export default function OrdersPage() {
         console.log(
           `📊 Final update for ${currentProduct.name}: ${currentStock} -> ${
             currentStock - item.quantity
-          }`
+          }`,
         );
 
         batch.update(productRef, {
@@ -718,14 +718,14 @@ export default function OrdersPage() {
         pendingOrder.customerName !== "Walk-in Customer"
       ) {
         console.log(
-          `👤 Saving/updating customer: ${pendingOrder.customerName}`
+          `👤 Saving/updating customer: ${pendingOrder.customerName}`,
         );
         try {
           await saveCustomerToManagement(pendingOrder.customerName);
         } catch (customerError) {
           console.warn(
             "⚠️ Could not save customer data, but continuing with order:",
-            customerError
+            customerError,
           );
         }
       }
@@ -763,7 +763,7 @@ export default function OrdersPage() {
         console.log("💾 Due date saved as:", dueDateObj);
       } else {
         console.log(
-          "💾 No due date to save (not credit order or no due date provided)"
+          "💾 No due date to save (not credit order or no due date provided)",
         );
         orderData.dueDate = null;
       }
@@ -795,13 +795,13 @@ export default function OrdersPage() {
         try {
           await updateCustomerStats(
             pendingOrder.customerName,
-            pendingOrder.totalAmount
+            pendingOrder.totalAmount,
           );
           console.log("✅ Customer stats updated");
         } catch (statsError) {
           console.warn(
             "⚠️ Could not update customer stats, but order was successful:",
-            statsError
+            statsError,
           );
         }
       }
@@ -829,7 +829,7 @@ export default function OrdersPage() {
         alert("Invalid data. Please check the order information.");
       } else {
         alert(
-          `Something went wrong while completing the order: ${err.message}`
+          `Something went wrong while completing the order: ${err.message}`,
         );
       }
 
@@ -858,7 +858,7 @@ export default function OrdersPage() {
   const handleCancelEntireOrder = () => {
     if (
       window.confirm(
-        "Are you sure you want to cancel this order? All items will be removed."
+        "Are you sure you want to cancel this order? All items will be removed.",
       )
     ) {
       setCart({});
@@ -1100,7 +1100,7 @@ export default function OrdersPage() {
                 {filteredAndSortedProducts.map((p) => {
                   const availableStock = StockConverter.getAvailableStock(
                     p,
-                    products
+                    products,
                   );
                   const isOutOfStock = availableStock === 0;
                   const item = cart[p.id] || {};
@@ -1132,6 +1132,8 @@ export default function OrdersPage() {
                             disabled={isOutOfStock}
                             onClick={(e) => e.stopPropagation()}
                           />
+                        </div>
+                        <div className="selection-order-slot">
                           {/* Show selection order if item is selected */}
                           {isSelected && currentDisplayOrder && (
                             <span className="selection-order-badge">
@@ -1141,38 +1143,42 @@ export default function OrdersPage() {
                         </div>
                         <div className="product-info">
                           <span className="product-name">{p.name}</span>
-                          {p.unit && (
-                            <span className="unit-badge">{p.unit}</span>
-                          )}
-                          {p.category && (
-                            <span className="category-badge">{p.category}</span>
-                          )}
-                          <span
-                            className="packaging-badge"
-                            data-packaging={p.packagingType || "single"}
-                          >
-                            {p.packagingType === "bulk" ? "Bulk" : "Single"}
-                          </span>
+                          <div className="product-badges">
+                            {p.unit && (
+                              <span className="unit-badge">{p.unit}</span>
+                            )}
+                            {p.category && (
+                              <span className="category-badge">
+                                {p.category}
+                              </span>
+                            )}
+                            <span
+                              className="packaging-badge"
+                              data-packaging={p.packagingType || "single"}
+                            >
+                              {p.packagingType === "bulk" ? "Bulk" : "Single"}
+                            </span>
+                          </div>
                         </div>
 
                         <div className="product-meta">
                           <div className="product-price">
-                            <span>₱{discountedPrice.toFixed(2)}</span>
-                            <span
-                              className={`stock-badge ${
-                                availableStock < 5 ? "low-stock" : ""
-                              }`}
-                            >
-                              {availableStock} available
-                              {p.packagingType === "single" &&
-                                availableStock > p.stock && (
-                                  <span className="stock-conversion-hint">
-                                    {" "}
-                                    (includes bulk)
-                                  </span>
-                                )}
-                            </span>
+                            ₱{discountedPrice.toFixed(2)}
                           </div>
+                          <span
+                            className={`stock-badge ${
+                              availableStock < 5 ? "low-stock" : ""
+                            }`}
+                          >
+                            {availableStock} available
+                            {p.packagingType === "single" &&
+                              availableStock > p.stock && (
+                                <span className="stock-conversion-hint">
+                                  {" "}
+                                  (includes bulk)
+                                </span>
+                              )}
+                          </span>
                         </div>
                       </div>
 
@@ -1213,7 +1219,7 @@ export default function OrdersPage() {
                             <span className="subtotal">
                               ₱
                               {(discountedPrice * (item.quantity || 1)).toFixed(
-                                2
+                                2,
                               )}
                             </span>
                           </div>
