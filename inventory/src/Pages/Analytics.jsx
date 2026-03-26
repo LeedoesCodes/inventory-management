@@ -21,6 +21,7 @@ import {
   faChartBar,
   faChartLine,
   faChartPie,
+  faCalendarWeek,
   faTrophy,
   faDollarSign,
   faShoppingCart,
@@ -32,6 +33,7 @@ import {
 
 // Chart components
 import RevenueChart from "../components/Analytics/RevenueChart";
+import WeeklyRevenueChart from "../components/Analytics/WeeklyRevenueChart";
 import SalesTrendChart from "../components/Analytics/SalesTrendChart";
 import ProductPerformance from "../components/Analytics/ProductPerformance";
 import ProductComparisonChart from "../components/Analytics/ProductComparisonChart";
@@ -125,6 +127,12 @@ const SafeSalesTrendChart = ({ data, enableAnimation }) => (
   </ChartErrorBoundary>
 );
 
+const SafeWeeklyRevenueChart = ({ data, enableAnimation }) => (
+  <ChartErrorBoundary chartName="Weekly Revenue Chart">
+    <WeeklyRevenueChart data={data || []} enableAnimation={enableAnimation} />
+  </ChartErrorBoundary>
+);
+
 const SafeProductPerformance = ({ data }) => (
   <ChartErrorBoundary chartName="Product Performance Chart">
     <ProductPerformance data={data || []} />
@@ -176,6 +184,13 @@ const getTransactionDate = (transaction) => {
   }
 };
 
+const isRevenueOrder = (transaction) => {
+  if (!transaction || typeof transaction !== "object") return false;
+  return (
+    transaction.status !== "cancelled" && transaction.paymentStatus === "paid"
+  );
+};
+
 const safeArray = (array) => {
   return Array.isArray(array) ? array : [];
 };
@@ -197,6 +212,7 @@ export default function Analytics() {
 
   const [analyticsData, setAnalyticsData] = useState({
     revenueData: [],
+    weeklyRevenueData: [],
     salesTrends: [],
     topProducts: [],
     allProducts: [],
@@ -251,12 +267,14 @@ export default function Analytics() {
 
       // Process the data with time range filtering
       const revenueData = processRevenueData(transactions, timeRange);
+      const weeklyRevenueData = processWeeklyRevenue(transactions, timeRange);
       const salesTrends = processSalesTrends(transactions, timeRange);
       const topProducts = processTopProducts(transactions, products, timeRange);
       const allProducts = processAllProducts(transactions, products, timeRange);
 
       setAnalyticsData({
         revenueData: revenueData || [],
+        weeklyRevenueData: weeklyRevenueData || [],
         salesTrends: salesTrends || [],
         topProducts: topProducts || [],
         allProducts: allProducts || [],
@@ -270,6 +288,7 @@ export default function Analytics() {
         loading: false,
         error: "Failed to load analytics data",
         revenueData: [],
+        weeklyRevenueData: [],
         salesTrends: [],
         topProducts: [],
         allProducts: [],
@@ -397,9 +416,10 @@ export default function Analytics() {
         transactions,
         range,
       );
+      const revenueTransactions = filteredTransactions.filter(isRevenueOrder);
 
       const dailyRevenue = {};
-      filteredTransactions.forEach((transaction) => {
+      revenueTransactions.forEach((transaction) => {
         if (!transaction) return;
         const date =
           getTransactionDate(transaction).toLocaleDateString("en-CA");
@@ -419,6 +439,63 @@ export default function Analytics() {
         .sort((a, b) => new Date(a.date) - new Date(b.date));
     } catch (error) {
       console.error("Error in processRevenueData:", error);
+      return [];
+    }
+  };
+
+  const processWeeklyRevenue = (transactions, range) => {
+    try {
+      const filteredTransactions = filterTransactionsByTimeRange(
+        transactions,
+        range,
+      );
+      const revenueTransactions = filteredTransactions.filter(isRevenueOrder);
+
+      const getWeekStart = (dateValue) => {
+        const date = new Date(dateValue);
+        date.setHours(0, 0, 0, 0);
+        date.setDate(date.getDate() - date.getDay());
+        return date;
+      };
+
+      const weeklyRevenue = {};
+
+      revenueTransactions.forEach((transaction) => {
+        if (!transaction) return;
+
+        const transactionDate = getTransactionDate(transaction);
+        const weekStartDate = getWeekStart(transactionDate);
+        const weekStartKey = weekStartDate.toLocaleDateString("en-CA");
+        const revenue = getTransactionTotal(transaction);
+
+        if (!weeklyRevenue[weekStartKey]) {
+          const weekEndDate = new Date(weekStartDate);
+          weekEndDate.setDate(weekStartDate.getDate() + 6);
+
+          weeklyRevenue[weekStartKey] = {
+            weekStart: weekStartKey,
+            weekLabel: `${weekStartDate.toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+            })} - ${weekEndDate.toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+            })}`,
+            revenue: 0,
+          };
+        }
+
+        weeklyRevenue[weekStartKey].revenue += revenue;
+      });
+
+      return Object.values(weeklyRevenue)
+        .map((week) => ({
+          ...week,
+          revenue: Math.round(week.revenue * 100) / 100,
+        }))
+        .sort((a, b) => new Date(a.weekStart) - new Date(b.weekStart));
+    } catch (error) {
+      console.error("Error in processWeeklyRevenue:", error);
       return [];
     }
   };
@@ -688,6 +765,20 @@ export default function Analytics() {
             </div>
             <SafeRevenueChart
               data={analyticsData.revenueData}
+              enableAnimation={enableChartAnimation}
+            />
+          </div>
+
+          {/* Weekly Revenue Comparison */}
+          <div className="analytics-card full-width">
+            <div className="card-header">
+              <h3>
+                <FontAwesomeIcon icon={faCalendarWeek} className="card-icon" />
+                Revenue by Week
+              </h3>
+            </div>
+            <SafeWeeklyRevenueChart
+              data={analyticsData.weeklyRevenueData}
               enableAnimation={enableChartAnimation}
             />
           </div>
