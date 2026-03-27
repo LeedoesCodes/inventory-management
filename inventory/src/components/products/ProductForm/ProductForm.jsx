@@ -37,11 +37,12 @@ export default function ProductForm({
   const [piecesPerPackage, setPiecesPerPackage] = useState("");
   const [parentProductId, setParentProductId] = useState("");
   const [parentProductName, setParentProductName] = useState("");
+  const [isTestProduct, setIsTestProduct] = useState(false);
 
   // Filter available parent products (single items only)
   const availableParentProducts = allProducts.filter(
     (product) =>
-      product.packagingType === "single" && product.id !== selectedProduct?.id
+      product.packagingType === "single" && product.id !== selectedProduct?.id,
   );
 
   // NEW: Handle name change - mark as manually set when user types
@@ -63,7 +64,7 @@ export default function ProductForm({
     // Auto-fill logic when product is selected - ONLY SUGGESTIONS, NO AUTO-FILL
     if (productId && piecesPerPackage) {
       const parentProduct = availableParentProducts.find(
-        (p) => p.id === productId
+        (p) => p.id === productId,
       );
 
       if (parentProduct) {
@@ -91,7 +92,7 @@ export default function ProductForm({
   useEffect(() => {
     if (packagingType === "bulk" && parentProductId && piecesPerPackage) {
       const parentProduct = availableParentProducts.find(
-        (p) => p.id === parentProductId
+        (p) => p.id === parentProductId,
       );
 
       if (parentProduct) {
@@ -213,11 +214,12 @@ export default function ProductForm({
       setPackagingType(selectedProduct.packagingType || "single");
       setPiecesPerPackage(selectedProduct.piecesPerPackage || "");
       setParentProductId(selectedProduct.parentProductId || "");
+      setIsTestProduct(Boolean(selectedProduct.isTestProduct));
 
       // Get parent product name for display
       if (selectedProduct.parentProductId) {
         const parent = allProducts.find(
-          (p) => p.id === selectedProduct.parentProductId
+          (p) => p.id === selectedProduct.parentProductId,
         );
         setParentProductName(parent?.name || "");
       }
@@ -229,7 +231,7 @@ export default function ProductForm({
       setCustomThreshold(
         hasCustomThreshold
           ? selectedProduct.lowStockThreshold.toString()
-          : defaultThreshold.toString()
+          : defaultThreshold.toString(),
       );
 
       setImageFile(null);
@@ -249,6 +251,7 @@ export default function ProductForm({
       setPiecesPerPackage("");
       setParentProductId("");
       setParentProductName("");
+      setIsTestProduct(false);
       setUseCustomThreshold(false);
       setCustomThreshold(defaultThreshold.toString());
       setImageFile(null);
@@ -371,6 +374,7 @@ export default function ProductForm({
           packagingType === "bulk" ? parseInt(piecesPerPackage) : 1,
         parentProductId: packagingType === "bulk" ? parentProductId : null,
         isBulkPackage: packagingType === "bulk",
+        isTestProduct: Boolean(isTestProduct),
       };
 
       console.log("🟡 [ProductForm] SAVING PRODUCT DATA:", {
@@ -519,6 +523,24 @@ export default function ProductForm({
                   Current: {selectedProduct.barcode}
                 </small>
               )}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="is-test-product">Testing Product</label>
+              <label className="checkbox-inline">
+                <input
+                  id="is-test-product"
+                  type="checkbox"
+                  checked={isTestProduct}
+                  onChange={(e) => setIsTestProduct(e.target.checked)}
+                  disabled={uploading}
+                />
+                Mark this product as testing/sample data
+              </label>
+              <small className="field-description">
+                Testing products can be excluded from audit stats and daily
+                totals.
+              </small>
             </div>
           </div>
 

@@ -8,6 +8,7 @@ import {
   faLink,
   faBoxOpen,
   faHistory,
+  faFlask,
 } from "@fortawesome/free-solid-svg-icons";
 import "./products-list.scss";
 
@@ -18,6 +19,7 @@ export default function ProductList({
   onViewHistory,
   onQuickCreateBulk,
   onViewRelated,
+  onToggleTesting,
   highlightedProductId,
   allProducts = [],
 }) {
@@ -119,6 +121,12 @@ export default function ProductList({
                             Single Only
                           </span>
                         )}
+                      {Boolean(p.isTestProduct) && (
+                        <span className="badge testing">
+                          <FontAwesomeIcon icon={faFlask} />
+                          Testing
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -215,6 +223,17 @@ export default function ProductList({
                       title="Delete Product"
                     >
                       <FontAwesomeIcon icon={faTrash} />
+                    </button>
+                    <button
+                      onClick={() => onToggleTesting?.(p)}
+                      className="icon-btn testing-btn"
+                      title={
+                        p.isTestProduct
+                          ? "Unmark as testing product"
+                          : "Mark as testing product"
+                      }
+                    >
+                      <FontAwesomeIcon icon={faFlask} />
                     </button>
                   </div>
                 </div>

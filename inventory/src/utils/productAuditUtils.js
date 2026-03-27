@@ -5,6 +5,8 @@ import {
   query,
   where,
   Timestamp,
+  doc,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "../Firebase/firebase";
 
@@ -22,6 +24,7 @@ import { db } from "../Firebase/firebase";
  * @param {string} [changeData.notes] - Optional notes/reason
  * @param {number} [changeData.price] - Optional current product cost price
  * @param {number} [changeData.totalPrice] - Optional total price (quantity × cost price)
+ * @param {boolean} [changeData.isTesting] - Whether this log is test/sample data
  * @returns {Promise<string>} Document ID of the audit log
  */
 export async function logProductChange(changeData) {
@@ -36,6 +39,7 @@ export async function logProductChange(changeData) {
       notes = "",
       price = null,
       totalPrice = null,
+      isTesting = false,
     } = changeData;
 
     const difference = changes.after - changes.before;
@@ -56,6 +60,7 @@ export async function logProductChange(changeData) {
       timestamp: Timestamp.fromDate(new Date()),
       notes,
       status: "completed",
+      isTesting: Boolean(isTesting),
     };
 
     console.log("🟡 [AUDIT] Creating audit log:", auditLog);
@@ -186,6 +191,45 @@ export async function getProductChangesForDateRange(
 }
 
 /**
+ * Get all audit logs across all products within a date range
+ * @param {Date} startDate - Start date
+ * @param {Date} endDate - End date
+ * @returns {Promise<Array>} Array of audit logs
+ */
+export async function getAllProductChangesForDateRange(startDate, endDate) {
+  try {
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    const q = query(collection(db, "productAuditLogs"));
+    const snapshot = await getDocs(q);
+
+    const results = snapshot.docs
+      .map((logDoc) => ({
+        id: logDoc.id,
+        ...logDoc.data(),
+        timestamp: logDoc.data().timestamp?.toDate?.(),
+      }))
+      .filter((log) => {
+        const logDate = log.timestamp;
+        return logDate >= start && logDate <= end;
+      })
+      .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    return results;
+  } catch (error) {
+    console.error(
+      "❌ Error fetching all product changes for date range:",
+      error,
+    );
+    return [];
+  }
+}
+
+/**
  * Get all audit logs across all products for a specific date
  * @param {Date} date - The date to query
  * @returns {Promise<Array>} Array of audit logs
@@ -233,11 +277,12 @@ export async function getAllProductChangesForDate(date) {
 export async function getProductAuditHistory(productId, limit = 50) {
   try {
     console.log("🟡 [AUDIT] Fetching audit history for product:", productId);
-    // Query only by productId to avoid composite index requirement
-    const q = query(
-      collection(db, "productAuditLogs"),
-      where("productId", "==", productId),
-    );
+    const q = productId
+      ? query(
+          collection(db, "productAuditLogs"),
+          where("productId", "==", productId),
+        )
+      : query(collection(db, "productAuditLogs"));
 
     const snapshot = await getDocs(q);
     console.log(
@@ -261,6 +306,30 @@ export async function getProductAuditHistory(productId, limit = 50) {
   } catch (error) {
     console.error("❌ [AUDIT] Error fetching product audit history:", error);
     return [];
+  }
+}
+
+/**
+ * Mark or unmark an audit log as testing data
+ * @param {string} logId - Audit log document ID
+ * @param {boolean} isTesting - Testing flag state
+ * @param {string} [updatedBy] - User display name who changed the flag
+ * @returns {Promise<void>}
+ */
+export async function setAuditLogTestingStatus(
+  logId,
+  isTesting,
+  updatedBy = "",
+) {
+  try {
+    await updateDoc(doc(db, "productAuditLogs", logId), {
+      isTesting: Boolean(isTesting),
+      testingMarkedAt: Timestamp.fromDate(new Date()),
+      testingMarkedBy: updatedBy || "Unknown User",
+    });
+  } catch (error) {
+    console.error("❌ Error updating audit log testing status:", error);
+    throw error;
   }
 }
 

@@ -343,6 +343,19 @@ export default function ProductsPage() {
     }
   };
 
+  const handleToggleProductTesting = async (product) => {
+    try {
+      await updateDoc(doc(db, "products", product.id), {
+        isTestProduct: !Boolean(product.isTestProduct),
+        updatedAt: new Date(),
+      });
+      await fetchProducts();
+    } catch (error) {
+      console.error("🔴 Failed to toggle product testing flag:", error);
+      alert("Failed to update product testing status.");
+    }
+  };
+
   const handleSave = async (productData, imageFile) => {
     try {
       console.log("🟡 [ProductsPage] RECEIVED PRODUCT DATA:", productData);
@@ -413,6 +426,7 @@ export default function ProductsPage() {
         piecesPerPackage: productData.piecesPerPackage || 1,
         parentProductId: productData.parentProductId || null,
         isBulkPackage: productData.packagingType === "bulk",
+        isTestProduct: Boolean(productData.isTestProduct),
 
         updatedAt: new Date(),
       };
@@ -426,12 +440,27 @@ export default function ProductsPage() {
         // Log stock change if stock was modified
         if (selectedProduct.stock !== productPayload.stock && user) {
           try {
-            const quantityDifference = productPayload.stock - selectedProduct.stock;
-            const costPrice = productPayload.costPrice !== null && productPayload.costPrice !== undefined ? productPayload.costPrice : null;
-            const totalPrice = costPrice !== null && quantityDifference ? costPrice * quantityDifference : null;
-            
-            console.log("🟢 [AUDIT LOG] Stock Edit - Qty Diff:", quantityDifference, "Cost:", costPrice, "Total:", totalPrice);
-            
+            const quantityDifference =
+              productPayload.stock - selectedProduct.stock;
+            const costPrice =
+              productPayload.costPrice !== null &&
+              productPayload.costPrice !== undefined
+                ? productPayload.costPrice
+                : null;
+            const totalPrice =
+              costPrice !== null && quantityDifference
+                ? costPrice * quantityDifference
+                : null;
+
+            console.log(
+              "🟢 [AUDIT LOG] Stock Edit - Qty Diff:",
+              quantityDifference,
+              "Cost:",
+              costPrice,
+              "Total:",
+              totalPrice,
+            );
+
             await logProductChange({
               productId: selectedProduct.id,
               productName: productData.name,
@@ -445,6 +474,7 @@ export default function ProductsPage() {
               notes: "", // Can be enhanced to accept user notes
               price: costPrice,
               totalPrice: totalPrice,
+              isTesting: Boolean(productPayload.isTestProduct),
             });
           } catch (auditError) {
             console.error("❌ Failed to log stock change:", auditError);
@@ -467,9 +497,16 @@ export default function ProductsPage() {
         // Log initial stock for new products
         if (productPayload.stock > 0 && user) {
           try {
-            const costPrice = productPayload.costPrice !== null && productPayload.costPrice !== undefined ? productPayload.costPrice : null;
-            const totalPrice = costPrice !== null && productPayload.stock ? costPrice * productPayload.stock : null;
-            
+            const costPrice =
+              productPayload.costPrice !== null &&
+              productPayload.costPrice !== undefined
+                ? productPayload.costPrice
+                : null;
+            const totalPrice =
+              costPrice !== null && productPayload.stock
+                ? costPrice * productPayload.stock
+                : null;
+
             await logProductChange({
               productId: newRef.id,
               productName: productData.name,
@@ -483,6 +520,7 @@ export default function ProductsPage() {
               notes: "Initial stock",
               price: costPrice,
               totalPrice: totalPrice,
+              isTesting: Boolean(productPayload.isTestProduct),
             });
           } catch (auditError) {
             console.error("❌ Failed to log initial stock:", auditError);
@@ -707,6 +745,7 @@ export default function ProductsPage() {
                 onEdit={handleEditProduct}
                 onDelete={handleDeleteProduct}
                 onViewHistory={handleViewAuditHistory}
+                onToggleTesting={handleToggleProductTesting}
                 highlightedProductId={highlightedProductId}
                 allProducts={products}
               />

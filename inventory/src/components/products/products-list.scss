@@ -238,6 +238,12 @@
               transform: translateY(-1px);
             }
           }
+
+          &.testing {
+            background: rgba(249, 115, 22, 0.12);
+            color: #c2410c;
+            border: 1px solid rgba(249, 115, 22, 0.4);
+          }
         }
       }
     }
@@ -562,6 +568,21 @@
             background: #5a67d8;
             transform: translateY(-2px);
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+          }
+
+          &:active {
+            transform: translateY(0);
+          }
+        }
+
+        &.testing-btn {
+          background: #f97316;
+          box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+
+          &:hover {
+            background: #ea580c;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
           }
 
           &:active {

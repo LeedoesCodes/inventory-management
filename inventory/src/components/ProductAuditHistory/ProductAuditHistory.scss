@@ -137,6 +137,22 @@
           cursor: not-allowed;
         }
       }
+
+      .testing-toggle-btn {
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 0.6rem 0.8rem;
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        cursor: pointer;
+        font-weight: 600;
+
+        &.active {
+          background: rgba(249, 115, 22, 0.12);
+          border-color: #f97316;
+          color: #c2410c;
+        }
+      }
     }
   }
 
@@ -287,6 +303,14 @@
             font-weight: 600;
             color: var(--text-primary);
             font-size: 0.95rem;
+
+            &.testing {
+              background: #f97316;
+              color: #fff;
+              padding: 0.2rem 0.5rem;
+              border-radius: 10px;
+              font-size: 0.72rem;
+            }
           }
 
           .time {
@@ -383,6 +407,22 @@
             min-width: 200px;
             font-style: italic;
             color: var(--text-primary);
+          }
+
+          .testing-log-action {
+            border: 1px solid #f97316;
+            background: rgba(249, 115, 22, 0.1);
+            color: #c2410c;
+            border-radius: 4px;
+            padding: 0.3rem 0.6rem;
+            font-size: 0.76rem;
+            cursor: pointer;
+            font-weight: 600;
+
+            &:disabled {
+              opacity: 0.6;
+              cursor: not-allowed;
+            }
           }
         }
       }

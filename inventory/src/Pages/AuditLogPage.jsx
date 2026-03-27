@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useContext } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faHistory,
@@ -7,20 +7,26 @@ import {
   faArrowDown,
   faSpinner,
   faFilter,
+  faFlask,
+  faChevronDown,
+  faChevronUp,
 } from "@fortawesome/free-solid-svg-icons";
 import {
   getAllProductChangesForDate,
-  getProductChangesForDateRange,
+  getAllProductChangesForDateRange,
   getProductAuditHistory,
   getAuditLogsByAction,
+  setAuditLogTestingStatus,
 } from "../utils/productAuditUtils";
 import Header from "../components/UI/Headers";
 import Sidebar from "../components/UI/Sidebar";
 import { useSidebar } from "../context/SidebarContext";
+import { AuthContext } from "../context/AuthContext";
 import "../styles/auditLog.scss";
 
 export default function AuditLogPage() {
   const { isCollapsed } = useSidebar();
+  const { user } = useContext(AuthContext);
 
   const [activeTab, setActiveTab] = useState("date"); // date, range, action, all
   const [selectedDate, setSelectedDate] = useState(
@@ -33,6 +39,10 @@ export default function AuditLogPage() {
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showTestingLogs, setShowTestingLogs] = useState(false);
+  const [updatingTestingLogId, setUpdatingTestingLogId] = useState("");
+  const [viewMode, setViewMode] = useState("grouped"); // flat, grouped
+  const [expandedDateKeys, setExpandedDateKeys] = useState({});
 
   const actionOptions = [
     { value: "all", label: "All Actions" },
@@ -44,7 +54,33 @@ export default function AuditLogPage() {
   // Fetch audit logs based on active tab
   useEffect(() => {
     fetchAuditLogs();
-  }, [activeTab, selectedDate, startDate, endDate, selectedAction]);
+  }, [
+    activeTab,
+    selectedDate,
+    startDate,
+    endDate,
+    selectedAction,
+    searchTerm,
+    showTestingLogs,
+  ]);
+
+  const normalizeBoolean = (value) => value === true;
+
+  const isLogTesting = (log) => {
+    if (normalizeBoolean(log?.isTesting)) return true;
+
+    const productNameLower = log?.productName?.toLowerCase() || "";
+    if (
+      productNameLower === "sample" ||
+      productNameLower === "sample bag" ||
+      productNameLower.includes(" sample") ||
+      productNameLower.includes("sample ")
+    ) {
+      return true;
+    }
+
+    return false;
+  };
 
   const fetchAuditLogs = async () => {
     setLoading(true);
@@ -63,7 +99,7 @@ export default function AuditLogPage() {
             "to",
             endDate,
           );
-          logs = await getProductChangesForDateRange(
+          logs = await getAllProductChangesForDateRange(
             new Date(startDate),
             new Date(endDate),
           );
@@ -89,16 +125,9 @@ export default function AuditLogPage() {
         );
       }
 
-      // Filter out test products (sample or sample bag)
-      logs = logs.filter((log) => {
-        const productNameLower = log.productName?.toLowerCase() || "";
-        return (
-          productNameLower !== "sample" &&
-          productNameLower !== "sample bag" &&
-          !productNameLower.includes(" sample") &&
-          !productNameLower.includes("sample ")
-        );
-      });
+      if (!showTestingLogs) {
+        logs = logs.filter((log) => !isLogTesting(log));
+      }
 
       console.log("✅ [AUDIT LOG] Received logs:", logs.length);
       setAuditLogs(logs);
@@ -109,6 +138,115 @@ export default function AuditLogPage() {
       console.error("❌ [AUDIT LOG] Error fetching logs:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const groupedDailyTotals = useMemo(() => {
+    const grouped = {};
+
+    auditLogs.forEach((log) => {
+      if (!(log?.timestamp instanceof Date)) return;
+
+      const key = log.timestamp.toISOString().split("T")[0];
+      const priceValue =
+        typeof log.totalPrice === "number"
+          ? log.totalPrice
+          : typeof log.price === "number" &&
+              typeof log.changes?.difference === "number"
+            ? log.price * log.changes.difference
+            : 0;
+
+      if (!grouped[key]) {
+        grouped[key] = {
+          date: log.timestamp,
+          totalAddedValue: 0,
+          totalAddedQty: 0,
+          totalLogs: 0,
+        };
+      }
+
+      grouped[key].totalLogs += 1;
+
+      if (Number(log.changes?.difference) > 0) {
+        grouped[key].totalAddedQty += Number(log.changes?.difference) || 0;
+        grouped[key].totalAddedValue += Number(priceValue) || 0;
+      }
+    });
+
+    return Object.values(grouped).sort((a, b) => b.date - a.date);
+  }, [auditLogs]);
+
+  const groupedLogsByDate = useMemo(() => {
+    const groups = {};
+
+    auditLogs.forEach((log) => {
+      if (!(log?.timestamp instanceof Date)) return;
+
+      const key = log.timestamp.toISOString().split("T")[0];
+      if (!groups[key]) {
+        groups[key] = {
+          key,
+          date: log.timestamp,
+          logs: [],
+          totalAddedQty: 0,
+          totalAddedValue: 0,
+        };
+      }
+
+      groups[key].logs.push(log);
+
+      if (Number(log.changes?.difference) > 0) {
+        groups[key].totalAddedQty += Number(log.changes?.difference) || 0;
+        const addedValue =
+          typeof log.totalPrice === "number"
+            ? Number(log.totalPrice)
+            : typeof log.price === "number" &&
+                typeof log.changes?.difference === "number"
+              ? Number(log.price) * Number(log.changes.difference)
+              : 0;
+        groups[key].totalAddedValue += Number(addedValue) || 0;
+      }
+    });
+
+    return Object.values(groups).sort((a, b) => b.date - a.date);
+  }, [auditLogs]);
+
+  const toggleDateGroup = (key) => {
+    setExpandedDateKeys((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
+
+  const handleToggleLogTesting = async (log) => {
+    if (!log?.id || updatingTestingLogId) return;
+
+    const nextState = !isLogTesting(log);
+    setUpdatingTestingLogId(log.id);
+
+    try {
+      await setAuditLogTestingStatus(
+        log.id,
+        nextState,
+        user?.displayName || user?.email || "Unknown User",
+      );
+
+      setAuditLogs((prev) => {
+        const updated = prev.map((item) =>
+          item.id === log.id ? { ...item, isTesting: nextState } : item,
+        );
+        return showTestingLogs
+          ? updated
+          : updated.filter((item) => !isLogTesting(item));
+      });
+    } catch (error) {
+      console.error(
+        "❌ [AUDIT LOG] Failed to toggle testing log status:",
+        error,
+      );
+      alert("Failed to update testing status. Please try again.");
+    } finally {
+      setUpdatingTestingLogId("");
     }
   };
 
@@ -211,6 +349,12 @@ export default function AuditLogPage() {
                 <div className="summary-item negative">
                   <span className="label">Total Removed</span>
                   <span className="value">-{summary.totalRemoved}</span>
+                </div>
+                <div className="summary-item">
+                  <span className="label">Testing Logs View</span>
+                  <span className="value">
+                    {showTestingLogs ? "Visible" : "Hidden"}
+                  </span>
                 </div>
               </div>
 
@@ -346,8 +490,64 @@ export default function AuditLogPage() {
                   className="search-input"
                 />
               </div>
+
+              <div className="testing-toggle-group">
+                <label>
+                  <FontAwesomeIcon icon={faFlask} /> Testing Logs
+                </label>
+                <button
+                  type="button"
+                  className={`testing-toggle-btn ${showTestingLogs ? "active" : ""}`}
+                  onClick={() => setShowTestingLogs((prev) => !prev)}
+                >
+                  {showTestingLogs ? "Hide Testing Logs" : "Show Testing Logs"}
+                </button>
+              </div>
+
+              <div className="view-mode-group">
+                <label>View Mode</label>
+                <div className="view-mode-buttons">
+                  <button
+                    type="button"
+                    className={`view-mode-btn ${viewMode === "flat" ? "active" : ""}`}
+                    onClick={() => setViewMode("flat")}
+                  >
+                    Flat List
+                  </button>
+                  <button
+                    type="button"
+                    className={`view-mode-btn ${viewMode === "grouped" ? "active" : ""}`}
+                    onClick={() => setViewMode("grouped")}
+                  >
+                    Group by Date
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
+
+          {groupedDailyTotals.length > 0 && (
+            <div className="daily-totals-section">
+              <h3>Daily Added Product Value</h3>
+              <div className="daily-totals-list">
+                {groupedDailyTotals.map((item) => (
+                  <div
+                    key={item.date.toISOString()}
+                    className="daily-total-item"
+                  >
+                    <span className="date">
+                      {item.date.toLocaleDateString()}
+                    </span>
+                    <span className="qty">+{item.totalAddedQty} qty</span>
+                    <span className="value">
+                      ₱{item.totalAddedValue.toFixed(2)}
+                    </span>
+                    <span className="logs">{item.totalLogs} log(s)</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Logs List */}
           <div className="audit-logs-section">
@@ -361,6 +561,149 @@ export default function AuditLogPage() {
                 <FontAwesomeIcon icon={faHistory} />
                 <p>No audit logs found</p>
                 <small>Try adjusting your filters or date range</small>
+              </div>
+            ) : viewMode === "grouped" ? (
+              <div className="grouped-logs-list">
+                {groupedLogsByDate.map((group) => {
+                  const isExpanded = Boolean(expandedDateKeys[group.key]);
+
+                  return (
+                    <div key={group.key} className="date-group-card">
+                      <button
+                        type="button"
+                        className="date-group-header"
+                        onClick={() => toggleDateGroup(group.key)}
+                      >
+                        <div className="date-main">
+                          <span className="date-label">
+                            {group.date.toLocaleDateString()}
+                          </span>
+                          <span className="date-meta">
+                            {group.logs.length} log(s)
+                          </span>
+                        </div>
+                        <div className="date-stats">
+                          <span className="qty">
+                            +{group.totalAddedQty} qty
+                          </span>
+                          <span className="value">
+                            ₱{group.totalAddedValue.toFixed(2)}
+                          </span>
+                          <span className="expand-icon">
+                            <FontAwesomeIcon
+                              icon={isExpanded ? faChevronUp : faChevronDown}
+                            />
+                          </span>
+                        </div>
+                      </button>
+
+                      {isExpanded && (
+                        <div className="date-group-logs">
+                          {group.logs.map((log) => (
+                            <div key={log.id} className="log-entry">
+                              <div className="log-icon">
+                                <div
+                                  className={`icon ${getActionColor(
+                                    log.changes?.difference || 0,
+                                  )}`}
+                                >
+                                  <FontAwesomeIcon
+                                    icon={getActionIcon(log.action)}
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="log-content">
+                                <div className="log-header">
+                                  <div className="product-info">
+                                    <h4 className="product-name">
+                                      {log.productName}
+                                    </h4>
+                                    <span className="action-badge">
+                                      {getActionLabel(log.action)}
+                                    </span>
+                                    {isLogTesting(log) && (
+                                      <span className="action-badge test-badge">
+                                        Testing
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="time">
+                                    {log.timestamp?.toLocaleString() || "N/A"}
+                                  </span>
+                                </div>
+
+                                <div className="log-details">
+                                  <div className="change-info">
+                                    <span className="before">
+                                      Before:{" "}
+                                      <strong>{log.changes?.before}</strong>
+                                    </span>
+                                    <span className="arrow">→</span>
+                                    <span className="after">
+                                      After:{" "}
+                                      <strong>{log.changes?.after}</strong>
+                                    </span>
+                                    <span
+                                      className={`difference ${getActionColor(
+                                        log.changes?.difference || 0,
+                                      )}`}
+                                    >
+                                      {log.changes?.difference > 0 ? "+" : ""}
+                                      {log.changes?.difference}
+                                    </span>
+                                  </div>
+                                  {typeof log.price === "number" && (
+                                    <div className="price-info">
+                                      <span className="price-label">Cost:</span>
+                                      <span className="price-value">
+                                        ₱{log.price.toFixed(2)}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {typeof log.totalPrice === "number" && (
+                                    <div className="total-price-info">
+                                      <span className="price-label">
+                                        Total:
+                                      </span>
+                                      <span className="price-value">
+                                        ₱{log.totalPrice.toFixed(2)}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="log-meta">
+                                  <span className="user">
+                                    <strong>User:</strong>{" "}
+                                    {log.userName || "Unknown"}
+                                  </span>
+                                  {log.notes && (
+                                    <span className="notes">
+                                      <strong>Notes:</strong> {log.notes}
+                                    </span>
+                                  )}
+                                  <button
+                                    type="button"
+                                    className="testing-log-action"
+                                    onClick={() => handleToggleLogTesting(log)}
+                                    disabled={updatingTestingLogId === log.id}
+                                  >
+                                    {updatingTestingLogId === log.id
+                                      ? "Updating..."
+                                      : isLogTesting(log)
+                                        ? "Undo Testing"
+                                        : "Mark as Testing"}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="logs-list">
@@ -383,6 +726,11 @@ export default function AuditLogPage() {
                           <span className="action-badge">
                             {getActionLabel(log.action)}
                           </span>
+                          {isLogTesting(log) && (
+                            <span className="action-badge test-badge">
+                              Testing
+                            </span>
+                          )}
                         </div>
                         <span className="time">
                           {log.timestamp?.toLocaleString() || "N/A"}
@@ -434,6 +782,18 @@ export default function AuditLogPage() {
                             <strong>Notes:</strong> {log.notes}
                           </span>
                         )}
+                        <button
+                          type="button"
+                          className="testing-log-action"
+                          onClick={() => handleToggleLogTesting(log)}
+                          disabled={updatingTestingLogId === log.id}
+                        >
+                          {updatingTestingLogId === log.id
+                            ? "Updating..."
+                            : isLogTesting(log)
+                              ? "Undo Testing"
+                              : "Mark as Testing"}
+                        </button>
                       </div>
                     </div>
                   </div>

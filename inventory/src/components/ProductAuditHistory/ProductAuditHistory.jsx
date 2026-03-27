@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faTimes,
@@ -8,15 +8,19 @@ import {
   faArrowDown,
   faSpinner,
   faExclamationTriangle,
+  faFlask,
 } from "@fortawesome/free-solid-svg-icons";
 import {
   getProductChangesForDate,
   getProductChangesForDateRange,
   getProductAuditHistory,
+  setAuditLogTestingStatus,
 } from "../../utils/productAuditUtils";
+import { AuthContext } from "../../context/AuthContext";
 import "./ProductAuditHistory.scss";
 
 const ProductAuditHistory = ({ productId, productName, onClose }) => {
+  const { user } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState("date"); // date, range, all
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split("T")[0],
@@ -26,11 +30,25 @@ const ProductAuditHistory = ({ productId, productName, onClose }) => {
   const [auditLogs, setAuditLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState(null);
+  const [showTestingLogs, setShowTestingLogs] = useState(false);
+  const [updatingTestingLogId, setUpdatingTestingLogId] = useState("");
 
   // Fetch audit logs based on active tab
   useEffect(() => {
     fetchAuditLogs();
-  }, [activeTab, selectedDate, startDate, endDate]);
+  }, [activeTab, selectedDate, startDate, endDate, showTestingLogs]);
+
+  const isLogTesting = (log) => {
+    if (log?.isTesting === true) return true;
+
+    const productNameLower = log?.productName?.toLowerCase() || "";
+    return (
+      productNameLower === "sample" ||
+      productNameLower === "sample bag" ||
+      productNameLower.includes(" sample") ||
+      productNameLower.includes("sample ")
+    );
+  };
 
   const fetchAuditLogs = async () => {
     setLoading(true);
@@ -72,6 +90,10 @@ const ProductAuditHistory = ({ productId, productName, onClose }) => {
         logs = await getProductAuditHistory(productId, 100);
       }
 
+      if (!showTestingLogs) {
+        logs = logs.filter((log) => !isLogTesting(log));
+      }
+
       console.log("✅ [AUDIT MODAL] Received logs:", logs.length, "logs");
       setAuditLogs(logs);
 
@@ -101,6 +123,35 @@ const ProductAuditHistory = ({ productId, productName, onClose }) => {
       console.error("❌ [AUDIT MODAL] Error fetching audit logs:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleToggleLogTesting = async (log) => {
+    if (!log?.id || updatingTestingLogId) return;
+
+    const nextState = !isLogTesting(log);
+    setUpdatingTestingLogId(log.id);
+
+    try {
+      await setAuditLogTestingStatus(
+        log.id,
+        nextState,
+        user?.displayName || user?.email || "Unknown User",
+      );
+
+      setAuditLogs((prev) => {
+        const updated = prev.map((item) =>
+          item.id === log.id ? { ...item, isTesting: nextState } : item,
+        );
+        return showTestingLogs
+          ? updated
+          : updated.filter((item) => !isLogTesting(item));
+      });
+    } catch (error) {
+      console.error("❌ [AUDIT MODAL] Failed to toggle testing status:", error);
+      alert("Failed to update testing status. Please try again.");
+    } finally {
+      setUpdatingTestingLogId("");
     }
   };
 
@@ -221,6 +272,19 @@ const ProductAuditHistory = ({ productId, productName, onClose }) => {
             )}
           </div>
         )}
+
+        <div className="filter-group">
+          <label>
+            <FontAwesomeIcon icon={faFlask} /> Testing Logs
+          </label>
+          <button
+            type="button"
+            className={`testing-toggle-btn ${showTestingLogs ? "active" : ""}`}
+            onClick={() => setShowTestingLogs((prev) => !prev)}
+          >
+            {showTestingLogs ? "Hide Testing Logs" : "Show Testing Logs"}
+          </button>
+        </div>
       </div>
 
       {/* Summary Section (Date view) */}
@@ -275,6 +339,9 @@ const ProductAuditHistory = ({ productId, productName, onClose }) => {
               <div className="log-content">
                 <div className="log-header">
                   <span className="action">{getActionLabel(log.action)}</span>
+                  {isLogTesting(log) && (
+                    <span className="action testing">Testing</span>
+                  )}
                   <span className="time">
                     {log.timestamp?.toLocaleTimeString?.() || "N/A"}
                   </span>
@@ -303,6 +370,18 @@ const ProductAuditHistory = ({ productId, productName, onClose }) => {
                   {log.notes && (
                     <span className="notes">Note: {log.notes}</span>
                   )}
+                  <button
+                    type="button"
+                    className="testing-log-action"
+                    onClick={() => handleToggleLogTesting(log)}
+                    disabled={updatingTestingLogId === log.id}
+                  >
+                    {updatingTestingLogId === log.id
+                      ? "Updating..."
+                      : isLogTesting(log)
+                        ? "Undo Testing"
+                        : "Mark as Testing"}
+                  </button>
                 </div>
               </div>
             </div>

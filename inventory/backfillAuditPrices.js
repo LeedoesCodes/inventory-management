@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 
 // Load service account key
 const serviceAccount = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "serviceAccountKey.json"), "utf-8")
+  fs.readFileSync(path.join(__dirname, "serviceAccountKey.json"), "utf-8"),
 );
 
 // Initialize Firebase Admin
@@ -26,7 +26,7 @@ async function backfillAuditPrices() {
     const auditLogsSnapshot = await db.collection("productAuditLogs").get();
 
     console.log(
-      `📊 Found ${auditLogsSnapshot.docs.length} audit logs to process\n`
+      `📊 Found ${auditLogsSnapshot.docs.length} audit logs to process\n`,
     );
 
     let updated = 0;
@@ -37,8 +37,12 @@ async function backfillAuditPrices() {
       const auditLog = auditDoc.data();
 
       // Skip only if already has both price and totalPrice
-      if (auditLog.price !== undefined && auditLog.price !== null &&
-          auditLog.totalPrice !== undefined && auditLog.totalPrice !== null) {
+      if (
+        auditLog.price !== undefined &&
+        auditLog.price !== null &&
+        auditLog.totalPrice !== undefined &&
+        auditLog.totalPrice !== null
+      ) {
         skipped++;
         continue;
       }
@@ -52,11 +56,17 @@ async function backfillAuditPrices() {
 
         if (productSnapshot.exists) {
           const product = productSnapshot.data();
-          const costPrice = product.costPrice !== null && product.costPrice !== undefined ? product.costPrice : null;
-          
+          const costPrice =
+            product.costPrice !== null && product.costPrice !== undefined
+              ? product.costPrice
+              : null;
+
           // Calculate total price (quantity difference × cost price)
           const quantityDifference = auditLog.changes?.difference || 0;
-          const totalPrice = costPrice != null && quantityDifference ? costPrice * quantityDifference : null;
+          const totalPrice =
+            costPrice != null && quantityDifference
+              ? costPrice * quantityDifference
+              : null;
 
           // Update the audit log with both price and totalPrice
           await auditDoc.ref.update({
@@ -66,19 +76,19 @@ async function backfillAuditPrices() {
 
           updated++;
           console.log(
-            `✅ Updated: ${auditLog.productName} - Cost: ₱${costPrice || "N/A"} | Total: ₱${totalPrice || "N/A"}`
+            `✅ Updated: ${auditLog.productName} - Cost: ₱${costPrice || "N/A"} | Total: ₱${totalPrice || "N/A"}`,
           );
         } else {
           failed++;
           console.warn(
-            `⚠️ Product not found for audit log: ${auditLog.productId}`
+            `⚠️ Product not found for audit log: ${auditLog.productId}`,
           );
         }
       } catch (error) {
         failed++;
         console.error(
           `❌ Failed to update audit log ${auditDoc.id}:`,
-          error.message
+          error.message,
         );
       }
     }

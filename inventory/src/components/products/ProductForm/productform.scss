@@ -753,6 +753,21 @@
     }
   }
 
+  .checkbox-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    font-weight: 500;
+
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+    }
+  }
+
   // Tags input - compact
   .tags-input {
     display: flex;
