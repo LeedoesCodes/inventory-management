@@ -426,6 +426,12 @@ export default function ProductsPage() {
         // Log stock change if stock was modified
         if (selectedProduct.stock !== productPayload.stock && user) {
           try {
+            const quantityDifference = productPayload.stock - selectedProduct.stock;
+            const costPrice = productPayload.costPrice !== null && productPayload.costPrice !== undefined ? productPayload.costPrice : null;
+            const totalPrice = costPrice !== null && quantityDifference ? costPrice * quantityDifference : null;
+            
+            console.log("🟢 [AUDIT LOG] Stock Edit - Qty Diff:", quantityDifference, "Cost:", costPrice, "Total:", totalPrice);
+            
             await logProductChange({
               productId: selectedProduct.id,
               productName: productData.name,
@@ -437,6 +443,8 @@ export default function ProductsPage() {
               userId: user.uid,
               userName: user.displayName || user.email || "Unknown User",
               notes: "", // Can be enhanced to accept user notes
+              price: costPrice,
+              totalPrice: totalPrice,
             });
           } catch (auditError) {
             console.error("❌ Failed to log stock change:", auditError);
@@ -459,6 +467,9 @@ export default function ProductsPage() {
         // Log initial stock for new products
         if (productPayload.stock > 0 && user) {
           try {
+            const costPrice = productPayload.costPrice !== null && productPayload.costPrice !== undefined ? productPayload.costPrice : null;
+            const totalPrice = costPrice !== null && productPayload.stock ? costPrice * productPayload.stock : null;
+            
             await logProductChange({
               productId: newRef.id,
               productName: productData.name,
@@ -470,6 +481,8 @@ export default function ProductsPage() {
               userId: user.uid,
               userName: user.displayName || user.email || "Unknown User",
               notes: "Initial stock",
+              price: costPrice,
+              totalPrice: totalPrice,
             });
           } catch (auditError) {
             console.error("❌ Failed to log initial stock:", auditError);

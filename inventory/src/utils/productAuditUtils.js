@@ -20,6 +20,8 @@ import { db } from "../Firebase/firebase";
  * @param {string} changeData.userId - User ID
  * @param {string} changeData.userName - User display name
  * @param {string} [changeData.notes] - Optional notes/reason
+ * @param {number} [changeData.price] - Optional current product cost price
+ * @param {number} [changeData.totalPrice] - Optional total price (quantity × cost price)
  * @returns {Promise<string>} Document ID of the audit log
  */
 export async function logProductChange(changeData) {
@@ -32,6 +34,8 @@ export async function logProductChange(changeData) {
       userId,
       userName,
       notes = "",
+      price = null,
+      totalPrice = null,
     } = changeData;
 
     const difference = changes.after - changes.before;
@@ -45,6 +49,8 @@ export async function logProductChange(changeData) {
         after: changes.after,
         difference,
       },
+      price,
+      totalPrice,
       userId,
       userName,
       timestamp: Timestamp.fromDate(new Date()),
@@ -127,7 +133,7 @@ export async function getProductChangesForDate(productId, date) {
  * @returns {Promise<Array>} Array of audit logs
  */
 export async function getProductChangesForDateRange(
-  productId,
+  productId = null,
   startDate,
   endDate,
 ) {
@@ -140,18 +146,20 @@ export async function getProductChangesForDateRange(
 
     console.log(
       "🟡 [AUDIT] Fetching range for",
-      productId,
+      productId || "ALL products",
       "from",
       startDate,
       "to",
       endDate,
     );
 
-    // Query only by productId to avoid composite index requirement
-    const q = query(
-      collection(db, "productAuditLogs"),
-      where("productId", "==", productId),
-    );
+    // Query by productId if provided, otherwise fetch all
+    const q = productId
+      ? query(
+          collection(db, "productAuditLogs"),
+          where("productId", "==", productId),
+        )
+      : query(collection(db, "productAuditLogs"));
 
     const snapshot = await getDocs(q);
 

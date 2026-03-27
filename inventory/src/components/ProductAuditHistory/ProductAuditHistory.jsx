@@ -289,6 +289,16 @@ const ProductAuditHistory = ({ productId, productName, onClose }) => {
                     {log.changes.difference > 0 ? "+" : ""}
                     {log.changes.difference}
                   </span>
+                  {log.price != null && !isNaN(Number(log.price)) && (
+                    <span className="price">
+                      Cost: ₱{Number(log.price).toFixed(2)}
+                    </span>
+                  )}
+                  {log.totalPrice != null && !isNaN(Number(log.totalPrice)) && (
+                    <span className="total-price">
+                      Total: ₱{Number(log.totalPrice).toFixed(2)}
+                    </span>
+                  )}
                 </div>
                 <div className="log-meta">
                   <span className="user">By: {log.userName || "Unknown"}</span>

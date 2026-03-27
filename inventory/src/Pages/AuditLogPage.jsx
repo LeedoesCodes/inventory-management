@@ -63,7 +63,9 @@ export default function AuditLogPage() {
             "to",
             endDate,
           );
+          // null = fetch all products across the date range
           logs = await getProductChangesForDateRange(
+            null,
             new Date(startDate),
             new Date(endDate),
           );
@@ -407,6 +409,22 @@ export default function AuditLogPage() {
                             {log.changes?.difference}
                           </span>
                         </div>
+                        {log.price != null && !isNaN(Number(log.price)) && (
+                          <div className="price-info">
+                            <span className="price-label">Cost:</span>
+                            <span className="price-value">
+                              ₱{Number(log.price).toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+                        {log.totalPrice != null && !isNaN(Number(log.totalPrice)) && (
+                          <div className="total-price-info">
+                            <span className="price-label">Total:</span>
+                            <span className="price-value">
+                              ₱{Number(log.totalPrice).toFixed(2)}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="log-meta">
