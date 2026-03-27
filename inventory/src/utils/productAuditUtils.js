@@ -133,7 +133,7 @@ export async function getProductChangesForDate(productId, date) {
  * @returns {Promise<Array>} Array of audit logs
  */
 export async function getProductChangesForDateRange(
-  productId = null,
+  productId,
   startDate,
   endDate,
 ) {
@@ -146,20 +146,18 @@ export async function getProductChangesForDateRange(
 
     console.log(
       "🟡 [AUDIT] Fetching range for",
-      productId || "ALL products",
+      productId,
       "from",
       startDate,
       "to",
       endDate,
     );
 
-    // Query by productId if provided, otherwise fetch all
-    const q = productId
-      ? query(
-          collection(db, "productAuditLogs"),
-          where("productId", "==", productId),
-        )
-      : query(collection(db, "productAuditLogs"));
+    // Query only by productId to avoid composite index requirement
+    const q = query(
+      collection(db, "productAuditLogs"),
+      where("productId", "==", productId),
+    );
 
     const snapshot = await getDocs(q);
 
