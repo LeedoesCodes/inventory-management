@@ -2,3 +2,5 @@ node_modules/
 dist/
 .env
 .vite/
+serviceAccountKey.json
+*/serviceAccountKey.json
