@@ -3,6 +3,9 @@ import {
   collection,
   getDocs,
   query,
+  where,
+  limit,
+  startAfter,
   deleteDoc,
   doc,
   writeBatch,
@@ -15,9 +18,15 @@ import {
 } from "firebase/firestore";
 import { db } from "../../../Firebase/firebase";
 
+const ORDER_BATCH_SIZE = 100;
+const FIRESTORE_IN_QUERY_LIMIT = 10;
+
 export const useOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMoreOrders, setHasMoreOrders] = useState(true);
+  const [lastVisibleOrderDoc, setLastVisibleOrderDoc] = useState(null);
 
   const convertFirestoreDueDate = (dueDate) => {
     if (!dueDate) return null;
@@ -53,20 +62,25 @@ export const useOrders = () => {
     }
   };
 
-  const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      const ordersQuery = query(
-        collection(db, "orders"),
-        orderBy("createdAt", "desc"),
-      );
-      const [ordersSnapshot, badOrdersSnapshot] = await Promise.all([
-        getDocs(ordersQuery),
-        getDocs(collection(db, "badOrders")),
-      ]);
+  const fetchBadOrdersForOrderIds = async (orderIds) => {
+    if (!orderIds.length) return new Map();
 
-      const badOrdersByOrderId = new Map();
-      badOrdersSnapshot.forEach((badOrderDoc) => {
+    const idChunks = [];
+    for (let i = 0; i < orderIds.length; i += FIRESTORE_IN_QUERY_LIMIT) {
+      idChunks.push(orderIds.slice(i, i + FIRESTORE_IN_QUERY_LIMIT));
+    }
+
+    const badOrderSnapshots = await Promise.all(
+      idChunks.map((chunk) =>
+        getDocs(
+          query(collection(db, "badOrders"), where("orderId", "in", chunk)),
+        ),
+      ),
+    );
+
+    const badOrdersByOrderId = new Map();
+    badOrderSnapshots.forEach((snapshot) => {
+      snapshot.forEach((badOrderDoc) => {
         const badOrder = { id: badOrderDoc.id, ...badOrderDoc.data() };
         const orderId = badOrder.orderId;
         if (!orderId) return;
@@ -76,8 +90,44 @@ export const useOrders = () => {
         }
         badOrdersByOrderId.get(orderId).push(badOrder);
       });
+    });
 
-      const ordersData = ordersSnapshot.docs.map((orderDoc) => {
+    return badOrdersByOrderId;
+  };
+
+  const fetchOrders = async (reset = true) => {
+    try {
+      if (reset) {
+        setLoading(true);
+      } else {
+        if (loadingMore || !hasMoreOrders) return;
+        setLoadingMore(true);
+      }
+
+      const constraints = [
+        orderBy("createdAt", "desc"),
+        limit(ORDER_BATCH_SIZE),
+      ];
+      if (!reset && lastVisibleOrderDoc) {
+        constraints.push(startAfter(lastVisibleOrderDoc));
+      }
+
+      const ordersQuery = query(collection(db, "orders"), ...constraints);
+      const ordersSnapshot = await getDocs(ordersQuery);
+
+      if (ordersSnapshot.empty) {
+        if (reset) {
+          setOrders([]);
+        }
+        setHasMoreOrders(false);
+        return;
+      }
+
+      const orderDocs = ordersSnapshot.docs;
+      const orderIds = orderDocs.map((orderDoc) => orderDoc.id);
+      const badOrdersByOrderId = await fetchBadOrdersForOrderIds(orderIds);
+
+      const ordersData = orderDocs.map((orderDoc) => {
         const orderData = orderDoc.data();
         const createdAtDate = orderData.createdAt?.toDate
           ? orderData.createdAt.toDate()
@@ -122,12 +172,27 @@ export const useOrders = () => {
         return order;
       });
 
-      setOrders(ordersData);
+      setLastVisibleOrderDoc(orderDocs[orderDocs.length - 1]);
+      setHasMoreOrders(orderDocs.length === ORDER_BATCH_SIZE);
+
+      if (reset) {
+        setOrders(ordersData);
+      } else {
+        setOrders((prevOrders) => [...prevOrders, ...ordersData]);
+      }
     } catch (err) {
       console.error("Error fetching orders:", err);
     } finally {
-      setLoading(false);
+      if (reset) {
+        setLoading(false);
+      } else {
+        setLoadingMore(false);
+      }
     }
+  };
+
+  const loadMoreOrders = async () => {
+    await fetchOrders(false);
   };
 
   const handleCancelOrder = async (order) => {
@@ -281,7 +346,10 @@ export const useOrders = () => {
   return {
     orders,
     loading,
+    loadingMore,
+    hasMoreOrders,
     fetchOrders,
+    loadMoreOrders,
     handleCancelOrder,
     handleDeleteOrder,
     handleProcessBadOrder,

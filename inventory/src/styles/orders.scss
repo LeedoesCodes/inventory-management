@@ -9,6 +9,11 @@
   --border-color: #e2e8f0;
   --card-bg: #ffffff;
   --input-bg: #ffffff;
+  --stock-badge-bg: #eaf8ef;
+  --stock-badge-text: #2f855a;
+  --stock-badge-low-bg: #fde8e8;
+  --stock-badge-low-text: #c53030;
+  --stock-hint-text: #2f855a;
 
   // Colors
   --accent-color: #009feb;
@@ -28,6 +33,11 @@
   --border-color: #4a5568;
   --card-bg: #262e3b;
   --input-bg: #2d3748;
+  --stock-badge-bg: #234e3b;
+  --stock-badge-text: #9ae6b4;
+  --stock-badge-low-bg: #612b2b;
+  --stock-badge-low-text: #feb2b2;
+  --stock-hint-text: #9ae6b4;
 
   // Colors (adjusted for contrast)
   --accent-color: #63b3ed;
@@ -61,11 +71,11 @@
 }
 
 .orders-content {
-  padding: 2rem;
+  padding: 1.25rem 1.5rem;
   background: var(--bg-primary);
   flex: 1;
-  margin-top: 50px;
-  padding-bottom: 2rem;
+  margin-top: 86px;
+  padding-bottom: 1rem;
   margin-bottom: 90px;
   transition: all 0.3s ease;
   width: 100%;
@@ -73,21 +83,22 @@
   box-sizing: border-box;
 
   .page-header {
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
     animation: slideInDown 0.5s ease-out;
     width: 100%;
 
     h2 {
       margin: 0;
       color: var(--text-primary);
-      font-size: 2.2rem;
+      font-size: 1.75rem;
       font-weight: 700;
+      line-height: 1.15;
     }
 
     p {
-      margin: 0.5rem 0 0 0;
+      margin: 0.3rem 0 0 0;
       color: var(--text-secondary);
-      font-size: 1.1rem;
+      font-size: 0.98rem;
     }
   }
 }
@@ -96,12 +107,12 @@
 .search-filters-section {
   width: 100%;
   max-width: 100%;
-  padding: 1.5rem;
+  padding: 0.85rem;
   background: var(--bg-secondary);
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   border: 1px solid var(--border-color);
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   display: flex;
   gap: 1rem;
   align-items: center;
@@ -203,10 +214,10 @@
   justify-content: space-between;
   align-items: center;
   background: var(--bg-secondary);
-  padding: 1.5rem;
+  padding: 0.85rem 1rem;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   flex-wrap: wrap;
   gap: 1rem;
   transition: all 0.3s ease;
@@ -301,10 +312,10 @@
 
 .recent-customers {
   background: var(--bg-secondary);
-  padding: 1.5rem;
+  padding: 0.85rem 1rem;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.9rem;
   transition: all 0.3s ease;
   animation: fadeInUp 0.5s ease-out 0.3s both;
   width: 100%;
@@ -312,9 +323,9 @@
   box-sizing: border-box;
 
   h3 {
-    margin: 0 0 1rem 0;
+    margin: 0 0 0.55rem 0;
     color: var(--text-primary);
-    font-size: 1.1rem;
+    font-size: 1rem;
   }
 
   .customer-tags {
@@ -323,13 +334,13 @@
     gap: 0.5rem;
 
     .customer-tag {
-      padding: 0.5rem 1rem;
+      padding: 0.35rem 0.8rem;
       background: var(--bg-tertiary);
       border: 1px solid var(--border-color);
       border-radius: 20px;
       cursor: pointer;
       transition: all 0.3s ease;
-      font-size: 0.9rem;
+      font-size: 0.82rem;
       color: var(--text-primary);
       position: relative;
       overflow: hidden;
@@ -360,6 +371,24 @@
           left: 100%;
         }
       }
+    }
+  }
+}
+
+// Keep the top section compact so product cards are visible sooner.
+.orders-page {
+  .orders-content {
+    .products-grid {
+      h2 {
+        margin-bottom: 0.9rem;
+        font-size: 1.25rem;
+      }
+    }
+
+    .search-filters-section,
+    .controls-bar,
+    .recent-customers {
+      border-radius: 10px;
     }
   }
 }
@@ -2224,41 +2253,43 @@
 // Compact product card layout for better space usage in Orders page
 .products-list {
   .product-card {
+    position: relative;
+
     .product-header {
       display: grid;
-      grid-template-columns: auto auto 1fr auto;
-      align-items: start;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
       gap: 0.75rem;
 
       .product-checkbox {
-        margin-top: 0.2rem;
+        margin-top: 0;
         width: 22px;
         display: flex;
-        justify-content: center;
+        justify-content: flex-start;
 
         input[type="checkbox"] {
           margin: 0;
         }
       }
 
-      .selection-order-slot {
-        width: 34px;
-        min-height: 22px;
-        margin-top: 0.1rem;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-      }
-
       .product-info {
         min-width: 0;
+        display: flex;
+        flex-direction: column;
         gap: 0.45rem;
 
         .product-name {
           margin: 0;
-          line-height: 1.2;
+          line-height: 1.25;
+          font-weight: 700;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          text-overflow: ellipsis;
           word-break: normal;
-          overflow-wrap: anywhere;
+          overflow-wrap: break-word;
+          max-height: 2.5em;
         }
 
         .product-badges {
@@ -2270,24 +2301,65 @@
       }
 
       .product-meta {
-        min-width: 138px;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
         align-items: flex-end;
         text-align: right;
-        gap: 0.4rem;
+        gap: 0.2rem;
+
+        .original-price {
+          font-size: 0.78rem;
+          color: var(--text-secondary);
+          text-decoration: line-through;
+          white-space: nowrap;
+          line-height: 1;
+        }
 
         .product-price {
           white-space: nowrap;
           line-height: 1;
         }
+      }
 
-        .stock-badge {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
-          line-height: 1.2;
-          max-width: 160px;
-          white-space: normal;
+      .selection-order-badge.floating {
+        position: absolute;
+        top: 0.65rem;
+        right: 0.65rem;
+        z-index: 2;
+        pointer-events: none;
+      }
+    }
+
+    .stock-row {
+      margin-top: 0.7rem;
+      display: flex;
+      justify-content: flex-end;
+
+      .stock-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        line-height: 1.2;
+        padding: 0.3rem 0.7rem;
+        border-radius: 10px;
+        font-size: 0.76rem;
+        font-weight: 700;
+        background: var(--stock-badge-bg);
+        color: var(--stock-badge-text);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        max-width: 180px;
+        white-space: normal;
+
+        &.low-stock {
+          background: var(--stock-badge-low-bg);
+          color: var(--stock-badge-low-text);
+        }
+
+        .stock-conversion-hint {
+          color: var(--stock-hint-text);
+          font-weight: 700;
         }
       }
     }
@@ -2302,32 +2374,56 @@
 }
 
 @media (max-width: 768px) {
+  .orders-content {
+    padding: 1rem;
+    margin-bottom: 80px;
+
+    .page-header {
+      margin-bottom: 0.75rem;
+
+      h2 {
+        font-size: 1.45rem;
+      }
+
+      p {
+        font-size: 0.9rem;
+      }
+    }
+  }
+
+  .search-filters-section,
+  .controls-bar,
+  .recent-customers {
+    margin-bottom: 0.75rem;
+  }
+
   .products-list {
     .product-card {
       .product-header {
-        grid-template-columns: auto auto 1fr;
+        grid-template-columns: auto minmax(0, 1fr) auto;
 
-        .selection-order-slot {
-          width: 30px;
-          min-height: 20px;
-
-          .selection-order-badge {
-            min-width: 24px;
-            height: 18px;
-            font-size: 0.66rem;
-          }
+        .selection-order-badge.floating {
+          top: 0.45rem;
+          right: 0.45rem;
+          min-width: 24px;
+          height: 18px;
+          font-size: 0.66rem;
         }
 
         .product-meta {
-          grid-column: 2 / -1;
+          grid-column: auto;
           align-items: flex-start;
-          text-align: left;
+          text-align: right;
           min-width: 0;
+        }
+      }
 
-          .stock-badge {
-            max-width: none;
-            justify-content: flex-start;
-          }
+      .stock-row {
+        justify-content: flex-start;
+
+        .stock-badge {
+          max-width: none;
+          justify-content: flex-start;
         }
       }
     }

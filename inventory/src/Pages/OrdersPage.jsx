@@ -987,11 +987,6 @@ export default function OrdersPage() {
         <Header />
 
         <div className="orders-content">
-          <div className="page-header">
-            <h2>Create new orders</h2>
-            <p>Select products and manage customer orders</p>
-          </div>
-
           {/* Enhanced Search & Filters Section */}
           <div className="search-filters-section">
             <ProductSearch
@@ -1133,16 +1128,10 @@ export default function OrdersPage() {
                             onClick={(e) => e.stopPropagation()}
                           />
                         </div>
-                        <div className="selection-order-slot">
-                          {/* Show selection order if item is selected */}
-                          {isSelected && currentDisplayOrder && (
-                            <span className="selection-order-badge">
-                              #{currentDisplayOrder}
-                            </span>
-                          )}
-                        </div>
                         <div className="product-info">
-                          <span className="product-name">{p.name}</span>
+                          <span className="product-name" title={p.name}>
+                            {p.name}
+                          </span>
                           <div className="product-badges">
                             {p.unit && (
                               <span className="unit-badge">{p.unit}</span>
@@ -1162,24 +1151,39 @@ export default function OrdersPage() {
                         </div>
 
                         <div className="product-meta">
+                          {hasDiscount && (
+                            <span className="original-price">
+                              ₱{Number(p.price || 0).toFixed(2)}
+                            </span>
+                          )}
                           <div className="product-price">
                             ₱{discountedPrice.toFixed(2)}
                           </div>
-                          <span
-                            className={`stock-badge ${
-                              availableStock < 5 ? "low-stock" : ""
-                            }`}
-                          >
-                            {availableStock} available
-                            {p.packagingType === "single" &&
-                              availableStock > p.stock && (
-                                <span className="stock-conversion-hint">
-                                  {" "}
-                                  (includes bulk)
-                                </span>
-                              )}
-                          </span>
                         </div>
+
+                        {/* Show selection order if item is selected */}
+                        {isSelected && currentDisplayOrder && (
+                          <span className="selection-order-badge floating">
+                            #{currentDisplayOrder}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="stock-row">
+                        <span
+                          className={`stock-badge ${
+                            availableStock < 5 ? "low-stock" : ""
+                          }`}
+                        >
+                          {availableStock} available
+                          {p.packagingType === "single" &&
+                            availableStock > p.stock && (
+                              <span className="stock-conversion-hint">
+                                {" "}
+                                (includes bulk)
+                              </span>
+                            )}
+                        </span>
                       </div>
 
                       {/* Quantity Controls - Only show when product is selected */}

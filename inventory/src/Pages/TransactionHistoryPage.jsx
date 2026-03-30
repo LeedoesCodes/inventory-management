@@ -57,7 +57,10 @@ export default function TransactionHistory() {
   const {
     orders,
     loading,
+    loadingMore,
+    hasMoreOrders,
     fetchOrders,
+    loadMoreOrders,
     handleCancelOrder,
     handleDeleteOrder,
     handleProcessBadOrder,
@@ -560,6 +563,17 @@ export default function TransactionHistory() {
     }
   };
 
+  const handleNextPage = async () => {
+    if (pagination.hasNextPage) {
+      pagination.nextPage();
+      return;
+    }
+
+    if (hasMoreOrders && !loadingMore) {
+      await loadMoreOrders();
+    }
+  };
+
   return (
     <div className="page-container">
       <Sidebar />
@@ -667,7 +681,7 @@ export default function TransactionHistory() {
           />
 
           {/* Pagination Controls */}
-          {pagination.totalPages > 1 && (
+          {(pagination.totalPages > 1 || hasMoreOrders) && (
             <div className="pagination-controls">
               <div className="pagination-info">
                 Showing {(pagination.currentPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
@@ -675,7 +689,8 @@ export default function TransactionHistory() {
                   pagination.currentPage * ITEMS_PER_PAGE,
                   finalFilteredOrders.length,
                 )}{" "}
-                of {finalFilteredOrders.length} orders
+                of {finalFilteredOrders.length}
+                {hasMoreOrders ? "+" : ""} orders
               </div>
               <div className="pagination-buttons">
                 <button
@@ -687,13 +702,22 @@ export default function TransactionHistory() {
                 </button>
                 <div className="page-indicator">
                   Page {pagination.currentPage} of {pagination.totalPages}
+                  {hasMoreOrders ? "+" : ""}
                 </div>
                 <button
-                  onClick={pagination.nextPage}
-                  disabled={!pagination.hasNextPage}
+                  onClick={handleNextPage}
+                  disabled={
+                    loadingMore || (!pagination.hasNextPage && !hasMoreOrders)
+                  }
                   className="pagination-btn"
                 >
-                  Next →
+                  {loadingMore
+                    ? "Loading..."
+                    : pagination.hasNextPage
+                      ? "Next →"
+                      : hasMoreOrders
+                        ? "Load More →"
+                        : "Next →"}
                 </button>
               </div>
             </div>
