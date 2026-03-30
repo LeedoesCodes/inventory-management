@@ -1,6 +1,13 @@
-import React, { useEffect, useState, useContext, useCallback } from "react";
+import React, {
+  useEffect,
+  useState,
+  useContext,
+  useCallback,
+  useMemo,
+} from "react";
 import { collection, getDocs, doc, onSnapshot } from "firebase/firestore";
 import { db } from "../Firebase/firebase";
+import { getFunctions, httpsCallable } from "firebase/functions";
 import { useSidebar } from "../context/SidebarContext.jsx";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
@@ -8,7 +15,6 @@ import "../styles/dashboard.scss";
 import Header from "../components/UI/Headers";
 import { useAssociationRules } from "../hooks/useAssociationRules";
 import CSVUploader from "../components/CSVUploader";
-import { StockConverter } from "../components/products/utils/stockConverter"; // ADD THIS IMPORT
 
 // FontAwesome imports
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -33,6 +39,9 @@ import {
   faArrowRight,
   faCube,
 } from "@fortawesome/free-solid-svg-icons";
+
+const DASHBOARD_CACHE_KEY = "dashboard_metrics_cache_v1";
+const DASHBOARD_CACHE_TTL_MS = 60000;
 
 export default function Dashboard() {
   const { isCollapsed } = useSidebar();
@@ -59,7 +68,6 @@ export default function Dashboard() {
   const {
     rules: associationRules,
     loading: mlLoading,
-    getRecommendations,
     refreshRules,
   } = useAssociationRules({
     minSupport: userSettings.minSupport,
@@ -71,7 +79,46 @@ export default function Dashboard() {
   const [error, setError] = useState(null);
   const [showCSVUpload, setShowCSVUpload] = useState(false);
   const [uploadedResults, setUploadedResults] = useState([]);
-  const [currentProducts, setCurrentProducts] = useState([]); // NEW: Store current products for filtering
+  const [currentProductNames, setCurrentProductNames] = useState([]);
+
+  function getItemName(item) {
+    if (!item || typeof item !== "object") return "Unknown Product";
+    return item.name || item.productName || "Unknown Product";
+  }
+
+  const currentProductNameSet = useMemo(() => {
+    return new Set(currentProductNames);
+  }, [currentProductNames]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DASHBOARD_CACHE_KEY);
+      if (!raw) return;
+
+      const cached = JSON.parse(raw);
+      if (!cached || !cached.ts || !cached.metrics) return;
+
+      if (Date.now() - cached.ts > DASHBOARD_CACHE_TTL_MS) return;
+
+      const cachedMetrics = cached.metrics;
+      setDashboardData((prev) => ({
+        ...prev,
+        totalProducts: Number(cachedMetrics.totalProducts || prev.totalProducts),
+        totalOrders: Number(cachedMetrics.totalOrders || prev.totalOrders),
+        lowStock: Number(cachedMetrics.lowStock || prev.lowStock),
+        popularItems: Array.isArray(cachedMetrics.popularItems)
+          ? cachedMetrics.popularItems
+          : prev.popularItems,
+        totalRevenue: Number(cachedMetrics.totalRevenue || prev.totalRevenue),
+        loading: false,
+      }));
+      if (Array.isArray(cachedMetrics.productNames)) {
+        setCurrentProductNames(cachedMetrics.productNames);
+      }
+    } catch (cacheErr) {
+      console.warn("Failed to read dashboard cache", cacheErr);
+    }
+  }, []);
 
   // Fetch user settings
   useEffect(() => {
@@ -102,7 +149,7 @@ export default function Dashboard() {
 
   // Generate recommendations based on top association rules
   useEffect(() => {
-    if (associationRules.length > 0 && currentProducts.length > 0) {
+    if (associationRules.length > 0 && currentProductNames.length > 0) {
       // Helper for strength (mirroring getRecommendationStrength)
       const getStrength = (confidence, lift) => {
         const conf = confidence || 0;
@@ -132,14 +179,10 @@ export default function Dashboard() {
 
         // Check if ALL consequent AND antecedent products exist in current catalog
         const consequentsExist = rec.consequent.every((productName) =>
-          currentProducts.some(
-            (product) => getItemName(product) === productName,
-          ),
+          currentProductNameSet.has(productName),
         );
         const antecedentsExist = rec.antecedent.every((productName) =>
-          currentProducts.some(
-            (product) => getItemName(product) === productName,
-          ),
+          currentProductNameSet.has(productName),
         );
 
         return consequentsExist && antecedentsExist;
@@ -147,159 +190,137 @@ export default function Dashboard() {
 
       const topRecommendations = validRules.slice(0, 5);
 
-      console.log("Generated dashboard recommendations:", {
-        totalRules: associationRules.length,
-        validRules: validRules.length,
-        topRecommendations,
-      });
-
       setRecommendations(topRecommendations);
     } else {
       setRecommendations([]);
     }
-  }, [associationRules, currentProducts]);
-
-  // Debug useEffect to see what's happening
-  useEffect(() => {
-    console.log("Association Rules:", associationRules);
-    console.log("Popular Items:", dashboardData.popularItems);
-    console.log("Recommendations:", recommendations);
-    console.log("Current Thresholds:", {
-      support: userSettings.minSupport,
-      confidence: userSettings.minConfidence,
-      lift: userSettings.minLift,
-    });
-    console.log("Current Products Count:", currentProducts.length);
-  }, [
-    associationRules,
-    dashboardData.popularItems,
-    recommendations,
-    userSettings,
-    currentProducts,
-  ]);
-
-  // Safe data accessor functions
-  const getItemName = (item) => {
-    if (!item || typeof item !== "object") return "Unknown Product";
-    return item.name || item.productName || "Unknown Product";
-  };
+  }, [associationRules, currentProductNames.length, currentProductNameSet]);
 
   const fetchDashboardData = useCallback(async () => {
     try {
       setError(null);
-      const [productsSnap, ordersSnap] = await Promise.all([
-        getDocs(collection(db, "products")),
-        getDocs(collection(db, "orders")),
-      ]);
-
-      const products = productsSnap.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      // NEW: Store current products for filtering
-      setCurrentProducts(products);
-
-      const orders = ordersSnap.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      // 🔥 UPDATED: Calculate low stock count considering BOTH custom thresholds AND bulk packages
-      const lowStockCount = products.filter((p) => {
-        // Calculate available stock including bulk packages
-        const availableStock = StockConverter.getAvailableStock(p, products);
-
-        // Use custom threshold if set, otherwise use global threshold
-        const threshold =
-          p.lowStockThreshold !== null && p.lowStockThreshold !== undefined
-            ? p.lowStockThreshold
-            : userSettings.lowStockThreshold;
-
-        // Only flag as low stock if available stock is below threshold
-        return availableStock <= threshold;
-      }).length;
-
-      let totalRevenue = 0;
-      const itemCounts = {};
-
-      orders.forEach((order) => {
-        // Only calculate revenue for non-cancelled and paid orders, matching StatisticsCards.jsx
-        if (order.status !== "cancelled" && order.paymentStatus === "paid") {
-          totalRevenue += order.totalAmount || order.total || 0;
-        }
-
-        // Only count items sold for non-cancelled orders
-        if (order.status !== "cancelled") {
-          order.items?.forEach((item) => {
-            const itemName = getItemName(item);
-
-            // NEW: Only count items that exist in current products catalog
-            const productExists = products.some(
-              (product) => getItemName(product) === itemName,
-            );
-
-            if (productExists) {
-              itemCounts[itemName] =
-                (itemCounts[itemName] || 0) + (item.quantity || 1);
-            }
-          });
-        }
-      });
-
-      // NEW: Filter popular items to only include existing products
-      const sortedItems = Object.entries(itemCounts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([name, sold]) => ({ name, sold }))
-        .filter((item) =>
-          products.some((product) => getItemName(product) === item.name),
+      try {
+        const functions = getFunctions();
+        const getDashboardMetrics = httpsCallable(
+          functions,
+          "getDashboardMetrics",
         );
+        const result = await getDashboardMetrics({
+          lowStockThreshold: userSettings.lowStockThreshold,
+        });
 
-      setDashboardData({
-        totalProducts: products.length,
-        totalOrders: orders.length,
-        lowStock: lowStockCount,
-        popularItems: sortedItems,
-        totalRevenue,
-        loading: false,
-      });
+        const metrics = result?.data || {};
+        const productNames = Array.isArray(metrics.productNames)
+          ? metrics.productNames
+          : [];
+        setCurrentProductNames(productNames);
 
-      // Debug: Log threshold usage
-      console.log("📊 DASHBOARD LOW STOCK CALCULATION:");
-      console.log("Global threshold:", userSettings.lowStockThreshold);
-      console.log(
-        "Products with custom thresholds:",
-        products.filter(
-          (p) =>
-            p.lowStockThreshold !== null && p.lowStockThreshold !== undefined,
-        ).length,
-      );
-      console.log("Total low stock items:", lowStockCount);
+        const nextDashboardData = {
+          totalProducts: Number(metrics.totalProducts || 0),
+          totalOrders: Number(metrics.totalOrders || 0),
+          lowStock: Number(metrics.lowStock || 0),
+          popularItems: Array.isArray(metrics.popularItems)
+            ? metrics.popularItems
+            : [],
+          totalRevenue: Number(metrics.totalRevenue || 0),
+          loading: false,
+        };
 
-      // NEW: Debug bulk package information
-      console.log("📦 BULK PACKAGE ANALYSIS:");
-      products.forEach((p) => {
-        if (p.packagingType === "single") {
-          const availableStock = StockConverter.getAvailableStock(p, products);
-          const currentStock = p.stock || 0;
+        setDashboardData(nextDashboardData);
+        try {
+          localStorage.setItem(
+            DASHBOARD_CACHE_KEY,
+            JSON.stringify({
+              ts: Date.now(),
+              metrics: {
+                ...nextDashboardData,
+                productNames,
+              },
+            }),
+          );
+        } catch (cacheErr) {
+          console.warn("Failed to write dashboard cache", cacheErr);
+        }
+      } catch (functionErr) {
+        console.warn("Falling back to client dashboard metrics", functionErr);
+
+        const productsSnap = await getDocs(collection(db, "products"));
+        const products = productsSnap.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        const ordersSnap = await getDocs(collection(db, "orders"));
+        const orders = ordersSnap.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        const productNameSet = new Set(
+          products.map((product) => getItemName(product)),
+        );
+        setCurrentProductNames(Array.from(productNameSet));
+
+        const bulkPiecesByParent = products.reduce((acc, product) => {
+          if (
+            product.packagingType === "bulk" &&
+            product.parentProductId &&
+            (product.stock || 0) > 0
+          ) {
+            const piecesPerPackage = product.piecesPerPackage || 1;
+            acc[product.parentProductId] =
+              (acc[product.parentProductId] || 0) +
+              (product.stock || 0) * piecesPerPackage;
+          }
+          return acc;
+        }, {});
+
+        const lowStockCount = products.filter((p) => {
+          const stock = p.stock || 0;
+          const availableStock =
+            p.packagingType === "single"
+              ? stock + (bulkPiecesByParent[p.id] || 0)
+              : stock;
+
           const threshold =
             p.lowStockThreshold !== null && p.lowStockThreshold !== undefined
               ? p.lowStockThreshold
               : userSettings.lowStockThreshold;
 
-          if (currentStock <= threshold && availableStock > threshold) {
-            console.log(
-              `✅ ${p.name}: Current stock ${currentStock} but available ${availableStock} (has bulk packages)`,
-            );
-          } else if (availableStock <= threshold) {
-            console.log(
-              `⚠️ ${p.name}: Low stock - available ${availableStock} <= threshold ${threshold}`,
-            );
+          return availableStock <= threshold;
+        }).length;
+
+        let totalRevenue = 0;
+        const itemCounts = {};
+
+        orders.forEach((order) => {
+          if (order.status !== "cancelled" && order.paymentStatus === "paid") {
+            totalRevenue += order.totalAmount || order.total || 0;
           }
-        }
-      });
-      console.log("Filtered popular items:", sortedItems.length);
+
+          if (order.status !== "cancelled") {
+            order.items?.forEach((item) => {
+              const itemName = getItemName(item);
+              if (!productNameSet.has(itemName)) return;
+
+              itemCounts[itemName] =
+                (itemCounts[itemName] || 0) + (item.quantity || 1);
+            });
+          }
+        });
+
+        const sortedItems = Object.entries(itemCounts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([name, sold]) => ({ name, sold }));
+
+        setDashboardData({
+          totalProducts: products.length,
+          totalOrders: orders.length,
+          lowStock: lowStockCount,
+          popularItems: sortedItems,
+          totalRevenue,
+          loading: false,
+        });
+      }
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
       setError("Failed to load dashboard data");
@@ -639,10 +660,9 @@ export default function Dashboard() {
                       color: "#666",
                     }}
                   >
-                    Debug: {associationRules.length} rules loaded,{" "}
+                    {associationRules.length} rules loaded,{" "}
                     {dashboardData.popularItems.length} popular items,{" "}
-                    {dashboardData.totalOrders} total orders,{" "}
-                    {currentProducts.length} current products
+                    {dashboardData.totalOrders} total orders
                   </div>
                 </div>
               )}
