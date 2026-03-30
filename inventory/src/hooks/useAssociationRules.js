@@ -1,6 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  limit,
+} from "firebase/firestore";
 import { db } from "../Firebase/firebase";
+
+const RECENT_ORDERS_DAYS = 90;
+const MAX_ORDERS_FOR_RULES = 1000;
 
 // Enhanced client-side association rules algorithm with lift calculation
 const generateAssociationRules = (orders, thresholds = {}) => {
@@ -15,7 +25,7 @@ const generateAssociationRules = (orders, thresholds = {}) => {
   const minLift = thresholds.minLift || 1.0;
 
   console.log(
-    `Generating rules with thresholds: Support=${minSupport}, Confidence=${minConfidence}, Lift=${minLift}`
+    `Generating rules with thresholds: Support=${minSupport}, Confidence=${minConfidence}, Lift=${minLift}`,
   );
 
   const pairCounts = {};
@@ -109,38 +119,49 @@ export const useAssociationRules = (thresholds = {}) => {
 
       console.log(
         "Loading association rules with thresholds:",
-        currentThresholds
+        currentThresholds,
       );
 
-      const ordersSnapshot = await getDocs(collection(db, "orders"));
-      const allOrders = ordersSnapshot.docs.map((doc) => ({
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - RECENT_ORDERS_DAYS);
+
+      // Pull only recent orders and cap payload to reduce dashboard latency.
+      const recentByCreatedAtQuery = query(
+        collection(db, "orders"),
+        where("createdAt", ">=", cutoffDate),
+        orderBy("createdAt", "desc"),
+        limit(MAX_ORDERS_FOR_RULES),
+      );
+
+      let ordersSnapshot = await getDocs(recentByCreatedAtQuery);
+
+      // Backward-compatible fallback for datasets that still use `timestamp`.
+      if (ordersSnapshot.empty) {
+        const recentByTimestampQuery = query(
+          collection(db, "orders"),
+          where("timestamp", ">=", cutoffDate),
+          orderBy("timestamp", "desc"),
+          limit(MAX_ORDERS_FOR_RULES),
+        );
+        ordersSnapshot = await getDocs(recentByTimestampQuery);
+      }
+
+      const recentOrders = ordersSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
 
-      console.log("All orders from Firestore:", allOrders.length);
+      console.log("Recent orders from Firestore:", recentOrders.length);
 
-      if (allOrders.length === 0) {
+      if (recentOrders.length === 0) {
         console.log("No orders found in database");
         setRules([]);
         return;
       }
 
-      // Get recent orders (last 90 days)
-      const ninetyDaysAgo = new Date();
-      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-
-      const recentOrders = allOrders.filter((order) => {
-        const orderDate =
-          order.timestamp?.toDate?.() || order.timestamp || order.date;
-        return orderDate ? new Date(orderDate) >= ninetyDaysAgo : true;
-      });
-
-      console.log("Recent orders (last 90 days):", recentOrders.length);
-
       const generatedRules = generateAssociationRules(
         recentOrders,
-        currentThresholds
+        currentThresholds,
       );
       console.log("Final rules generated:", generatedRules.length);
       setRules(generatedRules);
@@ -165,10 +186,10 @@ export const useAssociationRules = (thresholds = {}) => {
       const recommendations = rules
         .filter((rule) => {
           const antecedentMatch = rule.antecedent.every((item) =>
-            currentItems.includes(item)
+            currentItems.includes(item),
           );
           const consequentNotInCurrent = !rule.consequent.every((item) =>
-            currentItems.includes(item)
+            currentItems.includes(item),
           );
           return antecedentMatch && consequentNotInCurrent;
         })
@@ -190,7 +211,7 @@ export const useAssociationRules = (thresholds = {}) => {
       console.log("Generated recommendations with lift:", recommendations);
       return recommendations;
     },
-    [rules]
+    [rules],
   );
 
   // Enhanced strength calculation considering both confidence and lift

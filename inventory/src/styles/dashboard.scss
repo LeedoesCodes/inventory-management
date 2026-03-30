@@ -810,16 +810,6 @@
             transform: translateY(-1px);
           }
         }
-
-        &.ai-btn {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-
-          &:hover {
-            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
-            transform: translateY(-2px);
-          }
-        }
       }
     }
   }
@@ -1182,14 +1172,6 @@
               background: #718096;
             }
           }
-
-          &.ai-btn {
-            background: linear-gradient(135deg, #5a67d8 0%, #6a4190 100%);
-
-            &:hover {
-              background: linear-gradient(135deg, #4c51bf 0%, #5a3678 100%);
-            }
-          }
         }
       }
     }
@@ -1220,48 +1202,6 @@
   }
   100% {
     transform: rotate(360deg);
-  }
-}
-
-// Chatbot specific styles for dashboard integration
-.ai-assistant-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-  }
-}
-
-// Ensure chatbot appears above other content
-.chatbot-overlay {
-  z-index: 1000;
-}
-
-.chatbot-toggle {
-  z-index: 999;
-}
-
-// Responsive adjustments for chatbot
-@media (max-width: 768px) {
-  .dashboard-page {
-    .chatbot-toggle {
-      bottom: 70px;
-      right: 10px;
-    }
-
-    .chatbot-container {
-      width: 100vw;
-      height: 100vh;
-      border-radius: 0;
-    }
   }
 }
 

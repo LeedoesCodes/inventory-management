@@ -7,8 +7,6 @@ import { AuthContext } from "../context/AuthContext";
 import "../styles/dashboard.scss";
 import Header from "../components/UI/Headers";
 import { useAssociationRules } from "../hooks/useAssociationRules";
-import Chatbot from "../components/Chatbot/Chatbot";
-import ChatbotToggle from "../components/Chatbot/ChatbotToggle";
 import CSVUploader from "../components/CSVUploader";
 import { StockConverter } from "../components/products/utils/stockConverter"; // ADD THIS IMPORT
 
@@ -27,7 +25,6 @@ import {
   faPlus,
   faWarehouse,
   faReceipt,
-  faRobot,
   faFileCsv,
   faCrown,
   faSpinner,
@@ -72,7 +69,6 @@ export default function Dashboard() {
 
   const [recommendations, setRecommendations] = useState([]);
   const [error, setError] = useState(null);
-  const [isChatOpen, setIsChatOpen] = useState(false);
   const [showCSVUpload, setShowCSVUpload] = useState(false);
   const [uploadedResults, setUploadedResults] = useState([]);
   const [currentProducts, setCurrentProducts] = useState([]); // NEW: Store current products for filtering
@@ -98,7 +94,7 @@ export default function Dashboard() {
       },
       (error) => {
         console.error("Error listening to settings:", error);
-      }
+      },
     );
 
     return () => unsubscribe();
@@ -122,10 +118,11 @@ export default function Dashboard() {
       const formattedRules = associationRules.map((rule) => ({
         ...rule,
         strength: getStrength(rule.confidence, rule.lift),
-        products: rule.consequent?.map((itemName) => ({
-          id: itemName,
-          name: itemName,
-        })) || [],
+        products:
+          rule.consequent?.map((itemName) => ({
+            id: itemName,
+            name: itemName,
+          })) || [],
       }));
 
       // Filter recommendations to ensure items exist in current catalog
@@ -135,10 +132,14 @@ export default function Dashboard() {
 
         // Check if ALL consequent AND antecedent products exist in current catalog
         const consequentsExist = rec.consequent.every((productName) =>
-          currentProducts.some((product) => getItemName(product) === productName)
+          currentProducts.some(
+            (product) => getItemName(product) === productName,
+          ),
         );
         const antecedentsExist = rec.antecedent.every((productName) =>
-          currentProducts.some((product) => getItemName(product) === productName)
+          currentProducts.some(
+            (product) => getItemName(product) === productName,
+          ),
         );
 
         return consequentsExist && antecedentsExist;
@@ -151,7 +152,7 @@ export default function Dashboard() {
         validRules: validRules.length,
         topRecommendations,
       });
-      
+
       setRecommendations(topRecommendations);
     } else {
       setRecommendations([]);
@@ -235,7 +236,7 @@ export default function Dashboard() {
 
             // NEW: Only count items that exist in current products catalog
             const productExists = products.some(
-              (product) => getItemName(product) === itemName
+              (product) => getItemName(product) === itemName,
             );
 
             if (productExists) {
@@ -252,7 +253,7 @@ export default function Dashboard() {
         .slice(0, 5)
         .map(([name, sold]) => ({ name, sold }))
         .filter((item) =>
-          products.some((product) => getItemName(product) === item.name)
+          products.some((product) => getItemName(product) === item.name),
         );
 
       setDashboardData({
@@ -271,8 +272,8 @@ export default function Dashboard() {
         "Products with custom thresholds:",
         products.filter(
           (p) =>
-            p.lowStockThreshold !== null && p.lowStockThreshold !== undefined
-        ).length
+            p.lowStockThreshold !== null && p.lowStockThreshold !== undefined,
+        ).length,
       );
       console.log("Total low stock items:", lowStockCount);
 
@@ -289,11 +290,11 @@ export default function Dashboard() {
 
           if (currentStock <= threshold && availableStock > threshold) {
             console.log(
-              `✅ ${p.name}: Current stock ${currentStock} but available ${availableStock} (has bulk packages)`
+              `✅ ${p.name}: Current stock ${currentStock} but available ${availableStock} (has bulk packages)`,
             );
           } else if (availableStock <= threshold) {
             console.log(
-              `⚠️ ${p.name}: Low stock - available ${availableStock} <= threshold ${threshold}`
+              `⚠️ ${p.name}: Low stock - available ${availableStock} <= threshold ${threshold}`,
             );
           }
         }
@@ -338,7 +339,7 @@ export default function Dashboard() {
         recommendationSource: `Based on association rules (${(
           (recommendation.confidence || 0) * 100
         ).toFixed(1)}% confidence, ${(recommendation.lift || 0).toFixed(
-          2
+          2,
         )} lift)`,
       },
     });
@@ -367,7 +368,7 @@ export default function Dashboard() {
 
     // Show success message
     alert(
-      `CSV processed successfully! Found ${uploadData.results.rules.length} rules from ${uploadData.results.transactions} transactions.`
+      `CSV processed successfully! Found ${uploadData.results.rules.length} rules from ${uploadData.results.transactions} transactions.`,
     );
   };
 
@@ -396,11 +397,6 @@ export default function Dashboard() {
     navigate("/association-rules");
   };
 
-  // Chatbot functions
-  const toggleChat = () => {
-    setIsChatOpen(!isChatOpen);
-  };
-
   if (error) {
     return (
       <div className={`dashboard-page ${isCollapsed ? "collapsed" : ""}`}>
@@ -415,10 +411,6 @@ export default function Dashboard() {
             Try Again
           </button>
         </div>
-
-        {/* Chatbot Components */}
-        <ChatbotToggle onClick={toggleChat} isOpen={isChatOpen} />
-        <Chatbot isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
       </div>
     );
   }
@@ -554,8 +546,8 @@ export default function Dashboard() {
                             (rec.lift || 0) > 2
                               ? "high-lift"
                               : (rec.lift || 0) > 1
-                              ? "medium-lift"
-                              : "low-lift"
+                                ? "medium-lift"
+                                : "low-lift"
                           }`}
                         >
                           <FontAwesomeIcon
@@ -618,7 +610,7 @@ export default function Dashboard() {
                                 style={{
                                   left: `${Math.min(
                                     Math.max((rec.lift || 0) * 20, 0),
-                                    100
+                                    100,
                                   )}%`,
                                   backgroundColor:
                                     (rec.lift || 0) > 1 ? "#10b981" : "#ef4444",
@@ -760,14 +752,6 @@ export default function Dashboard() {
                   <FontAwesomeIcon icon={faReceipt} className="btn-icon" />
                   Create Orders
                 </button>
-                <button
-                  className="action-btn ai-btn"
-                  onClick={toggleChat}
-                  title="Get AI assistance"
-                >
-                  <FontAwesomeIcon icon={faRobot} className="btn-icon" />
-                  Assistant
-                </button>
               </div>
             </div>
           </div>
@@ -781,10 +765,6 @@ export default function Dashboard() {
           onClose={() => setShowCSVUpload(false)}
         />
       )}
-
-      {/* Chatbot Components */}
-      <ChatbotToggle onClick={toggleChat} isOpen={isChatOpen} />
-      <Chatbot isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </div>
   );
 }
