@@ -2,7 +2,6 @@ import { useState } from "react";
 import {
   collection,
   getDocs,
-  limit,
   query,
   deleteDoc,
   doc,
@@ -12,7 +11,6 @@ import {
   addDoc,
   getDoc,
   arrayUnion,
-  where,
   orderBy,
 } from "firebase/firestore";
 import { db } from "../../../Firebase/firebase";
@@ -21,54 +19,36 @@ export const useOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // BULLETPROOF due date converter
   const convertFirestoreDueDate = (dueDate) => {
     if (!dueDate) return null;
 
-    console.log("🔄 convertFirestoreDueDate INPUT:", dueDate);
-    console.log("📊 INPUT TYPE:", typeof dueDate);
-
     try {
-      // Method 1: Firestore Timestamp with toDate()
       if (dueDate.toDate && typeof dueDate.toDate === "function") {
-        const result = dueDate.toDate();
-        console.log("✅ Method 1 - toDate():", result);
-        return result;
+        return dueDate.toDate();
       }
 
-      // Method 2: Firestore Timestamp with seconds
       if (dueDate.seconds && typeof dueDate.seconds === "number") {
-        const result = new Date(dueDate.seconds * 1000);
-        console.log("✅ Method 2 - seconds:", result);
-        return result;
+        return new Date(dueDate.seconds * 1000);
       }
 
-      // Method 3: ISO string or date string
       if (typeof dueDate === "string") {
         const result = new Date(dueDate);
         if (!isNaN(result.getTime())) {
-          console.log("✅ Method 3 - string:", result);
           return result;
         }
       }
 
-      // Method 4: Already a Date object
       if (dueDate instanceof Date) {
-        console.log("✅ Method 4 - already Date:", dueDate);
         return dueDate;
       }
 
-      // Method 5: Check for _seconds (alternative Firestore format)
       if (dueDate._seconds && typeof dueDate._seconds === "number") {
-        const result = new Date(dueDate._seconds * 1000);
-        console.log("✅ Method 5 - _seconds:", result);
-        return result;
+        return new Date(dueDate._seconds * 1000);
       }
 
-      console.warn("❌ No conversion method worked for dueDate:", dueDate);
       return null;
     } catch (error) {
-      console.error("💥 Error converting dueDate:", error);
+      console.error("Error converting dueDate:", error);
       return null;
     }
   };
@@ -76,103 +56,75 @@ export const useOrders = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
-      const snapshot = await getDocs(q);
-
-      const ordersData = await Promise.all(
-        snapshot.docs.map(async (doc) => {
-          const orderData = doc.data();
-
-          console.log(`\n=== PROCESSING ORDER ${doc.id} ===`);
-          console.log("📦 Raw order data:", orderData);
-
-          // BULLETPROOF due date conversion
-          let dueDate = null;
-          if (orderData.dueDate) {
-            console.log("🎯 DUE DATE FOUND - Converting...");
-            dueDate = convertFirestoreDueDate(orderData.dueDate);
-          } else {
-            console.log("📭 No dueDate for this order");
-          }
-
-          // Build the order object
-          const order = {
-            id: doc.id,
-            ...orderData,
-            createdAt: orderData.createdAt?.toDate
-              ? orderData.createdAt.toDate()
-              : new Date(orderData.createdAt),
-            dueDate: dueDate, // Use the properly converted due date
-            paymentMethod: orderData.paymentMethod || "cash",
-            paymentStatus: orderData.paymentStatus || "paid",
-            paidAmount: orderData.paidAmount || 0,
-            remainingBalance:
-              orderData.remainingBalance || orderData.totalAmount || 0,
-            paymentHistory: orderData.paymentHistory || [],
-          };
-
-          // CRITICAL: Log the final result
-          console.log(`🎉 FINAL ORDER ${order.id}:`, {
-            dueDate: order.dueDate,
-            formattedDueDate: order.dueDate
-              ? order.dueDate.toLocaleDateString()
-              : "NO DATE",
-            paymentMethod: order.paymentMethod,
-            customerName: order.customerName,
-          });
-
-          // Bad orders processing (keep your existing code)
-          const badOrdersFromField = orderData.badOrders || [];
-          const badOrdersRootQuery = query(
-            collection(db, "badOrders"),
-            where("orderId", "==", doc.id),
-          );
-          const badOrdersRootSnapshot = await getDocs(badOrdersRootQuery);
-          const badOrdersFromRoot = badOrdersRootSnapshot.docs.map((bDoc) => ({
-            id: bDoc.id,
-            ...bDoc.data(),
-          }));
-
-          const allBadOrdersMap = new Map();
-          for (const bo of badOrdersFromRoot) {
-            const key = bo.id || bDoc.id;
-            allBadOrdersMap.set(key, bo);
-          }
-          for (const bo of badOrdersFromField) {
-            const key = bo.id || `${bo.orderId}-${bo.processedAt?.seconds}`;
-            allBadOrdersMap.set(key, bo);
-          }
-
-          order.badOrders = Array.from(allBadOrdersMap.values());
-          order.hasBadOrder = order.badOrders.length > 0;
-
-          return order;
-        }),
+      const ordersQuery = query(
+        collection(db, "orders"),
+        orderBy("createdAt", "desc"),
       );
+      const [ordersSnapshot, badOrdersSnapshot] = await Promise.all([
+        getDocs(ordersQuery),
+        getDocs(collection(db, "badOrders")),
+      ]);
 
-      // Final summary
-      console.log("\n📋 FINAL ORDERS SUMMARY:");
-      const creditOrders = ordersData.filter(
-        (order) => order.paymentMethod === "credit",
-      );
-      creditOrders.forEach((order) => {
-        console.log(`💰 CREDIT ORDER ${order.id}:`, {
-          dueDate: order.dueDate,
-          displayDate: order.dueDate
-            ? order.dueDate.toLocaleDateString()
-            : "NO DATE",
-          customer: order.customerName,
-          amount: order.totalAmount,
-        });
+      const badOrdersByOrderId = new Map();
+      badOrdersSnapshot.forEach((badOrderDoc) => {
+        const badOrder = { id: badOrderDoc.id, ...badOrderDoc.data() };
+        const orderId = badOrder.orderId;
+        if (!orderId) return;
+
+        if (!badOrdersByOrderId.has(orderId)) {
+          badOrdersByOrderId.set(orderId, []);
+        }
+        badOrdersByOrderId.get(orderId).push(badOrder);
       });
 
-      console.log(
-        `\n📊 STATS: ${creditOrders.length} credit orders out of ${ordersData.length} total orders`,
-      );
+      const ordersData = ordersSnapshot.docs.map((orderDoc) => {
+        const orderData = orderDoc.data();
+        const createdAtDate = orderData.createdAt?.toDate
+          ? orderData.createdAt.toDate()
+          : new Date(orderData.createdAt);
+        const dueDate = convertFirestoreDueDate(orderData.dueDate);
+
+        const order = {
+          id: orderDoc.id,
+          ...orderData,
+          createdAt: createdAtDate,
+          createdAtMs: Number.isNaN(createdAtDate?.getTime?.())
+            ? 0
+            : createdAtDate.getTime(),
+          dueDate,
+          dueDateMs: dueDate ? dueDate.getTime() : 0,
+          paymentMethod: orderData.paymentMethod || "cash",
+          paymentStatus: orderData.paymentStatus || "paid",
+          paidAmount: orderData.paidAmount || 0,
+          remainingBalance:
+            orderData.remainingBalance || orderData.totalAmount || 0,
+          paymentHistory: orderData.paymentHistory || [],
+        };
+
+        const badOrdersFromRoot = badOrdersByOrderId.get(orderDoc.id) || [];
+        const badOrdersFromField = orderData.badOrders || [];
+
+        const allBadOrdersMap = new Map();
+        for (const bo of badOrdersFromRoot) {
+          const key =
+            bo.id || `${order.id}-${bo.processedAt?.seconds || "root"}`;
+          allBadOrdersMap.set(key, bo);
+        }
+        for (const bo of badOrdersFromField) {
+          const key =
+            bo.id || `${order.id}-${bo.processedAt?.seconds || "field"}`;
+          allBadOrdersMap.set(key, bo);
+        }
+
+        order.badOrders = Array.from(allBadOrdersMap.values());
+        order.hasBadOrder = order.badOrders.length > 0;
+
+        return order;
+      });
 
       setOrders(ordersData);
     } catch (err) {
-      console.error("❌ Error fetching orders:", err);
+      console.error("Error fetching orders:", err);
     } finally {
       setLoading(false);
     }

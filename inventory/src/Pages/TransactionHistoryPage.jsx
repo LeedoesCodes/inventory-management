@@ -103,12 +103,18 @@ export default function TransactionHistory() {
   // Fetch orders and products on component mount
   useEffect(() => {
     fetchOrders();
-    fetchProducts();
   }, []);
+
+  // Load products only when bad-order workflow is opened.
+  useEffect(() => {
+    if (badOrderModal && products.length === 0 && !productsLoading) {
+      fetchProducts();
+    }
+  }, [badOrderModal, products.length, productsLoading]);
 
   // Save to cache whenever data changes
   useEffect(() => {
-    if (orders.length > 0 && products.length > 0) {
+    if (orders.length > 0) {
       setCacheData(orders, products);
     }
   }, [orders, products, setCacheData]);
@@ -155,17 +161,9 @@ export default function TransactionHistory() {
     }
 
     try {
-      // Convert due date to Date object
-      let dueDate;
-      if (order.dueDate.toDate && typeof order.dueDate.toDate === "function") {
-        dueDate = order.dueDate.toDate();
-      } else if (order.dueDate.seconds) {
-        dueDate = new Date(order.dueDate.seconds * 1000);
-      } else if (order.dueDate._seconds) {
-        dueDate = new Date(order.dueDate._seconds * 1000);
-      } else {
-        dueDate = new Date(order.dueDate);
-      }
+      const dueDate = order.dueDateMs
+        ? new Date(order.dueDateMs)
+        : order.dueDate;
 
       // Check if valid date
       if (isNaN(dueDate.getTime())) return false;
@@ -230,17 +228,15 @@ export default function TransactionHistory() {
       }
 
       return orders.filter((order) => {
-        let orderDate;
-        if (order.createdAt && order.createdAt.toDate) {
-          orderDate = order.createdAt.toDate();
-        } else if (order.createdAt instanceof Date) {
-          orderDate = order.createdAt;
-        } else if (order.createdAt) {
-          orderDate = new Date(order.createdAt);
-        } else {
-          return false;
-        }
+        const orderDate = order.createdAtMs
+          ? new Date(order.createdAtMs)
+          : order.createdAt instanceof Date
+            ? order.createdAt
+            : order.createdAt
+              ? new Date(order.createdAt)
+              : null;
 
+        if (!orderDate || isNaN(orderDate.getTime())) return false;
         return orderDate >= startDate && orderDate <= endDate;
       });
     }
@@ -252,17 +248,15 @@ export default function TransactionHistory() {
       end.setHours(23, 59, 59, 999);
 
       return orders.filter((order) => {
-        let orderDate;
-        if (order.createdAt && order.createdAt.toDate) {
-          orderDate = order.createdAt.toDate();
-        } else if (order.createdAt instanceof Date) {
-          orderDate = order.createdAt;
-        } else if (order.createdAt) {
-          orderDate = new Date(order.createdAt);
-        } else {
-          return false;
-        }
+        const orderDate = order.createdAtMs
+          ? new Date(order.createdAtMs)
+          : order.createdAt instanceof Date
+            ? order.createdAt
+            : order.createdAt
+              ? new Date(order.createdAt)
+              : null;
 
+        if (!orderDate || isNaN(orderDate.getTime())) return false;
         return orderDate >= start && orderDate <= end;
       });
     }
@@ -354,12 +348,8 @@ export default function TransactionHistory() {
 
       switch (sortBy) {
         case "date":
-          aValue = a.createdAt?.toDate
-            ? a.createdAt.toDate()
-            : new Date(a.createdAt);
-          bValue = b.createdAt?.toDate
-            ? b.createdAt.toDate()
-            : new Date(b.createdAt);
+          aValue = a.createdAtMs || 0;
+          bValue = b.createdAtMs || 0;
           break;
         case "customer":
           aValue = a.customerName?.toLowerCase() || "";
