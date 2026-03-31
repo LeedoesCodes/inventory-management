@@ -5,7 +5,13 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import { collection, getDocs, doc, onSnapshot } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  doc,
+  getDoc,
+  onSnapshot,
+} from "firebase/firestore";
 import { db } from "../Firebase/firebase";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { useSidebar } from "../context/SidebarContext.jsx";
@@ -42,6 +48,7 @@ import {
 
 const DASHBOARD_CACHE_KEY = "dashboard_metrics_cache_v1";
 const DASHBOARD_CACHE_TTL_MS = 60000;
+const DASHBOARD_METRICS_DOC_PATH = ["dashboardMetrics", "global"];
 
 export default function Dashboard() {
   const { isCollapsed } = useSidebar();
@@ -103,7 +110,9 @@ export default function Dashboard() {
       const cachedMetrics = cached.metrics;
       setDashboardData((prev) => ({
         ...prev,
-        totalProducts: Number(cachedMetrics.totalProducts || prev.totalProducts),
+        totalProducts: Number(
+          cachedMetrics.totalProducts || prev.totalProducts,
+        ),
         totalOrders: Number(cachedMetrics.totalOrders || prev.totalOrders),
         lowStock: Number(cachedMetrics.lowStock || prev.lowStock),
         popularItems: Array.isArray(cachedMetrics.popularItems)
@@ -200,6 +209,52 @@ export default function Dashboard() {
     try {
       setError(null);
       try {
+        const metricsDocRef = doc(db, ...DASHBOARD_METRICS_DOC_PATH);
+        const metricsDoc = await getDoc(metricsDocRef);
+
+        if (metricsDoc.exists()) {
+          const metrics = metricsDoc.data() || {};
+          const thresholdUsed = Number(metrics.thresholdUsed || 5);
+          const requestedThreshold = Number(
+            userSettings.lowStockThreshold || 5,
+          );
+
+          if (thresholdUsed === requestedThreshold) {
+            const productNames = Array.isArray(metrics.productNames)
+              ? metrics.productNames
+              : [];
+            setCurrentProductNames(productNames);
+
+            const nextDashboardData = {
+              totalProducts: Number(metrics.totalProducts || 0),
+              totalOrders: Number(metrics.totalOrders || 0),
+              lowStock: Number(metrics.lowStock || 0),
+              popularItems: Array.isArray(metrics.popularItems)
+                ? metrics.popularItems
+                : [],
+              totalRevenue: Number(metrics.totalRevenue || 0),
+              loading: false,
+            };
+
+            setDashboardData(nextDashboardData);
+            try {
+              localStorage.setItem(
+                DASHBOARD_CACHE_KEY,
+                JSON.stringify({
+                  ts: Date.now(),
+                  metrics: {
+                    ...nextDashboardData,
+                    productNames,
+                  },
+                }),
+              );
+            } catch (cacheErr) {
+              console.warn("Failed to write dashboard cache", cacheErr);
+            }
+            return;
+          }
+        }
+
         const functions = getFunctions();
         const getDashboardMetrics = httpsCallable(
           functions,

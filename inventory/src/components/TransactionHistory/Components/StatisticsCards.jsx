@@ -23,8 +23,15 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import "./StatisticsCards.scss";
 
-const StatisticsCards = ({ orders, customers = [], dateFilter }) => {
+const StatisticsCards = ({
+  orders,
+  allOrders = [],
+  customers = [],
+  dateFilter,
+}) => {
   const [showAll, setShowAll] = useState(false);
+  const revenueOrders =
+    Array.isArray(allOrders) && allOrders.length > 0 ? allOrders : orders;
 
   // Helper function to get order date safely
   const getOrderDate = (order) => {
@@ -66,7 +73,7 @@ const StatisticsCards = ({ orders, customers = [], dateFilter }) => {
   };
 
   // Calculate all statistics from the FILTERED orders
-  const totalRevenue = orders
+  const totalRevenue = revenueOrders
     .filter(
       (order) => order.status !== "cancelled" && order.paymentStatus === "paid",
     )
@@ -148,7 +155,7 @@ const StatisticsCards = ({ orders, customers = [], dateFilter }) => {
     orders.length > 0 ? (totalBadOrders / orders.length) * 100 : 0;
 
   // Today's sales - only orders from today
-  const todaySales = orders
+  const todaySales = revenueOrders
     .filter(
       (order) =>
         order.status !== "cancelled" &&
@@ -158,7 +165,7 @@ const StatisticsCards = ({ orders, customers = [], dateFilter }) => {
     .reduce((sum, order) => sum + order.totalAmount, 0);
 
   // Monthly sales - only orders from current month
-  const monthlySales = orders
+  const monthlySales = revenueOrders
     .filter(
       (order) =>
         order.status !== "cancelled" &&
@@ -168,7 +175,7 @@ const StatisticsCards = ({ orders, customers = [], dateFilter }) => {
     .reduce((sum, order) => sum + order.totalAmount, 0);
 
   // Weekly revenue - only paid and non-cancelled orders from current week
-  const weeklyRevenue = orders
+  const weeklyRevenue = revenueOrders
     .filter(
       (order) =>
         order.status !== "cancelled" &&
@@ -226,7 +233,7 @@ const StatisticsCards = ({ orders, customers = [], dateFilter }) => {
         maximumFractionDigits: 2,
       })}`,
       label: "Total Revenue",
-      description: `Paid and completed orders (${dateContext})`,
+      description: "Paid and completed orders (all time)",
       className: "total-revenue",
       trend: "up",
       priority: 1,

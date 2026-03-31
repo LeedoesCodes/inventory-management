@@ -32,6 +32,8 @@ import { printReceipt } from "../components/TransactionHistory/utils/receiptUtil
 import {
   collection,
   getDocs,
+  query,
+  orderBy,
   doc,
   runTransaction,
   increment,
@@ -50,6 +52,7 @@ export default function TransactionHistory() {
   // Add products state
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(false);
+  const [allOrdersForStats, setAllOrdersForStats] = useState([]);
 
   const ITEMS_PER_PAGE = 20;
 
@@ -106,6 +109,7 @@ export default function TransactionHistory() {
   // Fetch orders and products on component mount
   useEffect(() => {
     fetchOrders();
+    fetchAllOrdersForStats();
   }, []);
 
   // Load products only when bad-order workflow is opened.
@@ -141,6 +145,33 @@ export default function TransactionHistory() {
       console.error("Error fetching products:", error);
     } finally {
       setProductsLoading(false);
+    }
+  };
+
+  const fetchAllOrdersForStats = async () => {
+    try {
+      const statsQuery = query(
+        collection(db, "orders"),
+        orderBy("createdAt", "desc"),
+      );
+      const snapshot = await getDocs(statsQuery);
+
+      const ordersData = snapshot.docs.map((orderDoc) => {
+        const orderData = orderDoc.data();
+        const createdAt = orderData.createdAt?.toDate
+          ? orderData.createdAt.toDate()
+          : new Date(orderData.createdAt);
+
+        return {
+          id: orderDoc.id,
+          ...orderData,
+          createdAt,
+        };
+      });
+
+      setAllOrdersForStats(ordersData);
+    } catch (error) {
+      console.error("Error fetching all orders for stats:", error);
     }
   };
 
@@ -450,6 +481,7 @@ export default function TransactionHistory() {
   const handleCancelOrderWithErrorHandling = async (order) => {
     try {
       await handleCancelOrder(order);
+      fetchAllOrdersForStats();
       handleSuccess("Order cancelled successfully");
       setCancelModal(null);
     } catch (error) {
@@ -460,6 +492,7 @@ export default function TransactionHistory() {
   const handleDeleteOrderWithErrorHandling = async (orderId) => {
     try {
       await handleDeleteOrder(orderId);
+      fetchAllOrdersForStats();
       handleSuccess("Order deleted successfully");
       setDeleteModal(null);
     } catch (error) {
@@ -470,6 +503,7 @@ export default function TransactionHistory() {
   const handleRecordPaymentWithErrorHandling = async (order) => {
     try {
       await handleRecordPayment(order);
+      fetchAllOrdersForStats();
       handleSuccess("Payment recorded successfully");
       setPaymentModal(null);
     } catch (error) {
@@ -480,6 +514,7 @@ export default function TransactionHistory() {
   const handleMarkAsPaidWithErrorHandling = async (order) => {
     try {
       await handleMarkAsPaid(order);
+      fetchAllOrdersForStats();
       handleSuccess("Order marked as paid successfully");
       setMarkAsPaidModal(null);
     } catch (error) {
@@ -490,6 +525,7 @@ export default function TransactionHistory() {
   const handleProcessBadOrderWithErrorHandling = async (badOrderData) => {
     try {
       await handleProcessBadOrder(badOrderData);
+      fetchAllOrdersForStats();
       handleSuccess("Bad order processed successfully");
       setBadOrderModal(null);
       setBadOrderDetails({
@@ -557,6 +593,7 @@ export default function TransactionHistory() {
 
       handleSuccess("Order restored successfully!");
       fetchOrders(); // Refresh list
+      fetchAllOrdersForStats();
       setSelectedOrder(null); // Close modal
     } catch (error) {
       handleError(error);
@@ -644,6 +681,7 @@ export default function TransactionHistory() {
           {/* Statistics Cards */}
           <StatisticsCards
             orders={finalFilteredOrders}
+            allOrders={allOrdersForStats}
             dateFilter={dateFilter}
             overdueCount={overdueCount}
           />
