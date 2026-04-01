@@ -1,5 +1,5 @@
 // components/products/ProductsList.jsx - UPDATED VERSION
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faEdit,
@@ -9,6 +9,8 @@ import {
   faBoxOpen,
   faHistory,
   faFlask,
+  faChevronDown,
+  faChevronUp,
 } from "@fortawesome/free-solid-svg-icons";
 import "./products-list.scss";
 
@@ -24,6 +26,7 @@ export default function ProductList({
   allProducts = [],
 }) {
   const highlightedRef = useRef(null);
+  const [openMobileActions, setOpenMobileActions] = useState({});
 
   useEffect(() => {
     if (highlightedProductId) {
@@ -58,6 +61,13 @@ export default function ProductList({
   const highlightedProduct = products.find(
     (p) => p.id === highlightedProductId,
   );
+
+  const toggleMobileActions = (productId) => {
+    setOpenMobileActions((prev) => ({
+      ...prev,
+      [productId]: !prev[productId],
+    }));
+  };
 
   return (
     <div className="product-list">
@@ -97,7 +107,9 @@ export default function ProductList({
                 <div className="product-details">
                   {/* Product Header with Name and Packaging Badges */}
                   <div className="product-header">
-                    <div className="product-name">{p.name}</div>
+                    <div className="product-name" title={p.name}>
+                      {p.name}
+                    </div>
 
                     {/* Packaging Badges */}
                     <div className="packaging-badges">
@@ -201,8 +213,32 @@ export default function ProductList({
 
                 {/* Enhanced Action Buttons */}
                 <div className="product-actions enhanced-actions">
+                  <button
+                    type="button"
+                    className={`mobile-actions-toggle ${
+                      openMobileActions[p.id] ? "open" : ""
+                    }`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleMobileActions(p.id);
+                    }}
+                    aria-expanded={Boolean(openMobileActions[p.id])}
+                    title="Show more product actions"
+                  >
+                    <span>More actions</span>
+                    <FontAwesomeIcon
+                      icon={
+                        openMobileActions[p.id] ? faChevronUp : faChevronDown
+                      }
+                    />
+                  </button>
+
                   {/* Standard Actions */}
-                  <div className="standard-actions">
+                  <div
+                    className={`standard-actions ${
+                      openMobileActions[p.id] ? "open" : ""
+                    }`}
+                  >
                     <button
                       onClick={() => onViewHistory?.(p)}
                       className="icon-btn history-btn"

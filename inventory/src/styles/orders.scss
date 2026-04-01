@@ -2429,3 +2429,17 @@
     }
   }
 }
+
+@media (max-width: 768px) {
+  .orders-page .floating-checkout {
+    bottom: calc(
+      var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 8px
+    ) !important;
+  }
+
+  .orders-content {
+    margin-bottom: calc(
+      170px + var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px)
+    ) !important;
+  }
+}

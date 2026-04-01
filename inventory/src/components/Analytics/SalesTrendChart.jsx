@@ -6,14 +6,13 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from "recharts";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faShoppingCart } from "@fortawesome/free-solid-svg-icons";
 
 const SalesTrendChart = memo(
-  ({ data, enableAnimation = true }) => {
+  ({ data, enableAnimation = true, isMobile = false }) => {
     const emptyState = useMemo(
       () => (
         <div className="chart-container">
@@ -53,10 +52,15 @@ const SalesTrendChart = memo(
 
     return (
       <div className="chart-container">
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={isMobile ? 220 : 300}>
           <BarChart
             data={displayData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+            margin={{
+              top: 12,
+              right: isMobile ? 8 : 30,
+              left: isMobile ? 0 : 20,
+              bottom: isMobile ? 30 : 60,
+            }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
             <XAxis
@@ -64,17 +68,24 @@ const SalesTrendChart = memo(
               tickFormatter={formatXAxis}
               angle={0}
               textAnchor="middle"
-              height={60}
-              tick={{ fontSize: 12 }}
-              label={{
-                value: "Day of Month",
-                position: "insideBottom",
-                offset: 10,
-              }}
+              height={isMobile ? 34 : 60}
+              tick={{ fontSize: isMobile ? 10 : 12 }}
+              interval={isMobile ? "preserveStartEnd" : 0}
+              label={
+                isMobile
+                  ? undefined
+                  : {
+                      value: "Day of Month",
+                      position: "insideBottom",
+                      offset: 10,
+                    }
+              }
             />
-            <YAxis tick={{ fontSize: 12 }} width={40} />
+            <YAxis
+              tick={{ fontSize: isMobile ? 10 : 12 }}
+              width={isMobile ? 32 : 40}
+            />
             <Tooltip content={<CustomTooltip />} />
-            <Legend />
             <Bar
               dataKey="orders"
               fill="#82ca9d"

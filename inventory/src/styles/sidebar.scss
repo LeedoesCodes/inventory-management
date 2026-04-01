@@ -8,9 +8,13 @@
   padding: 0.8rem;
   display: flex;
   flex-direction: column;
-  transition: all 0.3s ease-in-out;
+  transition:
+    width 220ms ease,
+    padding 220ms ease,
+    transform 220ms ease;
   z-index: 2000;
   overflow: hidden;
+  will-change: transform;
 
   .app-title {
     display: flex;
@@ -27,7 +31,9 @@
   &.collapsed {
     width: 60px;
     padding: 0.8rem 0.4rem;
-    transition: all 0.6s ease-in-out; // Slow collapse
+    transition:
+      width 220ms ease,
+      padding 220ms ease;
 
     .app-title {
       opacity: 0;
@@ -35,7 +41,9 @@
       height: 0;
       margin-bottom: 0;
       transform: scale(0.8);
-      transition: all 0.3s ease-in-out;
+      transition:
+        opacity 180ms ease,
+        transform 180ms ease;
     }
 
     .menu-text {
@@ -44,7 +52,9 @@
       width: 0;
       margin-left: 0;
       transform: translateX(-10px);
-      transition: all 0.3s ease-in-out;
+      transition:
+        opacity 150ms ease,
+        transform 150ms ease;
     }
 
     .section-label {
@@ -54,24 +64,9 @@
       margin: 0;
       padding: 0;
       transform: scale(0.8);
-      transition: all 0.3s ease-in-out;
-    }
-  }
-
-  // Instant expand
-  &:not(.collapsed) {
-    transition: all 0s ease-in-out; // Instant expand
-
-    .app-title {
-      transition: all 0s ease-in-out;
-    }
-
-    .menu-text {
-      transition: all 0s ease-in-out;
-    }
-
-    .section-label {
-      transition: all 0s ease-in-out;
+      transition:
+        opacity 150ms ease,
+        transform 150ms ease;
     }
   }
 
@@ -89,7 +84,10 @@
       z-index: 1100;
       padding: 6px;
       border-radius: 6px;
-      transition: all 0.5s ease-in-out;
+      transition:
+        background-color 180ms ease,
+        color 180ms ease,
+        transform 220ms ease;
       width: 32px;
       height: 32px;
       display: flex;
@@ -196,7 +194,26 @@
   }
 }
 
-// Collapsed state specific styles - SLOW
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1995;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    opacity 200ms ease,
+    visibility 200ms ease;
+
+  &.active {
+    opacity: 1;
+    pointer-events: auto;
+    visibility: visible;
+  }
+}
+
+// Collapsed state specific styles
 .sidebar.collapsed {
   .sidebar-header {
     justify-content: center;
@@ -204,7 +221,7 @@
 
     .toggle-btn {
       transform: rotate(180deg);
-      transition: transform 0.6s ease-in-out; // Slow collapse
+      transition: transform 220ms ease;
     }
   }
 
@@ -216,7 +233,9 @@
         padding: 8px;
         justify-content: center;
         gap: 0;
-        transition: all 0.5s ease-in-out; // Slow collapse
+        transition:
+          padding 220ms ease,
+          gap 220ms ease;
 
         svg {
           font-size: 1.2rem;
@@ -234,40 +253,6 @@
 
         .section-label {
           display: none;
-        }
-      }
-    }
-  }
-}
-
-// Expanded state - INSTANT
-.sidebar:not(.collapsed) {
-  .sidebar-header {
-    .toggle-btn {
-      transition: transform 0s ease-in-out; // Instant expand
-    }
-  }
-
-  .menu {
-    li {
-      .nav-link {
-        transition: all 0s ease-in-out; // Instant expand
-
-        .menu-text {
-          opacity: 1;
-          visibility: visible;
-          width: auto;
-          transform: translateX(0);
-          transition: all 0s ease-in-out; // Instant expand
-        }
-      }
-
-      &.menu-section {
-        .section-label {
-          opacity: 1;
-          visibility: visible;
-          height: auto;
-          transition: all 0s ease-in-out; // Instant expand
         }
       }
     }
@@ -465,19 +450,19 @@
     display: flex;
   }
 
-  .sidebar-overlay {
-    display: block;
-  }
-
   // Mobile sidebar as drawer
   .sidebar {
     transform: translateX(-100%);
     width: 280px !important;
-    transition: transform 0.3s ease-in-out;
+    transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+    visibility: hidden;
+    pointer-events: none;
 
     &.mobile-open {
       transform: translateX(0);
       box-shadow: 2px 0 20px rgba(0, 0, 0, 0.3);
+      visibility: visible;
+      pointer-events: auto;
     }
 
     // Override collapsed styles on mobile
@@ -524,18 +509,12 @@
     }
   }
 
-  // Hide desktop sidebar when not in mobile drawer mode
-  .sidebar:not(.mobile-open) {
-    display: none;
-  }
-
   // Adjust main content for mobile layout
   .main-content {
-    margin-top: 60px !important;
-    margin-bottom: 65px !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
     margin-left: 0 !important;
     width: 100% !important;
-    padding: 1rem !important;
   }
 }
 

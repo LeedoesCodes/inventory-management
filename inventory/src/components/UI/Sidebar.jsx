@@ -40,16 +40,15 @@ export default function Sidebar() {
   return (
     <>
       {/* Mobile Overlay */}
-      {isMobileSidebarOpen && (
-        <div
-          className="sidebar-overlay"
-          onClick={closeMobileSidebar}
-          onKeyDown={(e) => e.key === "Escape" && closeMobileSidebar()}
-          tabIndex={-1}
-          role="button"
-          aria-label="Close sidebar"
-        />
-      )}
+      <div
+        className={`sidebar-overlay ${isMobileSidebarOpen ? "active" : ""}`}
+        onClick={closeMobileSidebar}
+        onKeyDown={(e) => e.key === "Escape" && closeMobileSidebar()}
+        tabIndex={isMobileSidebarOpen ? 0 : -1}
+        role="button"
+        aria-label="Close sidebar"
+        aria-hidden={!isMobileSidebarOpen}
+      />
 
       {/* Sidebar */}
       <div
@@ -63,7 +62,16 @@ export default function Sidebar() {
           <button
             className="toggle-btn"
             onClick={toggleSidebar}
-            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={
+              isMobile
+                ? isMobileSidebarOpen
+                  ? "Close sidebar"
+                  : "Open sidebar"
+                : isCollapsed
+                  ? "Expand sidebar"
+                  : "Collapse sidebar"
+            }
+            aria-expanded={isMobile ? isMobileSidebarOpen : !isCollapsed}
           >
             <FontAwesomeIcon icon={faBars} />
           </button>

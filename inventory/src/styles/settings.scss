@@ -389,11 +389,13 @@
 /* Responsive design from reference */
 @media (max-width: 768px) {
   .settings-page {
+    margin-top: 0;
     margin-left: 0 !important;
     width: 100%;
-    padding: 15px;
+    padding: 12px 15px 15px;
 
     &.sidebar-collapsed {
+      margin-top: 0;
       margin-left: 0 !important;
       width: 100%;
     }

@@ -13,54 +13,36 @@ export function SidebarProvider({ children }) {
   });
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  // Robust mobile detection with debouncing
+  // Keep mobile detection in sync with viewport changes.
   useEffect(() => {
-    let timeoutId;
-
-    const checkMobile = () => {
-      const mobile = window.innerWidth <= 768;
+    const mediaQuery = window.matchMedia("(max-width: 768px)");
+    const handleMediaChange = (event) => {
+      const mobile = event.matches;
       setIsMobile(mobile);
 
-      // Auto-close mobile sidebar when switching to desktop
-      if (!mobile && isMobileSidebarOpen) {
+      if (!mobile) {
         setIsMobileSidebarOpen(false);
       }
     };
 
-    const handleResize = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(checkMobile, 150); // Debounce resize events
-    };
-
-    // Check initially
-    checkMobile();
-
-    // Add resize listener
-    window.addEventListener("resize", handleResize);
+    setIsMobile(mediaQuery.matches);
+    mediaQuery.addEventListener("change", handleMediaChange);
 
     return () => {
-      window.removeEventListener("resize", handleResize);
-      clearTimeout(timeoutId);
+      mediaQuery.removeEventListener("change", handleMediaChange);
     };
-  }, [isMobileSidebarOpen]);
+  }, []);
 
   const toggleSidebar = () => {
-    console.log("Toggle sidebar called - isMobile:", isMobile);
     if (isMobile) {
-      // Toggle mobile sidebar
-      setIsMobileSidebarOpen((prev) => {
-        console.log("Setting mobile sidebar to:", !prev);
-        return !prev;
-      });
+      setIsMobileSidebarOpen((prev) => !prev);
     } else {
-      // Toggle desktop sidebar collapse
       setIsCollapsed((prev) => !prev);
     }
   };
 
   const closeMobileSidebar = () => {
     if (isMobile) {
-      console.log("Closing mobile sidebar");
       setIsMobileSidebarOpen(false);
     }
   };
@@ -70,15 +52,6 @@ export function SidebarProvider({ children }) {
       setIsMobileSidebarOpen(true);
     }
   };
-
-  // Debug log to verify context values
-  useEffect(() => {
-    console.log("SidebarContext updated:", {
-      isMobile,
-      isMobileSidebarOpen,
-      isCollapsed,
-    });
-  }, [isMobile, isMobileSidebarOpen, isCollapsed]);
 
   return (
     <SidebarContext.Provider

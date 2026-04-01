@@ -6,14 +6,13 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from "recharts";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCalendarWeek } from "@fortawesome/free-solid-svg-icons";
 
 const WeeklyRevenueChart = memo(
-  ({ data, enableAnimation = true }) => {
+  ({ data, enableAnimation = true, isMobile = false }) => {
     const emptyState = useMemo(
       () => (
         <div className="chart-container">
@@ -57,27 +56,31 @@ const WeeklyRevenueChart = memo(
 
     return (
       <div className="chart-container">
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={isMobile ? 220 : 300}>
           <BarChart
             data={chartData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
+            margin={{
+              top: 12,
+              right: isMobile ? 8 : 30,
+              left: isMobile ? 0 : 20,
+              bottom: isMobile ? 48 : 70,
+            }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
             <XAxis
               dataKey="weekLabel"
-              angle={-25}
+              angle={isMobile ? -35 : -25}
               textAnchor="end"
-              height={70}
-              tick={{ fontSize: 12 }}
-              interval={0}
+              height={isMobile ? 48 : 70}
+              tick={{ fontSize: isMobile ? 10 : 12 }}
+              interval={isMobile ? "preserveStartEnd" : 0}
             />
             <YAxis
               tickFormatter={formatYAxis}
-              tick={{ fontSize: 12 }}
-              width={60}
+              tick={{ fontSize: isMobile ? 10 : 12 }}
+              width={isMobile ? 48 : 60}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Legend />
             <Bar
               dataKey="revenue"
               fill="#4e79a7"

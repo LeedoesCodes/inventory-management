@@ -913,3 +913,163 @@
     }
   }
 }
+
+// Mobile chart optimization overrides
+@media (max-width: 900px) {
+  .analytics-content {
+    padding: 0.9rem;
+    margin-top: 0;
+  }
+
+  .analytics-header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.9rem;
+
+    .header-content {
+      h1 {
+        font-size: 1.3rem;
+      }
+
+      p {
+        font-size: 0.9rem;
+      }
+    }
+
+    .time-range-selector {
+      width: 100%;
+      gap: 0.5rem;
+
+      select {
+        flex: 1;
+        min-width: 0;
+        padding: 0.6rem 0.75rem;
+        font-size: 0.9rem;
+      }
+    }
+  }
+
+  .analytics-grid {
+    gap: 0.9rem;
+  }
+
+  .analytics-card {
+    padding: 0.95rem;
+    border-radius: 10px;
+
+    .card-header {
+      margin-bottom: 0.8rem;
+      padding-bottom: 0.65rem;
+
+      h3 {
+        font-size: 1rem;
+        line-height: 1.25;
+      }
+
+      .time-range {
+        font-size: 0.75rem;
+      }
+    }
+
+    .chart-container {
+      height: 220px;
+    }
+
+    .stats-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.6rem;
+
+      .stat-card {
+        padding: 0.8rem;
+
+        .stat-value {
+          font-size: 1.15rem;
+        }
+
+        .stat-label {
+          font-size: 0.72rem;
+        }
+      }
+    }
+  }
+
+  .comparison-header {
+    padding: 12px;
+
+    .header-left h3 {
+      font-size: 1rem;
+    }
+
+    .header-controls {
+      width: 100%;
+      gap: 8px;
+
+      .control-btn {
+        padding: 6px 10px;
+        font-size: 0.78rem;
+      }
+    }
+  }
+
+  .product-selection-panel {
+    padding: 12px;
+  }
+
+  .product-selection-grid {
+    grid-template-columns: 1fr;
+    max-height: 180px;
+  }
+
+  .comparison-chart-container {
+    padding: 12px;
+    min-height: 280px;
+
+    &.minimized {
+      min-height: 170px;
+      padding: 10px;
+    }
+  }
+
+  .custom-tooltip {
+    padding: 8px;
+
+    .tooltip-header,
+    .tooltip-item {
+      font-size: 0.78rem;
+    }
+  }
+}
+
+@media (max-width: 560px) {
+  .analytics-card {
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .product-list {
+      .product-item {
+        align-items: flex-start;
+        gap: 0.5rem;
+
+        .product-stats {
+          gap: 0.8rem;
+
+          .stat {
+            .value {
+              font-size: 0.86rem;
+            }
+
+            .label {
+              font-size: 0.7rem;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .comparison-header {
+    .header-controls {
+      flex-wrap: wrap;
+    }
+  }
+}

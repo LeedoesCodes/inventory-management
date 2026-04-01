@@ -56,6 +56,7 @@ export default function ProductsPage() {
   const [sortBy, setSortBy] = useState("name");
   const [sortOrder, setSortOrder] = useState("asc");
   const [stockFilter, setStockFilter] = useState("all");
+  const [mobileControlsOpen, setMobileControlsOpen] = useState(false);
 
   // Packaging statistics
   const [packagingStats, setPackagingStats] = useState({
@@ -554,6 +555,22 @@ export default function ProductsPage() {
     setAuditHistoryProduct(null);
   };
 
+  const hasActiveFilters = Boolean(
+    searchTerm ||
+    selectedCategory ||
+    selectedUnit ||
+    selectedPackagingType ||
+    stockFilter !== "all",
+  );
+
+  const activeFilterCount = [
+    Boolean(searchTerm),
+    Boolean(selectedCategory),
+    Boolean(selectedUnit),
+    Boolean(selectedPackagingType),
+    stockFilter !== "all",
+  ].filter(Boolean).length;
+
   return (
     <div className="page-container">
       <Sidebar />
@@ -643,96 +660,120 @@ export default function ProductsPage() {
               </div>
             </div>
 
-            <div className="search-filters-section enhanced-filters">
-              <ProductSearch
-                onSearch={handleSearch}
-                categories={categories}
-                units={units}
-                selectedCategory={selectedCategory}
-                selectedUnit={selectedUnit}
-                selectedPackagingType={selectedPackagingType}
-              />
+            <button
+              type="button"
+              className={`mobile-controls-toggle ${
+                mobileControlsOpen ? "open" : ""
+              }`}
+              onClick={() => setMobileControlsOpen((prev) => !prev)}
+              aria-expanded={mobileControlsOpen}
+              aria-controls="products-controls-panel"
+            >
+              <span>
+                {mobileControlsOpen
+                  ? "Hide Filters & Sort"
+                  : "Show Filters & Sort"}
+              </span>
+              {hasActiveFilters && (
+                <span className="active-filter-badge">{activeFilterCount}</span>
+              )}
+            </button>
 
-              <div className="filter-groups-row">
-                <div className="filter-group">
-                  <label>Stock Status:</label>
+            <div
+              id="products-controls-panel"
+              className={`products-top-controls ${
+                mobileControlsOpen ? "open" : ""
+              }`}
+            >
+              <div className="search-filters-section enhanced-filters">
+                <ProductSearch
+                  onSearch={handleSearch}
+                  categories={categories}
+                  units={units}
+                  selectedCategory={selectedCategory}
+                  selectedUnit={selectedUnit}
+                  selectedPackagingType={selectedPackagingType}
+                />
+
+                <div className="filter-groups-row">
+                  <div className="filter-group">
+                    <label>Stock Status:</label>
+                    <select
+                      value={stockFilter}
+                      onChange={(e) => setStockFilter(e.target.value)}
+                      className="control-select"
+                    >
+                      <option value="all">All Stock</option>
+                      <option value="inStock">In Stock</option>
+                      <option value="lowStock">Low Stock</option>
+                      <option value="outOfStock">Out of Stock</option>
+                    </select>
+                  </div>
+
+                  {hasActiveFilters && (
+                    <button
+                      className="clear-filters-btn"
+                      onClick={handleClearFilters}
+                    >
+                      Clear All Filters
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="products-controls-bar enhanced-controls">
+                <div className="control-group">
+                  <label>
+                    <FontAwesomeIcon icon={faSort} />
+                    Sort by:
+                  </label>
                   <select
-                    value={stockFilter}
-                    onChange={(e) => setStockFilter(e.target.value)}
+                    value={sortBy}
+                    onChange={(e) => handleSortChange(e.target.value)}
                     className="control-select"
                   >
-                    <option value="all">All Stock</option>
-                    <option value="inStock">In Stock</option>
-                    <option value="lowStock">Low Stock</option>
-                    <option value="outOfStock">Out of Stock</option>
+                    <option value="name">Name</option>
+                    <option value="price">Selling Price</option>
+                    <option value="costPrice">Cost Price</option>
+                    <option value="category">Category</option>
+                    <option value="unit">Unit</option>
+                    <option value="packagingType">Packaging Type</option>
+                    <option value="piecesPerPackage">Pieces per Package</option>
+                    <option value="stock">Stock</option>
+                    <option value="sold">Sold</option>
+                    <option value="lowStockThreshold">
+                      Low Stock Threshold
+                    </option>
+                  </select>
+                  <select
+                    value={sortOrder}
+                    onChange={(e) => handleSortOrderChange(e.target.value)}
+                    className="control-select"
+                  >
+                    <option value="asc">Ascending</option>
+                    <option value="desc">Descending</option>
                   </select>
                 </div>
 
-                {(searchTerm ||
-                  selectedCategory ||
-                  selectedUnit ||
-                  selectedPackagingType ||
-                  stockFilter !== "all") && (
-                  <button
-                    className="clear-filters-btn"
-                    onClick={handleClearFilters}
-                  >
-                    Clear All Filters
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="products-controls-bar enhanced-controls">
-              <div className="control-group">
-                <label>
-                  <FontAwesomeIcon icon={faSort} />
-                  Sort by:
-                </label>
-                <select
-                  value={sortBy}
-                  onChange={(e) => handleSortChange(e.target.value)}
-                  className="control-select"
-                >
-                  <option value="name">Name</option>
-                  <option value="price">Selling Price</option>
-                  <option value="costPrice">Cost Price</option>
-                  <option value="category">Category</option>
-                  <option value="unit">Unit</option>
-                  <option value="packagingType">Packaging Type</option>
-                  <option value="piecesPerPackage">Pieces per Package</option>
-                  <option value="stock">Stock</option>
-                  <option value="sold">Sold</option>
-                  <option value="lowStockThreshold">Low Stock Threshold</option>
-                </select>
-                <select
-                  value={sortOrder}
-                  onChange={(e) => handleSortOrderChange(e.target.value)}
-                  className="control-select"
-                >
-                  <option value="asc">Ascending</option>
-                  <option value="desc">Descending</option>
-                </select>
-              </div>
-
-              <div className="products-count">
-                <span>{filteredProducts.length} products</span>
-                {(selectedCategory ||
-                  selectedUnit ||
-                  selectedPackagingType ||
-                  stockFilter !== "all") && (
-                  <span className="filter-info">
-                    {selectedCategory && ` • ${selectedCategory}`}
-                    {selectedUnit && ` • ${selectedUnit}`}
-                    {selectedPackagingType &&
-                      ` • ${
-                        selectedPackagingType === "single"
-                          ? "Single Items"
-                          : "Bulk Packages"
-                      }`}
-                    {stockFilter !== "all" && ` • ${stockFilter}`}
-                  </span>
-                )}
+                <div className="products-count">
+                  <span>{filteredProducts.length} products</span>
+                  {(selectedCategory ||
+                    selectedUnit ||
+                    selectedPackagingType ||
+                    stockFilter !== "all") && (
+                    <span className="filter-info">
+                      {selectedCategory && ` • ${selectedCategory}`}
+                      {selectedUnit && ` • ${selectedUnit}`}
+                      {selectedPackagingType &&
+                        ` • ${
+                          selectedPackagingType === "single"
+                            ? "Single Items"
+                            : "Bulk Packages"
+                        }`}
+                      {stockFilter !== "all" && ` • ${stockFilter}`}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 

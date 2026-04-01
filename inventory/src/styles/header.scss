@@ -4,13 +4,13 @@
   top: 0;
   left: 230px;
   right: 0;
-  height: 80px;
+  height: 70px;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 2rem;
+  padding: 0 1.25rem;
   z-index: 1000;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(10px);
@@ -73,7 +73,7 @@
     // ... (rest of your existing header-left styles remain the same)
     .page-title {
       margin: 0;
-      font-size: 1.8rem;
+      font-size: 1.55rem;
       font-weight: 700;
       color: var(--text-primary);
       background: linear-gradient(
@@ -86,7 +86,8 @@
       -webkit-text-fill-color: transparent;
       color: transparent;
       position: relative;
-      animation: titleGlow 3s ease-in-out infinite alternate,
+      animation:
+        titleGlow 3s ease-in-out infinite alternate,
         fadeInUp 0.8s ease-out;
 
       &::after {

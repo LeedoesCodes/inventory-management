@@ -6,14 +6,13 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from "recharts";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faDollarSign } from "@fortawesome/free-solid-svg-icons";
 
 const RevenueChart = memo(
-  ({ data, enableAnimation = true }) => {
+  ({ data, enableAnimation = true, isMobile = false }) => {
     // Memoize the empty state to prevent unnecessary re-renders
     const emptyState = useMemo(
       () => (
@@ -72,22 +71,22 @@ const RevenueChart = memo(
 
       return {
         margin: {
-          top: 20,
-          right: 30,
-          left: 20,
-          bottom: isLargeDataset ? 80 : 60,
+          top: 12,
+          right: isMobile ? 8 : 24,
+          left: isMobile ? 0 : 12,
+          bottom: isMobile ? 42 : isLargeDataset ? 80 : 60,
         },
         xAxisConfig: {
-          angle: isLargeDataset ? -45 : 0,
+          angle: isMobile ? -25 : isLargeDataset ? -45 : 0,
           textAnchor: isLargeDataset ? "end" : "middle",
-          height: isLargeDataset ? 80 : 60,
+          height: isMobile ? 50 : isLargeDataset ? 80 : 60,
         },
         lineConfig: {
           dot: { r: isLargeDataset ? 2 : 4 },
           activeDot: { r: isLargeDataset ? 4 : 6 },
         },
       };
-    }, [data.length]);
+    }, [data.length, isMobile]);
 
     // Memoize chart summary
     const chartSummary = useMemo(
@@ -102,7 +101,7 @@ const RevenueChart = memo(
 
     return (
       <div className="chart-container">
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={isMobile ? 220 : 300}>
           <LineChart data={data} margin={chartConfig.margin}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
             <XAxis
@@ -111,16 +110,15 @@ const RevenueChart = memo(
               angle={chartConfig.xAxisConfig.angle}
               textAnchor={chartConfig.xAxisConfig.textAnchor}
               height={chartConfig.xAxisConfig.height}
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: isMobile ? 10 : 12 }}
               interval="preserveStartEnd"
             />
             <YAxis
               tickFormatter={formatYAxis}
-              tick={{ fontSize: 12 }}
-              width={60}
+              tick={{ fontSize: isMobile ? 10 : 12 }}
+              width={isMobile ? 48 : 60}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Legend />
             <Line
               type="monotone"
               dataKey="revenue"

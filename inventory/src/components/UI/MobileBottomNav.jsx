@@ -7,7 +7,7 @@ import {
   faBoxOpen,
   faClipboardList,
   faMoneyBill,
-  faGear,
+  faUser,
 } from "@fortawesome/free-solid-svg-icons";
 
 export default function MobileBottomNav() {
@@ -46,11 +46,11 @@ export default function MobileBottomNav() {
       </NavLink>
 
       <NavLink
-        to="/settings"
+        to="/profile"
         className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
       >
-        <FontAwesomeIcon icon={faGear} />
-        <span>Settings</span>
+        <FontAwesomeIcon icon={faUser} />
+        <span>Profile</span>
       </NavLink>
     </nav>
   );

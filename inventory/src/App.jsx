@@ -107,16 +107,20 @@ function HomeRedirect() {
 
 /** SidebarLayout consumes SidebarContext to add collapsed class to main */
 function SidebarLayout() {
-  const { isCollapsed } = useContext(SidebarContext);
+  const { isCollapsed, isMobile } = useContext(SidebarContext);
 
   return (
-    <div className="app-layout">
+    <div
+      className={`app-layout ${isMobile ? "mobile-shell" : "desktop-shell"}`}
+    >
+      {isMobile && <MobileHeader />}
       <Sidebar />
       <main
         className={`main-content ${isCollapsed ? "sidebar-collapsed" : ""}`}
       >
         <Outlet />
       </main>
+      {isMobile && <MobileBottomNav />}
     </div>
   );
 }

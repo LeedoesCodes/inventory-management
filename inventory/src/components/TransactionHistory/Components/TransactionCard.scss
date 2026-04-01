@@ -145,6 +145,25 @@
     display: flex;
     gap: 0.25rem;
 
+    .mobile-actions-toggle {
+      display: none;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.4rem 0.6rem;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      background: #ffffff;
+      color: #374151;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .actions-group {
+      display: flex;
+      gap: 0.25rem;
+    }
+
     .action-btn {
       padding: 0.5rem;
       border: none;
@@ -440,6 +459,14 @@
         }
       }
     }
+
+    .order-actions {
+      .mobile-actions-toggle {
+        background: #2d3748;
+        border-color: #718096;
+        color: #e2e8f0;
+      }
+    }
   }
 
   .transaction-body {
@@ -546,7 +573,23 @@
 
       .order-actions {
         width: 100%;
-        justify-content: space-between;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+
+        .mobile-actions-toggle {
+          display: inline-flex;
+        }
+
+        .actions-group {
+          display: none;
+          width: 100%;
+          justify-content: space-between;
+          margin-top: 0.5rem;
+
+          &.open {
+            display: flex;
+          }
+        }
       }
     }
 
@@ -556,6 +599,16 @@
       .transaction-details {
         grid-template-columns: 1fr;
         gap: 0.5rem;
+
+        .detail-date,
+        .detail-due {
+          display: none;
+        }
+
+        .detail-total {
+          font-weight: 700;
+          font-size: 1rem;
+        }
       }
 
       .payment-progress-section {
@@ -584,8 +637,10 @@
       padding: 0.75rem;
 
       .order-actions {
-        .action-btn {
-          padding: 0.4rem;
+        .actions-group {
+          .action-btn {
+            padding: 0.4rem;
+          }
         }
       }
     }

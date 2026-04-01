@@ -487,14 +487,16 @@
 @media (max-width: 768px) {
   .profile-page {
     margin-left: 0 !important;
+    margin-top: 0 !important;
 
     &.collapsed {
       margin-left: 0 !important;
+      margin-top: 0 !important;
     }
   }
 
   .profile-content {
-    margin-top: 70px;
+    margin-top: 0;
     padding: 1rem;
 
     .profile-header {

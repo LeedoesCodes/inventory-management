@@ -101,9 +101,13 @@ class ChartErrorBoundary extends React.Component {
 }
 
 // Safe chart wrapper components
-const SafeRevenueChart = ({ data, enableAnimation }) => (
+const SafeRevenueChart = ({ data, enableAnimation, isMobile }) => (
   <ChartErrorBoundary chartName="Revenue Chart">
-    <RevenueChart data={data || []} enableAnimation={enableAnimation} />
+    <RevenueChart
+      data={data || []}
+      enableAnimation={enableAnimation}
+      isMobile={isMobile}
+    />
   </ChartErrorBoundary>
 );
 
@@ -111,25 +115,35 @@ const SafeProductComparisonChart = ({
   products,
   timeRange,
   enableAnimation,
+  isMobile,
 }) => (
   <ChartErrorBoundary chartName="Product Comparison Chart">
     <ProductComparisonChart
       products={products || []}
       timeRange={timeRange}
       enableAnimation={enableAnimation}
+      isMobile={isMobile}
     />
   </ChartErrorBoundary>
 );
 
-const SafeSalesTrendChart = ({ data, enableAnimation }) => (
+const SafeSalesTrendChart = ({ data, enableAnimation, isMobile }) => (
   <ChartErrorBoundary chartName="Sales Trends Chart">
-    <SalesTrendChart data={data || []} enableAnimation={enableAnimation} />
+    <SalesTrendChart
+      data={data || []}
+      enableAnimation={enableAnimation}
+      isMobile={isMobile}
+    />
   </ChartErrorBoundary>
 );
 
-const SafeWeeklyRevenueChart = ({ data, enableAnimation }) => (
+const SafeWeeklyRevenueChart = ({ data, enableAnimation, isMobile }) => (
   <ChartErrorBoundary chartName="Weekly Revenue Chart">
-    <WeeklyRevenueChart data={data || []} enableAnimation={enableAnimation} />
+    <WeeklyRevenueChart
+      data={data || []}
+      enableAnimation={enableAnimation}
+      isMobile={isMobile}
+    />
   </ChartErrorBoundary>
 );
 
@@ -196,7 +210,7 @@ const safeArray = (array) => {
 };
 
 export default function Analytics() {
-  const { isCollapsed } = useSidebar();
+  const { isCollapsed, isMobile } = useSidebar();
   const { user } = useContext(AuthContext);
   const [timeRange, setTimeRange] = useState("all");
   const [isSidebarTransitioning, setIsSidebarTransitioning] = useState(false);
@@ -766,6 +780,7 @@ export default function Analytics() {
             <SafeRevenueChart
               data={analyticsData.revenueData}
               enableAnimation={enableChartAnimation}
+              isMobile={isMobile}
             />
           </div>
 
@@ -780,6 +795,7 @@ export default function Analytics() {
             <SafeWeeklyRevenueChart
               data={analyticsData.weeklyRevenueData}
               enableAnimation={enableChartAnimation}
+              isMobile={isMobile}
             />
           </div>
 
@@ -795,6 +811,7 @@ export default function Analytics() {
               products={analyticsData.allProducts}
               timeRange={timeRange}
               enableAnimation={enableChartAnimation}
+              isMobile={isMobile}
             />
           </div>
 
@@ -809,6 +826,7 @@ export default function Analytics() {
             <SafeSalesTrendChart
               data={analyticsData.salesTrends}
               enableAnimation={enableChartAnimation}
+              isMobile={isMobile}
             />
           </div>
 

@@ -46,10 +46,14 @@ const getProductComparisonData = (product) => {
 };
 
 const ProductComparisonChart = memo(
-  ({ products, timeRange, enableAnimation = true }) => {
+  ({ products, timeRange, enableAnimation = true, isMobile = false }) => {
     const [selectedProducts, setSelectedProducts] = useState([]);
     const [metricType, setMetricType] = useState("sales");
-    const [isSelectionOpen, setIsSelectionOpen] = useState(false);
+    const [isSelectionOpen, setIsSelectionOpen] = useState(!isMobile);
+    useEffect(() => {
+      setIsSelectionOpen(!isMobile);
+    }, [isMobile]);
+
     const [isLocked, setIsLocked] = useState(false);
     const [savedCombinations, setSavedCombinations] = useState([]);
     const [isChartMinimized, setIsChartMinimized] = useState(false);
@@ -226,28 +230,28 @@ const ProductComparisonChart = memo(
     const chartConfig = useMemo(
       () => ({
         margin: {
-          top: 20,
-          right: 30,
-          left: 20,
-          bottom: isChartMinimized ? 40 : 60,
+          top: 12,
+          right: isMobile ? 8 : 30,
+          left: isMobile ? 0 : 20,
+          bottom: isMobile ? 42 : isChartMinimized ? 40 : 60,
         },
         xAxis: {
           tick: { fontSize: isChartMinimized ? 10 : 12 },
-          angle: isChartMinimized ? -90 : -45,
+          angle: isMobile ? -55 : isChartMinimized ? -90 : -45,
           textAnchor: isChartMinimized ? "end" : "end",
-          height: isChartMinimized ? 60 : 80,
-          interval: isChartMinimized ? "preserveStartEnd" : 0,
+          height: isMobile ? 52 : isChartMinimized ? 60 : 80,
+          interval: isMobile || isChartMinimized ? "preserveStartEnd" : 0,
         },
         yAxis: {
-          tick: { fontSize: isChartMinimized ? 10 : 12 },
+          tick: { fontSize: isMobile ? 10 : isChartMinimized ? 10 : 12 },
         },
         line: {
-          strokeWidth: isChartMinimized ? 1.5 : 2,
+          strokeWidth: isMobile ? 1.5 : isChartMinimized ? 1.5 : 2,
           dot: isChartMinimized ? false : { r: 3 },
           activeDot: isChartMinimized ? false : { r: 6 },
         },
       }),
-      [isChartMinimized],
+      [isChartMinimized, isMobile],
     );
 
     // Memoized chart colors
@@ -566,7 +570,15 @@ const ProductComparisonChart = memo(
               </div>
               <ResponsiveContainer
                 width="100%"
-                height={isChartMinimized ? 200 : 400}
+                height={
+                  isChartMinimized
+                    ? isMobile
+                      ? 170
+                      : 200
+                    : isMobile
+                      ? 280
+                      : 400
+                }
               >
                 <LineChart data={comparisonData} margin={chartConfig.margin}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -580,8 +592,9 @@ const ProductComparisonChart = memo(
                   />
                   <YAxis
                     tick={chartConfig.yAxis.tick}
+                    width={isMobile ? 34 : 58}
                     label={
-                      !isChartMinimized
+                      !isChartMinimized && !isMobile
                         ? {
                             value:
                               metricType === "sales"
@@ -596,7 +609,7 @@ const ProductComparisonChart = memo(
                     }
                   />
                   <Tooltip content={<CustomTooltip />} />
-                  {!isChartMinimized && (
+                  {!isChartMinimized && !isMobile && (
                     <Legend
                       verticalAlign="top"
                       height={36}

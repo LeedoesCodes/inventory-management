@@ -28,7 +28,7 @@ export default function Header() {
       },
       (error) => {
         console.error("Error fetching user data:", error);
-      }
+      },
     );
 
     return () => unsubscribe();
@@ -47,6 +47,11 @@ export default function Header() {
   };
 
   const title = pageTitles[location.pathname] || "Welcome";
+
+  // Mobile uses the shared app-shell header to avoid duplicate fixed headers.
+  if (isMobile) {
+    return null;
+  }
 
   // Get profile picture with priority: Firestore -> Auth -> default
   const getProfilePicture = () => {
@@ -103,8 +108,8 @@ export default function Header() {
               {role === "admin"
                 ? "Administrator"
                 : role === "developer"
-                ? "Developer"
-                : "Employee"}
+                  ? "Developer"
+                  : "Employee"}
             </p>
           </div>
         )}

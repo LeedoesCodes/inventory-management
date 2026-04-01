@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUser,
@@ -12,6 +12,8 @@ import {
   faCheckCircle,
   faMoneyCheck,
   faClock,
+  faChevronDown,
+  faChevronUp,
 } from "@fortawesome/free-solid-svg-icons";
 
 // Import utils
@@ -33,6 +35,7 @@ const TransactionCard = ({
   onDeleteOrder,
 }) => {
   const cardRef = useRef(null);
+  const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
 
   // Calculate total refund amount from all bad orders
   const calculateTotalRefundAmount = () => {
@@ -239,91 +242,107 @@ const TransactionCard = ({
         </div>
 
         <div className="order-actions" onClick={(e) => e.stopPropagation()}>
-          {/* Payment Actions for Credit Orders */}
-          {order.status !== "cancelled" && order.paymentMethod === "credit" && (
-            <>
-              {(isCreditPending || isPartiallyPaid || overdue) && (
-                <button
-                  className={`action-btn payment-btn ${
-                    overdue ? `overdue-btn ${overdueSeverity}` : ""
-                  }`}
-                  onClick={() => onRecordPayment(order)}
-                  title={
-                    overdue
-                      ? `Pay Overdue Amount (${daysOverdue} days overdue)`
-                      : "Record Payment"
-                  }
-                >
-                  <FontAwesomeIcon
-                    icon={overdue ? faExclamationTriangle : faMoneyCheck}
-                  />
-                </button>
-              )}
-              {(isCreditPending || overdue) && (
-                <button
-                  className="action-btn mark-paid-btn"
-                  onClick={() => onMarkAsPaid(order)}
-                  title="Mark as Paid in Full"
-                >
-                  <FontAwesomeIcon icon={faCheckCircle} />
-                </button>
-              )}
-            </>
-          )}
+          <button
+            type="button"
+            className={`mobile-actions-toggle ${mobileActionsOpen ? "open" : ""}`}
+            onClick={() => setMobileActionsOpen((prev) => !prev)}
+            aria-expanded={mobileActionsOpen}
+            title="Show more transaction actions"
+          >
+            <span>More</span>
+            <FontAwesomeIcon
+              icon={mobileActionsOpen ? faChevronUp : faChevronDown}
+            />
+          </button>
 
-          {/* Regular Actions */}
-          {order.status !== "cancelled" && (
-            <>
-              <button
-                className="action-btn bad-order-btn"
-                onClick={() => onBadOrder(order)}
-                title="Process Bad Order"
-              >
-                <FontAwesomeIcon icon={faExclamationTriangle} />
-              </button>
-              <button
-                className="action-btn cancel-btn"
-                onClick={() => onCancelOrder(order)}
-                title="Cancel Order"
-              >
-                <FontAwesomeIcon icon={faTimesCircle} />
-              </button>
-            </>
-          )}
+          <div className={`actions-group ${mobileActionsOpen ? "open" : ""}`}>
+            {/* Payment Actions for Credit Orders */}
+            {order.status !== "cancelled" &&
+              order.paymentMethod === "credit" && (
+                <>
+                  {(isCreditPending || isPartiallyPaid || overdue) && (
+                    <button
+                      className={`action-btn payment-btn ${
+                        overdue ? `overdue-btn ${overdueSeverity}` : ""
+                      }`}
+                      onClick={() => onRecordPayment(order)}
+                      title={
+                        overdue
+                          ? `Pay Overdue Amount (${daysOverdue} days overdue)`
+                          : "Record Payment"
+                      }
+                    >
+                      <FontAwesomeIcon
+                        icon={overdue ? faExclamationTriangle : faMoneyCheck}
+                      />
+                    </button>
+                  )}
+                  {(isCreditPending || overdue) && (
+                    <button
+                      className="action-btn mark-paid-btn"
+                      onClick={() => onMarkAsPaid(order)}
+                      title="Mark as Paid in Full"
+                    >
+                      <FontAwesomeIcon icon={faCheckCircle} />
+                    </button>
+                  )}
+                </>
+              )}
 
-          {/* Universal Actions */}
-          <button
-            className="action-btn print-btn"
-            onClick={handlePrintReceipt}
-            title="Print Receipt"
-          >
-            <FontAwesomeIcon icon={faPrint} />
-          </button>
-          <button
-            className="action-btn view-btn"
-            onClick={onView}
-            title="View Details"
-          >
-            <FontAwesomeIcon icon={faEye} />
-          </button>
-          <button
-            className="action-btn delete-btn"
-            onClick={() => onDeleteOrder(order)}
-            title="Delete Transaction"
-          >
-            <FontAwesomeIcon icon={faTrash} />
-          </button>
+            {/* Regular Actions */}
+            {order.status !== "cancelled" && (
+              <>
+                <button
+                  className="action-btn bad-order-btn"
+                  onClick={() => onBadOrder(order)}
+                  title="Process Bad Order"
+                >
+                  <FontAwesomeIcon icon={faExclamationTriangle} />
+                </button>
+                <button
+                  className="action-btn cancel-btn"
+                  onClick={() => onCancelOrder(order)}
+                  title="Cancel Order"
+                >
+                  <FontAwesomeIcon icon={faTimesCircle} />
+                </button>
+              </>
+            )}
+
+            {/* Universal Actions */}
+            <button
+              className="action-btn print-btn"
+              onClick={handlePrintReceipt}
+              title="Print Receipt"
+            >
+              <FontAwesomeIcon icon={faPrint} />
+            </button>
+            <button
+              className="action-btn view-btn"
+              onClick={onView}
+              title="View Details"
+            >
+              <FontAwesomeIcon icon={faEye} />
+            </button>
+            <button
+              className="action-btn delete-btn"
+              onClick={() => onDeleteOrder(order)}
+              title="Delete Transaction"
+            >
+              <FontAwesomeIcon icon={faTrash} />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Body Section */}
       <div className="transaction-body">
         <div className="transaction-details">
-          <div className="detail-item">
+          <div className="detail-item detail-customer">
             <FontAwesomeIcon icon={faUser} />
             <span>{order.customerName || "Walk-in Customer"}</span>
           </div>
-          <div className="detail-item">
+          <div className="detail-item detail-date">
             <FontAwesomeIcon icon={faCalendar} />
             <span>{order.createdAt.toLocaleString()}</span>
           </div>
@@ -331,7 +350,7 @@ const TransactionCard = ({
           {/* Due Date Display - Clean and simple */}
           {isCreditOrder && displayDueDate && (
             <div
-              className={`detail-item ${
+              className={`detail-item detail-due ${
                 overdue ? `overdue-detail ${overdueSeverity}` : ""
               }`}
             >
@@ -344,18 +363,18 @@ const TransactionCard = ({
             </div>
           )}
 
-          <div className="detail-item payment-method">
+          <div className="detail-item detail-payment payment-method">
             <FontAwesomeIcon
               icon={paymentMethod.icon}
               style={{ color: paymentMethod.color }}
             />
             <span>{getPaymentMethodDisplay()}</span>
           </div>
-          <div className="detail-item">
+          <div className="detail-item detail-items">
             <FontAwesomeIcon icon={faBox} />
             <span>{order.totalItems} items</span>
           </div>
-          <div className="detail-item">
+          <div className="detail-item detail-total">
             <span
               className={order.status === "cancelled" ? "cancelled-amount" : ""}
             >
