@@ -57,23 +57,25 @@ const TransactionList = ({
           {filteredOrders.length !== 1 ? "s" : ""}
         </span>
         {(searchTerm || filterStatus !== "all" || filterPayment !== "all") && (
-          <span className="filter-indicator">• Filtered results</span>
+          <span className="filter-indicator">• Filtered</span>
         )}
       </div>
 
-      {filteredOrders.map((order) => (
-        <TransactionCard
-          key={order.id}
-          order={order}
-          isHighlighted={highlightedOrderId === order.id}
-          onView={() => onViewOrder(order)}
-          onRecordPayment={() => onRecordPayment(order)}
-          onMarkAsPaid={() => onMarkAsPaid(order)}
-          onBadOrder={() => onBadOrder(order)}
-          onCancelOrder={() => onCancelOrder(order)}
-          onDeleteOrder={() => onDeleteOrder(order)}
-        />
-      ))}
+      <div className="transaction-cards-grid">
+        {filteredOrders.map((order) => (
+          <TransactionCard
+            key={order.id}
+            order={order}
+            isHighlighted={highlightedOrderId === order.id}
+            onView={() => onViewOrder(order)}
+            onRecordPayment={() => onRecordPayment(order)}
+            onMarkAsPaid={() => onMarkAsPaid(order)}
+            onBadOrder={() => onBadOrder(order)}
+            onCancelOrder={() => onCancelOrder(order)}
+            onDeleteOrder={() => onDeleteOrder(order)}
+          />
+        ))}
+      </div>
     </div>
   );
 };

@@ -1,7 +1,11 @@
-// components/UI/FloatingCheckout.jsx
-import React from "react";
+import React, { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faShoppingCart, faTag } from "@fortawesome/free-solid-svg-icons";
+import {
+  faShoppingCart,
+  faTag,
+  faChevronUp,
+  faChevronDown,
+} from "@fortawesome/free-solid-svg-icons";
 import "../../styles/orders.scss";
 
 export default function FloatingCheckout({
@@ -16,12 +20,24 @@ export default function FloatingCheckout({
   customerName,
   setCustomerName,
 }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   return (
-    <div className="floating-checkout">
+    <div className={`floating-checkout ${isExpanded ? "expanded" : "compact"}`}>
       <div className="checkout-content">
+        {/* Mobile-only toggle header */}
+        <div className="mobile-checkout-toggle" onClick={() => setIsExpanded(!isExpanded)}>
+          <div className="compact-summary">
+            <FontAwesomeIcon icon={faShoppingCart} />
+            <span className="items-count">{totalItems} items</span>
+            <span className="total-price">₱{totalAmount.toFixed(2)}</span>
+          </div>
+          <FontAwesomeIcon icon={isExpanded ? faChevronDown : faChevronUp} className="toggle-icon" />
+        </div>
+
         <div className="checkout-summary">
           <div className="summary-info">
-            <div className="summary-row">
+            <div className="summary-row desktop-only">
               <FontAwesomeIcon icon={faShoppingCart} />
               <span className="total-items">{totalItems} items</span>
               <span className="total-amount">₱{totalAmount.toFixed(2)}</span>
@@ -42,7 +58,7 @@ export default function FloatingCheckout({
                 type="text"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="Enter customer name or select from recent customers"
+                placeholder="Name or Walk-in Customer"
                 className="customer-input"
               />
               {customerName &&
@@ -61,7 +77,7 @@ export default function FloatingCheckout({
               onClick={onCheckout}
               disabled={cartItems.length === 0}
             >
-              Complete Checkout
+              Checkout
             </button>
           </div>
         </div>

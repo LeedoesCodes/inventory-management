@@ -429,9 +429,22 @@ export default function ProductForm({
     ? getFileNameFromUrl(selectedProduct.imageUrl)
     : null;
 
+  const handleNumberInputWheel = (e) => {
+    const target = e.target;
+
+    if (
+      target instanceof HTMLInputElement &&
+      target.type === "number" &&
+      document.activeElement === target
+    ) {
+      target.blur();
+    }
+  };
+
   return (
     <form
       onSubmit={handleSubmit}
+      onWheelCapture={handleNumberInputWheel}
       className={`product-form horizontal-layout ${
         isFullPage ? "full-page-mode" : ""
       }`}

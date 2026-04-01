@@ -18,6 +18,9 @@ import {
   faBoxOpen,
   faLink,
   faHistory,
+  faSlidersH,
+  faChevronDown,
+  faChevronUp,
 } from "@fortawesome/free-solid-svg-icons";
 import { AuthContext } from "../context/AuthContext";
 import { logProductChange } from "../utils/productAuditUtils";
@@ -652,23 +655,14 @@ export default function ProductsPage() {
                   </div>
                 </div>
               </div>
-
-              <div className="header-actions">
-                <button className="add-product-btn" onClick={handleAddProduct}>
-                  Add Product
-                </button>
-              </div>
             </div>
 
             <button
               type="button"
-              className={`mobile-controls-toggle ${
-                mobileControlsOpen ? "open" : ""
-              }`}
+              className={`mobile-controls-toggle ${mobileControlsOpen ? "open" : ""}`}
               onClick={() => setMobileControlsOpen((prev) => !prev)}
-              aria-expanded={mobileControlsOpen}
-              aria-controls="products-controls-panel"
             >
+              <FontAwesomeIcon icon={faSlidersH} />
               <span>
                 {mobileControlsOpen
                   ? "Hide Filters & Sort"
@@ -677,6 +671,10 @@ export default function ProductsPage() {
               {hasActiveFilters && (
                 <span className="active-filter-badge">{activeFilterCount}</span>
               )}
+              <FontAwesomeIcon
+                icon={mobileControlsOpen ? faChevronUp : faChevronDown}
+                className="toggle-chevron"
+              />
             </button>
 
             <div

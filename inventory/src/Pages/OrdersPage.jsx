@@ -25,6 +25,9 @@ import {
   faSort,
   faShoppingCart,
   faExclamationTriangle,
+  faChevronDown,
+  faChevronUp,
+  faSlidersH,
 } from "@fortawesome/free-solid-svg-icons";
 import { StockConverter } from "../components/products/utils/stockConverter";
 import "../styles/orders.scss";
@@ -65,6 +68,7 @@ export default function OrdersPage() {
   const [debounceTimer, setDebounceTimer] = useState(null);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [customerDiscounts, setCustomerDiscounts] = useState([]);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Fetch categories from Firestore
   const fetchCategories = async () => {
@@ -987,8 +991,25 @@ export default function OrdersPage() {
         <Header />
 
         <div className="orders-content">
-          {/* Enhanced Search & Filters Section */}
-          <div className="search-filters-section">
+          {/* Enhanced Search & Filters Section - Collapsible on Mobile */}
+          <div className="orders-top-controls">
+            <button
+              className={`mobile-filter-toggle ${filtersOpen ? "open" : ""}`}
+              onClick={() => setFiltersOpen(!filtersOpen)}
+            >
+              <FontAwesomeIcon icon={faSlidersH} />
+              <span>Filters & Categories</span>
+              <FontAwesomeIcon
+                icon={filtersOpen ? faChevronUp : faChevronDown}
+              />
+            </button>
+          </div>
+
+          <div
+            className={`search-filters-section ${
+              filtersOpen ? "mobile-open" : ""
+            }`}
+          >
             <ProductSearch
               onSearch={handleSearch}
               categories={categories}
@@ -1000,6 +1021,23 @@ export default function OrdersPage() {
               <button className="clear-filters-btn" onClick={clearAllFilters}>
                 Clear Filters
               </button>
+            )}
+
+            {recentCustomers.length > 0 && (
+              <div className="recent-customers">
+                <h3>Recent Customers</h3>
+                <div className="customer-tags">
+                  {recentCustomers.map((customer, index) => (
+                    <button
+                      key={index}
+                      className="customer-tag"
+                      onClick={() => setCustomerName(customer)}
+                    >
+                      {customer}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
 
@@ -1051,24 +1089,7 @@ export default function OrdersPage() {
             </div>
           </div>
 
-          {recentCustomers.length > 0 && (
-            <div className="recent-customers">
-              <h3>Recent Customers</h3>
-              <div className="customer-tags">
-                {recentCustomers.map((customer, index) => (
-                  <button
-                    key={index}
-                    className="customer-tag"
-                    onClick={() => setCustomerName(customer)}
-                  >
-                    {customer}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="products-grid">
+        <div className="products-grid">
             <h2>Available Products</h2>
 
             {loading ? (
