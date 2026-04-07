@@ -458,6 +458,101 @@
   }
 }
 
+@media (min-width: 1024px) {
+  .orders-content {
+    .search-filters-section {
+      padding: 0.65rem 0.75rem;
+      gap: 0.65rem;
+      margin-bottom: 0.65rem;
+
+      .search-filters-container {
+        display: grid;
+        grid-template-columns: minmax(280px, 1fr) minmax(500px, 620px);
+        align-items: center;
+        gap: 0.6rem;
+      }
+
+      .search-input-group {
+        min-width: 0;
+
+        .search-input {
+          padding: 0.58rem 0.85rem;
+        }
+      }
+
+      .filter-select-group {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(150px, 1fr));
+        gap: 0.6rem;
+        width: 100%;
+
+        .filter-select {
+          min-width: 0;
+          padding: 0.58rem 0.8rem;
+          font-size: 0.92rem;
+        }
+      }
+
+      .clear-filters-btn {
+        padding: 0.58rem 0.95rem;
+        font-size: 0.88rem;
+      }
+    }
+
+    .recent-customers {
+      margin-bottom: 0;
+      padding: 0.55rem 0.7rem;
+
+      h3 {
+        margin-bottom: 0.4rem;
+        font-size: 0.9rem;
+      }
+
+      .customer-tags {
+        gap: 0.35rem;
+
+        .customer-tag {
+          padding: 0.25rem 0.65rem;
+          font-size: 0.78rem;
+        }
+      }
+    }
+
+    .controls-bar {
+      display: grid;
+      grid-template-columns: minmax(300px, 1fr) auto auto;
+      align-items: center;
+      gap: 0.7rem;
+      padding: 0.6rem 0.75rem;
+      margin-bottom: 0.7rem;
+
+      .control-group {
+        gap: 0.6rem;
+
+        label {
+          font-size: 0.95rem;
+          white-space: nowrap;
+        }
+
+        .control-select {
+          padding: 0.55rem 0.7rem;
+          font-size: 0.9rem;
+        }
+      }
+
+      .cart-summary-mini,
+      .products-count {
+        padding: 0.5rem 0.75rem;
+        white-space: nowrap;
+      }
+
+      .products-count {
+        gap: 0.35rem;
+      }
+    }
+  }
+}
+
 .products-grid {
   width: 100%;
   max-width: 100%;
@@ -857,6 +952,10 @@
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
+
+    .mobile-checkout-toggle {
+      display: none;
+    }
 
     .checkout-summary {
       display: flex;
@@ -1830,16 +1929,17 @@
       }
     }
 
-      .selected-variants {
-        .variant-quantity-section {
-          flex-direction: column;
-          gap: 0.5rem;
-          text-align: center;
-        }
+    .selected-variants {
+      .variant-quantity-section {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
       }
     }
   }
+}
 
+@media (max-width: 768px) {
   .floating-checkout {
     background: var(--bg-secondary);
     border-top: 2px solid var(--accent-color);
@@ -1942,9 +2042,9 @@
     }
 
     &.compact {
-       .checkout-summary {
-         display: none;
-       }
+      .checkout-summary {
+        display: none;
+      }
     }
 
     &.has-bottom-nav {
@@ -1953,41 +2053,42 @@
       }
     }
   }
+}
 
-  .barcode-scanner-section {
-    padding: 15px;
+.barcode-scanner-section {
+  padding: 15px;
 
-    .scanner-header {
-      flex-direction: column;
-      gap: 10px;
-      align-items: flex-start;
-    }
+  .scanner-header {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
 
-    .scanner-controls {
-      flex-direction: column;
+  .scanner-controls {
+    flex-direction: column;
+    width: 100%;
+
+    .barcode-input-group {
+      min-width: 100%;
       width: 100%;
+    }
 
-      .barcode-input-group {
-        min-width: 100%;
-        width: 100%;
-      }
-
-      .scanner-options {
-        width: 100%;
-        justify-content: center;
-      }
+    .scanner-options {
+      width: 100%;
+      justify-content: center;
     }
   }
+}
 
-  .camera-scanner-area {
-    .camera-container {
-      max-width: 100%;
-    }
-
-    .manual-scan-section .manual-buttons {
-      flex-direction: column;
-    }
+.camera-scanner-area {
+  .camera-container {
+    max-width: 100%;
   }
+
+  .manual-scan-section .manual-buttons {
+    flex-direction: column;
+  }
+}
 
 // Smooth transitions for theme switching
 .orders-page,
@@ -2500,6 +2601,7 @@
           line-height: 1.25;
           font-weight: 700;
           display: -webkit-box;
+          line-clamp: 2;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
